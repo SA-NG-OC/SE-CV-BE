@@ -3,14 +3,14 @@ import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../database/schema';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { LoginDto } from './dto/auth/login.dto';
+import { LoginDto } from './dto/login.dto';
 import { DATABASE_CONNECTION } from '../database/database.module';
 import { eq, and } from 'drizzle-orm';
 import { InferSelectModel } from 'drizzle-orm';
 import { Redis } from 'ioredis';
 import { MailService } from 'src/mail/mail.service';
-import { RegisterDto } from './dto/auth/register.dto';
-import { ChangePasswordDto } from './dto/auth/changePassword.dto';
+import { RegisterDto } from './dto/register.dto';
+import { ChangePasswordDto } from './dto/changePassword.dto';
 import { randomInt } from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 
