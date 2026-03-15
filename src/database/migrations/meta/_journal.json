@@ -8,6 +8,20 @@
       "when": 1772716415703,
       "tag": "0000_bizarre_proemial_gods",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1773539716929,
+      "tag": "0001_cold_mariko_yashida",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1773539889888,
+      "tag": "0002_narrow_marten_broadcloak",
+      "breakpoints": true
     }
   ]
 }

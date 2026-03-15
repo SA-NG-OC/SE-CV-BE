@@ -21,11 +21,18 @@ import RegisterDocs from './decorators/register.decorator';
 import VerifyEmailDocs from './decorators/verify-email.decorator';
 import RefreshDocs from './decorators/refresh.decorator';
 import ForgotPasswordDocs from './decorators/forgot-password.decorator';
+import { GoogleOAuthGuard } from './guards/google.guard';
+import { UseGuards } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import GoogleAuthDocs from './decorators/google-auth.decorator';
+import GoogleCallbackDocs from './decorators/google-callback.decorator';
 
 @Controller('auth')
 @ApiTags('Auth')
 export class AuthController {
-    constructor(private readonly authService: AuthService) { }
+    constructor(private readonly authService: AuthService,
+        private readonly configService: ConfigService
+    ) { }
 
     @Post('login')
     @LoginDocs()
@@ -104,4 +111,30 @@ export class AuthController {
         await this.authService.resetPassword(dto.resetToken, dto.newPassword);
         return new ResponseSuccess('Đặt lại mật khẩu thành công', {});
     }
+
+    @Get('google')
+    @GoogleAuthDocs()
+    @UseGuards(GoogleOAuthGuard)
+    async googleAuth() {
+        // Guard tự redirect sang Google, không cần xử lý gì ở đây
+    }
+
+    @Get('google/callback')
+    @GoogleCallbackDocs()
+    @UseGuards(GoogleOAuthGuard)
+    async googleCallback(@Request() req, @Res() res: Response) {
+        // req.user là kết quả từ GoogleStrategy.validate()
+        const { accessToken } = req.user;
+
+        // Redirect về frontend kèm token
+        // return res.redirect(
+        //     `${this.configService.get('FRONTEND_URL')}/oauth/callback?token=${accessToken}`
+        // );
+        return res.json({
+            message: 'OAuth success',
+            token: req.user.accessToken,
+            user: req.user,
+        });
+    }
+
 }

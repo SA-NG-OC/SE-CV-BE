@@ -13,6 +13,7 @@ import { RegisterDto } from './dto/register.dto';
 import { ChangePasswordDto } from './dto/changePassword.dto';
 import { randomInt } from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
+import { GoogleUserDto } from './dto/google-user.dto';
 
 type User = InferSelectModel<typeof schema.users>;
 @Injectable()
@@ -179,7 +180,7 @@ export class AuthService {
         if (!user.is_verified) {
             throw new UnauthorizedException('Tài khoản của bạn chưa được xác thực');
         }
-        const checkPassword = await bcrypt.compare(loginDto.password, user.password_hash);
+        const checkPassword = await bcrypt.compare(loginDto.password, user.password_hash ?? '');
         if (!checkPassword) {
             throw new UnauthorizedException('Email hoặc mật khẩu không chính xác');
         }
@@ -217,7 +218,7 @@ export class AuthService {
         if (!checkUser) {
             throw new NotFoundException('Không tìm thấy người dùng');
         }
-        const isPasswordValid = await bcrypt.compare(oldPassword, checkUser.password_hash);
+        const isPasswordValid = await bcrypt.compare(oldPassword, checkUser.password_hash ?? '');
         if (!isPasswordValid) {
             throw new BadRequestException('Mật khẩu cũ không chính xác');
         }
@@ -315,5 +316,62 @@ export class AuthService {
         await this.redisClient.del(`reset:${resetToken}`);
 
         return { message: 'Đổi mật khẩu thành công' };
+    }
+
+    //Oauth2
+    async findOrCreateOAuthUser(googleUser: GoogleUserDto) {
+        let [user] = await this.db
+            .select()
+            .from(schema.users)
+            .where(
+                and(
+                    eq(schema.users.oauth_provider, googleUser.oauth_provider),
+                    eq(schema.users.oauth_provider_id, googleUser.oauth_provider_id),
+                )
+            )
+        if (!user) {
+            [user] = await this.db
+                .select()
+                .from(schema.users)
+                .where(eq(schema.users.email, googleUser.email));
+            if (user) {
+                await this.db
+                    .update(schema.users)
+                    .set({
+                        oauth_provider: googleUser.oauth_provider,
+                        oauth_provider_id: googleUser.oauth_provider_id,
+                        is_verified: true,
+                        last_login: new Date(),
+                    })
+                    .where(eq(schema.users.user_id, user.user_id));
+            }
+            else {
+                [user] = await this.db
+                    .insert(schema.users)
+                    .values({
+                        email: googleUser.email,
+                        oauth_provider: googleUser.oauth_provider,
+                        oauth_provider_id: googleUser.oauth_provider_id,
+                        password_hash: null,
+                        is_active: true,
+                        is_verified: true,
+                        last_login: new Date(),
+                    })
+                    .returning();
+            }
+        }
+
+        const { accessToken, refreshToken } = await this.generateTokens(user);
+        await this.redisClient.set(
+            `refresh_token:${user.user_id}`,
+            refreshToken,
+            'EX',
+            7 * 24 * 60 * 60
+        );
+        return {
+            email: user.email,
+            access_token: accessToken,
+            refresh_token: refreshToken
+        }
     }
 }

@@ -30,7 +30,7 @@ export const users = pgTable(
     {
         user_id: serial("user_id").primaryKey(),
         email: varchar("email", { length: 255 }).unique().notNull(),
-        password_hash: varchar("password_hash", { length: 255 }).notNull(),
+        password_hash: varchar("password_hash", { length: 255 }),
         role_id: integer("role_id").references(() => roles.role_id),
         is_active: boolean("is_active").default(true),
         is_verified: boolean("is_verified").default(false),
@@ -40,6 +40,10 @@ export const users = pgTable(
         last_login: timestamp("last_login"),
         created_at: timestamp("created_at").defaultNow(),
         updated_at: timestamp("updated_at").defaultNow(),
+        oauth_provider: varchar('oauth_provider', { length: 50 }),   // 'google', 'github',...
+        oauth_provider_id: varchar('oauth_provider_id', { length: 255 }),
+        //avatar_url: varchar('avatar_url', { length: 500 }),
+        //full_name: varchar('full_name', { length: 255 }),
     },
     (t) => [
         index("idx_users_email").on(t.email),
