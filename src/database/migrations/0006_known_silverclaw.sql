@@ -1,0 +1,1 @@
+ALTER TABLE "companies" ADD COLUMN "slogan" varchar(100);

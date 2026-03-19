@@ -4,6 +4,7 @@ import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 import cookieParser from 'cookie-parser';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConsoleLogger } from '@nestjs/common';
+import { ZodValidationPipe } from 'nestjs-zod';
 
 
 async function bootstrap() {
@@ -13,6 +14,7 @@ async function bootstrap() {
     }),
   });
   app.useGlobalFilters(new AllExceptionsFilter());
+  app.useGlobalPipes(new ZodValidationPipe());
   app.use(cookieParser());
 
   const config = new DocumentBuilder()

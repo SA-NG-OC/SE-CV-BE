@@ -14,6 +14,7 @@ import { ChangePasswordDto } from './dto/changePassword.dto';
 import { randomInt } from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import { GoogleUserDto } from './dto/google-user.dto';
+import { Role } from 'src/common/types/role.enum';
 
 type User = InferSelectModel<typeof schema.users>;
 @Injectable()
@@ -107,6 +108,7 @@ export class AuthService {
                 password_hash: passwordHash,
                 is_verified: false,
                 verification_token: verificationToken,
+                role_id: Role.COMPANY,
             })
             .returning();
         try {
@@ -201,7 +203,7 @@ export class AuthService {
             success: true,
             message: 'Đăng nhập thành công',
             data: {
-                email: user.email,
+                user: user,
                 access_token: accessToken,
                 refresh_token: refreshToken
             }
@@ -353,6 +355,7 @@ export class AuthService {
                         oauth_provider: googleUser.oauth_provider,
                         oauth_provider_id: googleUser.oauth_provider_id,
                         password_hash: null,
+                        role_id: Role.COMPANY,
                         is_active: true,
                         is_verified: true,
                         last_login: new Date(),

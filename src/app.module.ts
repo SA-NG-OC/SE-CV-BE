@@ -6,6 +6,10 @@ import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { RedisModule } from './redis/redis.module';
 import { MailModule } from './mail/mail.module';
+import { CompanyModule } from './company/company.module';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { EventsGateway } from './events/events.gateway';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
@@ -13,9 +17,20 @@ import { MailModule } from './mail/mail.module';
     RedisModule,
     MailModule,
     ConfigModule.forRoot({ isGlobal: true }),
-    AuthModule
+    AuthModule,
+    CompanyModule,
+    CloudinaryModule,
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          ttl: 60000,
+          limit: 10,
+        },
+      ]
+
+    })
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, EventsGateway],
 })
 export class AppModule { }

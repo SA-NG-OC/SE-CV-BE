@@ -11,6 +11,7 @@ import {
     jsonb,
     uniqueIndex,
     index,
+    pgEnum
 } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
 
@@ -55,18 +56,28 @@ export const users = pgTable(
 // 2. BẢNG DOANH NGHIỆP
 // =============================================
 
+export const companyStatusEnum = pgEnum("company_status", [
+    "PENDING",    // Chờ duyệt
+    "APPROVED",   // Đã duyệt
+    "REJECTED",   // Bị từ chối
+    "RESTRICTED"  // Bị hạn chế
+]);
+
 export const companies = pgTable(
     "companies",
     {
         company_id: serial("company_id").primaryKey(),
         user_id: integer("user_id")
             .unique()
+            .notNull()
             .references(() => users.user_id, { onDelete: "cascade" }),
         company_name: varchar("company_name", { length: 255 }).notNull(),
         industry: varchar("industry", { length: 100 }),
+        slogan: varchar("slogan", { length: 100 }),
         company_size: varchar("company_size", { length: 50 }),
         website: varchar("website", { length: 255 }),
         logo_url: varchar("logo_url", { length: 500 }),
+        cover_image_url: varchar("cover_image_url", { length: 500 }),
         description: text("description"),
         address: text("address"),
         city: varchar("city", { length: 100 }),
@@ -74,8 +85,11 @@ export const companies = pgTable(
         contact_email: varchar("contact_email", { length: 255 }),
         contact_phone: varchar("contact_phone", { length: 20 }),
         is_verified: boolean("is_verified").default(false),
+        status: companyStatusEnum("status").default("PENDING").notNull(),
+        admin_note: text("admin_note"),
         rating: decimal("rating", { precision: 2, scale: 1 }).default("0.0"),
         total_jobs_posted: integer("total_jobs_posted").default(0),
+        total_followers: integer("total_followers").default(0),
         created_at: timestamp("created_at").defaultNow(),
         updated_at: timestamp("updated_at").defaultNow(),
     },
@@ -98,6 +112,27 @@ export const company_images = pgTable("company_images", {
     image_url: varchar("image_url", { length: 500 }).notNull(),
     created_at: timestamp("created_at").defaultNow(),
 });
+
+export const followed_companies = pgTable(
+    "followed_companies",
+    {
+        follow_id: serial("follow_id").primaryKey(),
+        student_id: integer("student_id")
+            .notNull()
+            .references(() => students.student_id, { onDelete: "cascade" }),
+        company_id: integer("company_id")
+            .notNull()
+            .references(() => companies.company_id, { onDelete: "cascade" }),
+        created_at: timestamp("created_at").defaultNow(),
+    },
+    (t) => [
+        // Đảm bảo một sinh viên không thể theo dõi một công ty nhiều lần
+        uniqueIndex("uq_student_company_follow").on(t.student_id, t.company_id),
+        // Index để tối ưu hóa truy vấn tìm kiếm
+        index("idx_followed_companies_student").on(t.student_id),
+        index("idx_followed_companies_company").on(t.company_id),
+    ]
+);
 
 // =============================================
 // 3. BẢNG SINH VIÊN
@@ -456,6 +491,18 @@ export const companiesRelations = relations(companies, ({ one, many }) => ({
     }),
     images: many(company_images),
     job_postings: many(job_postings),
+    followers: many(followed_companies),
+}));
+
+export const followedCompaniesRelations = relations(followed_companies, ({ one }) => ({
+    student: one(students, {
+        fields: [followed_companies.student_id],
+        references: [students.student_id],
+    }),
+    company: one(companies, {
+        fields: [followed_companies.company_id],
+        references: [companies.company_id],
+    }),
 }));
 
 export const studentsRelations = relations(students, ({ one, many }) => ({
@@ -471,6 +518,7 @@ export const studentsRelations = relations(students, ({ one, many }) => ({
     saved_jobs: many(saved_jobs),
     search_history: many(search_history),
     saved_searches: many(saved_searches),
+    followed_companies: many(followed_companies),
 }));
 
 export const majorsRelations = relations(majors, ({ many }) => ({

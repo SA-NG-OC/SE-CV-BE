@@ -26,6 +26,7 @@ import { UseGuards } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import GoogleAuthDocs from './decorators/google-auth.decorator';
 import GoogleCallbackDocs from './decorators/google-callback.decorator';
+import { access } from 'fs';
 
 @Controller('auth')
 @ApiTags('Auth')
@@ -45,7 +46,11 @@ export class AuthController {
             sameSite: 'lax',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
-        return new ResponseSuccess('Đăng nhập thành công', { access_token: result.data.access_token });
+        const {
+            password_hash,
+            ...userSafe
+        } = result.data.user;
+        return new ResponseSuccess('Đăng nhập thành công', { access_token: result.data.access_token, user: userSafe });
     }
 
     @Post('register')

@@ -19,6 +19,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
             `${request.method} ${request.url}`,
             exception instanceof Error ? exception.stack : exception,
         );
+        console.error("🔥 OBJECT LỖI GỐC ĐỂ DEBUG:", exception);
         return response.status(status).json({
             success: false,
             statusCode: status,
