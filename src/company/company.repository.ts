@@ -137,10 +137,12 @@ export class CompanyRepository {
         status?: "PENDING" | "APPROVED" | "REJECTED" | "RESTRICTED"
     ) {
         const offset = (page - 1) * limit;
-        // 1. Lọc theo trạng thái
-        const condition = status ? eq(schema.companies.status, status) : undefined;
-        // 2. Chạy nhiều truy vấn
-        const [companies, [{ totalItem }], statusCount] = await Promise.all([
+
+        const condition = status
+            ? eq(schema.companies.status, status)
+            : undefined;
+
+        const [companies, [{ totalItems }], statusCount] = await Promise.all([
             this.db
                 .select({
                     companyId: schema.companies.company_id,
@@ -161,31 +163,25 @@ export class CompanyRepository {
 
             this.db
                 .select({
-                    totalItem: sql<number>`count(*)`.mapWith(Number)
+                    totalItems: sql<number>`count(*)`.mapWith(Number),
                 })
                 .from(schema.companies)
                 .where(condition),
 
-            this.db.select({
-                status: schema.companies.status,
-                count: sql<number>`count(*)`.mapWith(Number)
-            })
+            this.db
+                .select({
+                    status: schema.companies.status,
+                    count: sql<number>`count(*)`.mapWith(Number),
+                })
                 .from(schema.companies)
-                .groupBy(schema.companies.status)
+                .groupBy(schema.companies.status),
+        ]);
 
-        ])
-        const totalPages = Math.ceil(totalItem / limit);
         return {
-            data: companies,
-            status: statusCount,
-            meta: {
-                currentPage: page,
-                itemsPerPage: limit,
-                totalItem,
-                totalPages,
-            }
+            companies,
+            totalItems,
+            statusCount,
         };
-
     }
 
     async getCompanyCardForUser(page: number, limit: number) {

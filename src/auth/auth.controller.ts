@@ -37,7 +37,7 @@ export class AuthController {
 
     @Post('login')
     @LoginDocs()
-    @UsePipes(new ZodValidationPipe(loginSchema))
+    //@UsePipes(new ZodValidationPipe(loginSchema))
     async login(@Body() body: LoginDto, @Res({ passthrough: true }) res: Response) {
         const result = await this.authService.login(body);
         res.cookie('refresh_token', result.data.refresh_token, {
@@ -54,7 +54,7 @@ export class AuthController {
     }
 
     @Post('register')
-    @UsePipes(new ZodValidationPipe(registerScheme))
+    //@UsePipes(new ZodValidationPipe(registerScheme))
     @RegisterDocs()
     async register(@Body() registerDto: RegisterDto) {
         await this.authService.register(registerDto);
@@ -86,7 +86,7 @@ export class AuthController {
     }
 
     @Post('change-password')
-    @UsePipes(new ZodValidationPipe(changePasswordSchema))
+    //@UsePipes(new ZodValidationPipe(changePasswordSchema))
     @ChangePasswordDocs()
     async changePassword(@Body() data: ChangePasswordDto) {
         const result = await this.authService.changePassword(data);
@@ -94,7 +94,7 @@ export class AuthController {
     }
 
     @Post('forgot-password')
-    @UsePipes(new ZodValidationPipe(forgotPasswordSchema))
+    //@UsePipes(new ZodValidationPipe(forgotPasswordSchema))
     @ForgotPasswordDocs()
     async forgotPassword(@Body() dto: ForgotPasswordDto) {
         await this.authService.forgotPassword(dto.email);
@@ -103,7 +103,7 @@ export class AuthController {
 
     @Post('verify-otp')
     @VerifyOtpDocs()
-    @UsePipes(new ZodValidationPipe(verifyOtpSchema))
+    //@UsePipes(new ZodValidationPipe(verifyOtpSchema))
     async verifyOtp(@Body() dto: VerifyOtpDto) {
         const result = await this.authService.verifyOtp(dto.email, dto.otp);
         return new ResponseSuccess('OTP hợp lệ', { resetToken: result.resetToken });
@@ -111,7 +111,7 @@ export class AuthController {
 
     @Post('reset-password')
     @ResetPasswordDocs()
-    @UsePipes(new ZodValidationPipe(resetPasswordSchema))
+    //@UsePipes(new ZodValidationPipe(resetPasswordSchema))
     async resetPassword(@Body() dto: ResetPasswordDto) {
         await this.authService.resetPassword(dto.resetToken, dto.newPassword);
         return new ResponseSuccess('Đặt lại mật khẩu thành công', {});

@@ -2,16 +2,23 @@ import { ArgumentMetadata, BadRequestException, PipeTransform } from "@nestjs/co
 import { ZodType } from "zod";
 
 export class ZodValidationPipe implements PipeTransform {
-    constructor(private schema: ZodType) { }
+    constructor() { }
 
     transform(value: any, metadata: ArgumentMetadata) {
-        const result = this.schema.safeParse(value);
+        const { metatype } = metadata;
+
+        const schema = (metatype as any)?.schema;
+        if (!schema) return value;
+
+        const result = schema.safeParse(value);
+
         if (!result.success) {
             throw new BadRequestException({
                 message: 'Dữ liệu đầu vào không hợp lệ',
                 errors: result.error.issues
-            })
+            });
         }
+
         return result.data;
     }
 }

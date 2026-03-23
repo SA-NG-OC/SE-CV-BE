@@ -24,4 +24,23 @@ export class CloudinaryService {
             streamifier.createReadStream(file.buffer).pipe(uploadStream);
         });
     }
+
+    async uploadDocument(file: Express.Multer.File): Promise<any> {
+        return new Promise((resolve, reject) => {
+            const upload = cloudinary.uploader.upload_stream(
+                {
+                    folder: 'se_cv_resumes',
+                    resource_type: 'image',
+                    format: 'pdf',
+                    pages: true,
+                    type: 'upload',
+                },
+                (error, result) => {
+                    if (error) return reject(error);
+                    resolve(result);
+                },
+            );
+            upload.end(file.buffer);
+        });
+    }
 }

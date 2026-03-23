@@ -1,0 +1,2 @@
+CREATE TYPE "public"."student_status" AS ENUM('STUDYING', 'GRADUATED', 'DROPPED_OUT');--> statement-breakpoint
+ALTER TABLE "students" ADD COLUMN "student_status" "student_status" DEFAULT 'STUDYING' NOT NULL;

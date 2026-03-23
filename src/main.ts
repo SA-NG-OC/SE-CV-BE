@@ -13,9 +13,15 @@ async function bootstrap() {
       json: true,
     }),
   });
+
+  app.enableCors({
+    origin: true,
+    credentials: true,
+  });
+
+  app.use(cookieParser());
   app.useGlobalFilters(new AllExceptionsFilter());
   app.useGlobalPipes(new ZodValidationPipe());
-  app.use(cookieParser());
 
   const config = new DocumentBuilder()
     .setTitle('SE-CV API')
