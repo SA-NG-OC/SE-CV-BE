@@ -11,7 +11,8 @@ import {
     jsonb,
     uniqueIndex,
     index,
-    pgEnum
+    pgEnum,
+    primaryKey
 } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
 
@@ -137,6 +138,11 @@ export const followed_companies = pgTable(
 // =============================================
 // 3. BẢNG SINH VIÊN
 // =============================================
+export const studentStatusEnum = pgEnum("student_status", [
+    "STUDYING",     // đang học
+    "GRADUATED",    // đã tốt nghiệp
+    "DROPPED_OUT",  // dừng học
+]);
 
 export const majors = pgTable("majors", {
     major_id: serial("major_id").primaryKey(),
@@ -165,8 +171,10 @@ export const students = pgTable(
         enrollment_year: integer("enrollment_year"),
         expected_graduation_year: integer("expected_graduation_year"),
         current_year: integer("current_year"),
+        student_status: studentStatusEnum("student_status")
+            .default("STUDYING")
+            .notNull(),
         gpa: decimal("gpa", { precision: 3, scale: 2 }),
-        cv_url: varchar("cv_url", { length: 500 }),
         bio: text("bio"),
         career_goals: text("career_goals"),
         linkedin_url: varchar("linkedin_url", { length: 255 }),
@@ -177,7 +185,7 @@ export const students = pgTable(
         desired_salary_max: integer("desired_salary_max"),
         desired_location: varchar("desired_location", { length: 255 }),
         work_type: varchar("work_type", { length: 50 }),
-        is_open_to_work: boolean("is_open_to_work").default(true),
+        is_open_to_work: boolean("is_open_to_work").default(false),
         created_at: timestamp("created_at").defaultNow(),
         updated_at: timestamp("updated_at").defaultNow(),
     },
@@ -186,6 +194,30 @@ export const students = pgTable(
         index("idx_students_code").on(t.student_code),
         index("idx_students_major").on(t.major_id),
         index("idx_students_graduation_year").on(t.expected_graduation_year),
+    ]
+);
+
+export const student_resumes = pgTable("student_resumes", {
+    resume_id: serial("resume_id").primaryKey(),
+    student_id: integer("student_id").references(() => students.student_id, { onDelete: "cascade" }),
+    resume_name: varchar("resume_name", { length: 255 }).notNull(), // VD: "CV Frontend Dev - Tieng Viet"
+    cv_url: varchar("cv_url", { length: 500 }).notNull(),
+    is_default: boolean("is_default").default(false),
+    created_at: timestamp("created_at").defaultNow(),
+});
+
+export const student_skills = pgTable(
+    "student_skills",
+    {
+        student_id: integer("student_id").references(() => students.student_id, { onDelete: "cascade" }),
+        skill_id: integer("skill_id").references(() => skills.skill_id, { onDelete: "cascade" }),
+        proficiency_level: varchar("proficiency_level", { length: 50 }), // Tùy chọn (vd: Beginner, Expert)
+        created_at: timestamp("created_at").defaultNow(),
+    },
+    (t) => [
+        primaryKey({ columns: [t.student_id, t.skill_id] }), // Primary key tổ hợp
+        index("idx_student_skills_student").on(t.student_id),
+        index("idx_student_skills_skill").on(t.skill_id),
     ]
 );
 

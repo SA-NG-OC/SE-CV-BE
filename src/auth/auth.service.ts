@@ -30,11 +30,12 @@ export class AuthService {
         return bcrypt.hash(password, saltRounds);
     }
 
-    async generateTokens(user: Partial<User>) {
+    async generateTokens(user: Partial<User>, student?) {
         const payload = {
             sub: user.user_id,
             email: user.email,
-            roleId: user.role_id
+            roleId: user.role_id,
+            studentId: student?.studentId
         };
         const [accessToken, refreshToken] = await Promise.all([
             this.jwtService.signAsync(payload),
@@ -186,7 +187,12 @@ export class AuthService {
         if (!checkPassword) {
             throw new UnauthorizedException('Email hoặc mật khẩu không chính xác');
         }
-        const { accessToken, refreshToken } = await this.generateTokens(user);
+        const [student] = await this.db
+            .select({ studentId: schema.students.student_id })
+            .from(schema.students)
+            .where(eq(schema.students.user_id, user.user_id))
+            .limit(1);
+        const { accessToken, refreshToken } = await this.generateTokens(user, student);
         await this.redisClient.set(
             `refresh_token:${user.user_id}`,
             refreshToken,

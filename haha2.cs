@@ -1,97 +1,84 @@
 using System;
-using System.Collections.Generic;
 
-// Prototype (Interface)
-interface IPrototype
+namespace DecoratorPatternExample
 {
-    IPrototype Clone();     // nhân bản
-    string GetColor();      // dùng để tìm kiếm
-}
-
-// ConcretePrototype (Button)
-class Button : IPrototype
-{
-    public int X, Y;
-    public string Color;
-
-    // Constructor thường
-    public Button(int x, int y, string color)
+    // 1. Component Interface - Giao diện chung
+    public interface ICoffee
     {
-        X = x; Y = y; Color = color;
+        string GetDescription();
+        double GetCost();
     }
 
-    // Copy constructor → dùng cho clone
-    public Button(Button prototype)
+    // 2. Concrete Component - Cái "Lõi" cà phê đen
+    public class PlainCoffee : ICoffee
     {
-        X = prototype.X;
-        Y = prototype.Y;
-        Color = prototype.Color;
+        public string GetDescription() => "Cà phê đen";
+        public double GetCost() => 15000.0; // Giá gốc 15k
     }
 
-    public IPrototype Clone()
+    // 3. Base Decorator - Lớp vỏ nền (Abstract)
+    public abstract class CoffeeDecorator : ICoffee
     {
-        // tạo bản sao từ chính nó
-        return new Button(this);
-    }
+        protected ICoffee _decoratedCoffee; // Tham chiếu đến đối tượng bị bọc
 
-    public string GetColor()
-    {
-        return Color;
-    }
-}
-
-// PrototypeRegistry
-class PrototypeRegistry
-{
-    private Dictionary<string, IPrototype> items = new();
-
-    // thêm prototype vào kho
-    public void AddItem(string id, IPrototype prototype)
-    {
-        items[id] = prototype;
-    }
-
-    // lấy theo id (trả về clone)
-    public IPrototype GetById(string id)
-    {
-        return items[id].Clone();
-    }
-
-    // tìm theo color rồi clone
-    public IPrototype GetByColor(string color)
-    {
-        foreach (var item in items.Values)
+        public CoffeeDecorator(ICoffee coffee)
         {
-            if (item.GetColor() == color)
-            {
-                return item.Clone(); // luôn trả bản sao
-            }
+            _decoratedCoffee = coffee;
         }
-        return null;
+
+        // Chuyển tiếp lời gọi vào bên trong
+        public virtual string GetDescription() => _decoratedCoffee.GetDescription();
+        public virtual double GetCost() => _decoratedCoffee.GetCost();
     }
-}
 
-// Client
-class Program
-{
-    static void Main()
+    // 4. Concrete Decorator A - Lớp vỏ "Thêm Sữa"
+    public class MilkDecorator : CoffeeDecorator
     {
-        var registry = new PrototypeRegistry();
+        public MilkDecorator(ICoffee coffee) : base(coffee) { }
 
-        // tạo prototype ban đầu
-        var btn = new Button(10, 40, "red");
-        registry.AddItem("LandingButton", btn);
+        public override string GetDescription()
+            => base.GetDescription() + " + Sữa";
 
-        // lấy theo id
-        var b1 = (Button)registry.GetById("LandingButton");
+        public override double GetCost()
+            => base.GetCost() + 5000.0; // Sữa thêm 5k
+    }
 
-        // lấy theo color
-        var b2 = (Button)registry.GetByColor("red");
+    // 5. Concrete Decorator B - Lớp vỏ "Thêm Đường"
+    public class SugarDecorator : CoffeeDecorator
+    {
+        public SugarDecorator(ICoffee coffee) : base(coffee) { }
 
-        // thay đổi clone không ảnh hưởng bản gốc
-        b2.X = 999;
+        public override string GetDescription()
+            => base.GetDescription() + " + Đường";
 
-        Console.WriteLine(b1.X); // 10
-        Console.WriteLine(b2.X); // 999
+        public override double GetCost()
+            => base.GetCost() + 2000.0; // Đường thêm 2k
+    }
+
+    // --- CHƯƠNG TRÌNH CHÍNH (CLIENT) ---
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            // Bước 1: Gọi một ly cà phê đen cơ bản
+            ICoffee myCoffee = new PlainCoffee();
+
+            // Bước 2: Khách muốn thêm sữa? Bọc nó lại!
+            myCoffee = new MilkDecorator(myCoffee);
+
+            // Bước 3: Khách muốn thêm cả đường? Bọc tiếp lớp nữa!
+            myCoffee = new SugarDecorator(myCoffee);
+
+            // Bước 4: Thậm chí thêm 1 phần đường nữa (Double Sugar)
+            myCoffee = new SugarDecorator(myCoffee);
+
+            // Kết quả cuối cùng
+            Console.WriteLine($"Hóa đơn: {myCoffee.GetDescription()}");
+            Console.WriteLine($"Tổng tiền: {myCoffee.GetCost():N0} VNĐ");
+
+            // Output dự kiến:
+            // Hóa đơn: Cà phê đen + Sữa + Đường + Đường
+            // Tổng tiền: 24,000 VNĐ
+        }
     }
 }

@@ -7,7 +7,7 @@ import { UpdateCompanyDescriptionDto } from './dto/update-company-description.dt
 import { UpdateCompanyContactDto } from './dto/update-company-contact.dto';
 import { UpdateCompanyDetailDto } from './dto/update-company-detail.dto';
 import { ChangeCompanyStatusDto } from './dto/change-company-status.dto';
-
+import { PaginationResponse } from 'src/common/types/PaginationResponse';
 @Injectable()
 export class CompanyService {
     constructor(private readonly companyRepo: CompanyRepository,
@@ -99,27 +99,31 @@ export class CompanyService {
         await this.companyRepo.deleteImage(imageId);
     }
 
-    async getCompanyCardAdmin(page: number,
+    async getCompanyCardAdmin(
+        page: number,
         limit: number,
-        status?: "PENDING" | "APPROVED" | "REJECTED" | "RESTRICTED") {
-        const data = await this.companyRepo.getCompanyCardAdmin(page, limit, status);
-        return data;
+        status?: "PENDING" | "APPROVED" | "REJECTED" | "RESTRICTED"
+    ) {
+        const { companies, totalItems, statusCount } =
+            await this.companyRepo.getCompanyCardAdmin(page, limit, status);
+
+        const pagination = new PaginationResponse(
+            companies,
+            page,
+            limit,
+            totalItems
+        );
+
+        return {
+            ...pagination,
+            status: statusCount, // thêm field riêng
+        };
     }
 
     async getCompanyCardForUser(page: number, limit: number) {
         const { companies, totalItems } = await this.companyRepo.getCompanyCardForUser(page, limit);
 
-        const totalPages = Math.ceil(totalItems / limit);
-
-        return {
-            data: companies,
-            meta: {
-                currentPage: page,
-                itemsPerPage: limit,
-                totalItems,
-                totalPages,
-            }
-        };
+        return new PaginationResponse(companies, page, limit, totalItems);
     }
 
     async changeCompanyStatus(companyId: number, dto: ChangeCompanyStatusDto) {

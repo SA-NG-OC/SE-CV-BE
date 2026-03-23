@@ -10,6 +10,8 @@ import { CompanyModule } from './company/company.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { EventsGateway } from './events/events.gateway';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { StudentModule } from './student/student.module';
+
 
 @Module({
   imports: [
@@ -28,7 +30,8 @@ import { ThrottlerModule } from '@nestjs/throttler';
         },
       ]
 
-    })
+    }),
+    StudentModule
   ],
   controllers: [AppController],
   providers: [AppService, EventsGateway],

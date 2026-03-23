@@ -50,6 +50,20 @@
       "when": 1773717549189,
       "tag": "0006_known_silverclaw",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1774181312074,
+      "tag": "0007_green_red_hulk",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1774190851381,
+      "tag": "0008_lean_harry_osborn",
+      "breakpoints": true
     }
   ]
 }
