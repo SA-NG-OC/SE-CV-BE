@@ -11,13 +11,19 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { EventsGateway } from './events/events.gateway';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { StudentModule } from './student/student.module';
-
+import { NotificationsGateway } from './notifications/notifications.gateway';
+import { NotificationsModule } from './notifications/notifications.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
   imports: [
     DatabaseModule,
     RedisModule,
     MailModule,
+    EventEmitterModule.forRoot({
+      wildcard: true,
+      maxListeners: 11
+    }),
     ConfigModule.forRoot({ isGlobal: true }),
     AuthModule,
     CompanyModule,
@@ -31,9 +37,10 @@ import { StudentModule } from './student/student.module';
       ]
 
     }),
-    StudentModule
+    StudentModule,
+    NotificationsModule
   ],
   controllers: [AppController],
-  providers: [AppService, EventsGateway],
+  providers: [AppService, EventsGateway, NotificationsGateway],
 })
 export class AppModule { }

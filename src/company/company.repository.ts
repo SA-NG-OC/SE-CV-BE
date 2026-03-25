@@ -62,7 +62,7 @@ export class CompanyRepository {
                 }));
                 await tx.insert(schema.company_images).values(imageValues);
             }
-            return newCompany;
+            return { newCompany };
         });
     }
 
@@ -227,6 +227,12 @@ export class CompanyRepository {
             })
             .where(eq(schema.companies.company_id, companyId))
             .returning();
-        return updateCompany;
+        const email = await this.db
+            .select({ email: schema.users.email })
+            .from(schema.users)
+            .where(eq(schema.users.user_id, updateCompany.user_id))
+            .limit(1)
+            .then(rows => rows[0]?.email);
+        return { ...updateCompany, email };
     }
 }

@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { CompanyRepository } from './company.repository'; // Import Repo mới
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { CompanyResponseDto } from './dto/company-response.dto';
@@ -8,9 +8,11 @@ import { UpdateCompanyContactDto } from './dto/update-company-contact.dto';
 import { UpdateCompanyDetailDto } from './dto/update-company-detail.dto';
 import { ChangeCompanyStatusDto } from './dto/change-company-status.dto';
 import { PaginationResponse } from 'src/common/types/PaginationResponse';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 @Injectable()
 export class CompanyService {
     constructor(private readonly companyRepo: CompanyRepository,
+        private readonly eventEmitter: EventEmitter2,
     ) { }
 
     async createCompany(
@@ -21,7 +23,16 @@ export class CompanyService {
         officeImageUrls?: string[],
     ) {
         try {
-            return await this.companyRepo.createCompanyWithImages(userId, data, logoUrl, coverUrl, officeImageUrls);
+            const company = await this.companyRepo.createCompanyWithImages(userId, data, logoUrl, coverUrl, officeImageUrls);
+            if (!company) {
+                throw new InternalServerErrorException('Có lỗi khi tạo lập công ty, vui lòng thử lại sau!');
+            }
+
+            this.eventEmitter.emit('company.created', {
+                userId,
+                companyName: data.company_name,
+            });
+            return company;
         } catch (error) {
             if (error.code === '23505') {
                 throw new BadRequestException('Tài khoản này đã đăng ký công ty rồi.');
@@ -132,6 +143,13 @@ export class CompanyService {
             noteToSave = null;
         }
         const updatedCompany = await this.companyRepo.updateCompanyStatus(companyId, dto.status, noteToSave);
+        this.eventEmitter.emit('company.statusChanged', {
+            email: updatedCompany.email,
+            companyName: updatedCompany.company_name,
+            userId: updatedCompany.user_id,
+            newStatus: dto.status,
+            note: dto.admin_note,
+        });
 
         if (!updatedCompany) {
             throw new NotFoundException(`Không tìm thấy công ty với ID ${companyId}`);

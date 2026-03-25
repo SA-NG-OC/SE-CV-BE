@@ -1,5 +1,6 @@
 import { MailerService } from "@nestjs-modules/mailer";
 import { Injectable } from "@nestjs/common";
+import { OnEvent } from "@nestjs/event-emitter";
 
 @Injectable()
 export class MailService {
@@ -64,6 +65,29 @@ export class MailService {
             context: {
                 verifyUrl,
                 expireMinutes: 15,
+            },
+        });
+    }
+
+    @OnEvent('company.statusChanged')
+    async sendCompanyStatusNotification(payload: { email: string; companyName: string; newStatus: string, note?: string }) {
+        let message = '';
+        if (payload.newStatus === 'APPROVED') {
+            message = `Công ty "${payload.companyName}" của bạn đã được phê duyệt. Bạn có thể bắt đầu đăng tuyển dụng và quản lý công ty.`;
+        } else if (payload.newStatus === 'REJECTED') {
+            message = `Rất tiếc, công ty "${payload.companyName}" của bạn đã bị từ chối. Vui lòng kiểm tra lại thông tin và thử đăng ký lại.`;
+        } else {
+            message = `Trạng thái công ty "${payload.companyName}" của bạn đã thay đổi thành ${payload.newStatus}. Vui lòng kiểm tra chi tiết trong phần quản lý công ty.`;
+        }
+        await this.mailerService.sendMail({
+            to: payload.email,
+            subject: 'Cập nhật trạng thái công ty',
+            template: 'company-status',
+            context: {
+                companyName: payload.companyName,
+                newStatus: payload.newStatus,
+                message,
+                note: payload.note,
             },
         });
     }
