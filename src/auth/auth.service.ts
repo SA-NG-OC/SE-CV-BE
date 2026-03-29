@@ -18,6 +18,7 @@ import { Role } from 'src/common/types/role.enum';
 import { UserResponseDto } from './dto/get-me.dto';
 
 type User = InferSelectModel<typeof schema.users>;
+type AuthUser = { user_id: string | number; email: string; role: string; is_active: boolean; is_verified: boolean; };
 @Injectable()
 export class AuthService {
     constructor(private jwtService: JwtService,
@@ -171,50 +172,76 @@ export class AuthService {
 
     async login(loginDto: LoginDto) {
         const [user] = await this.db
-            .select()
+            .select({
+                user_id: schema.users.user_id,
+                email: schema.users.email,
+                password_hash: schema.users.password_hash,
+                is_active: schema.users.is_active,
+                is_verified: schema.users.is_verified,
+                role_name: schema.roles.role_name
+            })
             .from(schema.users)
+            .leftJoin(schema.roles, eq(schema.users.role_id, schema.roles.role_id))
             .where(eq(schema.users.email, loginDto.email))
             .limit(1);
+
         if (!user) {
             throw new UnauthorizedException('Email hoặc mật khẩu không chính xác');
         }
+
         if (!user.is_active) {
             throw new UnauthorizedException('Tài khoản của bạn đang bị khóa');
         }
+
         if (!user.is_verified) {
             throw new UnauthorizedException('Tài khoản của bạn chưa được xác thực');
         }
-        const checkPassword = await bcrypt.compare(loginDto.password, user.password_hash ?? '');
+
+        const checkPassword = await bcrypt.compare(
+            loginDto.password,
+            user.password_hash ?? ''
+        );
+
         if (!checkPassword) {
             throw new UnauthorizedException('Email hoặc mật khẩu không chính xác');
         }
+
         const [student] = await this.db
             .select({ studentId: schema.students.student_id })
             .from(schema.students)
             .where(eq(schema.students.user_id, user.user_id))
             .limit(1);
+
         const { accessToken, refreshToken } = await this.generateTokens(user, student);
+
         await this.redisClient.set(
             `refresh_token:${user.user_id}`,
             refreshToken,
             'EX',
             7 * 24 * 60 * 60
         );
-        // Cập nhật thời gian đăng nhập gần nhất
+
         await this.db
             .update(schema.users)
             .set({ last_login: new Date() })
             .where(eq(schema.users.user_id, user.user_id));
 
+        // map sang AuthUser
+        const authUser: AuthUser = {
+            user_id: user.user_id,
+            email: user.email,
+            role: (user.role_name ?? 'USER').toUpperCase() as string,
+            is_active: user.is_active ?? false,
+            is_verified: user.is_verified ?? false,
+        };
+
         return {
-            success: true,
-            message: 'Đăng nhập thành công',
             data: {
-                user: user,
+                user: authUser,
                 access_token: accessToken,
-                refresh_token: refreshToken
-            }
-        }
+                refresh_token: refreshToken,
+            },
+        };
     }
 
     async changePassword(data: ChangePasswordDto) {
