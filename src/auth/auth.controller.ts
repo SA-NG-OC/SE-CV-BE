@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UsePipes, Res, Request, UnauthorizedException, Get, Query } from '@nestjs/common';
+import { Body, Controller, Post, UsePipes, Res, Request, UnauthorizedException, Get, Query, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation.pipe';
 import { loginSchema } from './dto/login.dto';
@@ -8,7 +8,7 @@ import { RegisterDto } from './dto/register.dto';
 import type { Response } from 'express';
 import { ApiTags } from '@nestjs/swagger';
 import { BadRequestException } from '@nestjs/common';
-import { ChangePasswordDto, changePasswordSchema } from './dto/changePassword.dto';
+import { ChangePasswordDto, changePasswordSchema } from './dto/change-password.dto';
 import { forgotPasswordSchema, ForgotPasswordDto } from './dto/forgot-password.dto';
 import { verifyOtpSchema, VerifyOtpDto } from './dto/verify-otp.dto';
 import { resetPasswordSchema, ResetPasswordDto } from './dto/reset-password.dto';
@@ -26,7 +26,8 @@ import { UseGuards } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import GoogleAuthDocs from './decorators/google-auth.decorator';
 import GoogleCallbackDocs from './decorators/google-callback.decorator';
-import { access } from 'fs';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import GetMeDocs from './decorators/get-me.decorator';
 
 @Controller('auth')
 @ApiTags('Auth')
@@ -88,6 +89,7 @@ export class AuthController {
     @Post('change-password')
     //@UsePipes(new ZodValidationPipe(changePasswordSchema))
     @ChangePasswordDocs()
+    @UseGuards(JwtAuthGuard)
     async changePassword(@Body() data: ChangePasswordDto) {
         const result = await this.authService.changePassword(data);
         return new ResponseSuccess(result.message, {});
@@ -117,6 +119,14 @@ export class AuthController {
         return new ResponseSuccess('Đặt lại mật khẩu thành công', {});
     }
 
+    @Get('me')
+    @GetMeDocs()
+    @UseGuards(JwtAuthGuard)
+    async getMe(@Req() req: any) {
+        const data = await this.authService.getMe(req.user.userId);
+        return new ResponseSuccess('Lấy thông tin người dùng thành công', data);
+    }
+
     @Get('google')
     @GoogleAuthDocs()
     @UseGuards(GoogleOAuthGuard)
@@ -132,14 +142,9 @@ export class AuthController {
         const { accessToken } = req.user;
 
         // Redirect về frontend kèm token
-        // return res.redirect(
-        //     `${this.configService.get('FRONTEND_URL')}/oauth/callback?token=${accessToken}`
-        // );
-        return res.json({
-            message: 'OAuth success',
-            token: req.user.accessToken,
-            user: req.user,
-        });
+        return res.redirect(
+            `${this.configService.get('FRONTEND_URL')}/oauth/callback?token=${accessToken}`
+        );
     }
 
 }

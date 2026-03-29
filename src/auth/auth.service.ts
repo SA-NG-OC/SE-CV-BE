@@ -10,11 +10,12 @@ import { InferSelectModel } from 'drizzle-orm';
 import { Redis } from 'ioredis';
 import { MailService } from 'src/mail/mail.service';
 import { RegisterDto } from './dto/register.dto';
-import { ChangePasswordDto } from './dto/changePassword.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { randomInt } from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import { GoogleUserDto } from './dto/google-user.dto';
 import { Role } from 'src/common/types/role.enum';
+import { UserResponseDto } from './dto/get-me.dto';
 
 type User = InferSelectModel<typeof schema.users>;
 @Injectable()
@@ -324,6 +325,40 @@ export class AuthService {
         await this.redisClient.del(`reset:${resetToken}`);
 
         return { message: 'Đổi mật khẩu thành công' };
+    }
+
+    async getMe(userId: number): Promise<UserResponseDto> {
+        const [user] = await this.db
+            .select({
+                userId: schema.users.user_id,
+                email: schema.users.email,
+                isActive: schema.users.is_active,
+                isVerified: schema.users.is_verified,
+                createdAt: schema.users.created_at,
+
+                roleId: schema.roles.role_id,
+                roleName: schema.roles.role_name,
+                roleDescription: schema.roles.description,
+            })
+            .from(schema.users)
+            .leftJoin(
+                schema.roles,
+                eq(schema.users.role_id, schema.roles.role_id)
+            )
+            .where(eq(schema.users.user_id, userId))
+            .limit(1);
+
+        if (!user) {
+            throw new NotFoundException('Không tìm thấy thông tin người dùng');
+        }
+
+        return {
+            userId: user.userId,
+            email: user.email,
+            isActive: user.isActive,
+            isVerified: user.isVerified,
+            role: user.roleId,
+        };
     }
 
     //Oauth2

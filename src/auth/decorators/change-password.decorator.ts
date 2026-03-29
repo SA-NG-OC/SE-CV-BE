@@ -1,7 +1,7 @@
 // decorators/change-password.decorator.ts
 import { applyDecorators, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiOkResponse } from '@nestjs/swagger';
-import { ChangePasswordDto } from '../dto/changePassword.dto';
+import { ChangePasswordDto } from '../dto/change-password.dto';
 
 const ChangePasswordDocs = () => applyDecorators(
     HttpCode(HttpStatus.OK),
