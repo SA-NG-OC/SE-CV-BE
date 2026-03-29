@@ -48,12 +48,12 @@ async function main() {
     // 5. Thêm USERS (Phụ thuộc vào Roles)
     console.log('📦 Thêm Users...');
     await db.insert(schema.users).values([
-        { user_id: 1, email: 'admin@test.com', password_hash: '$2a$10$IQHd4uBdkCS7hoV4uVDI1OCfW7aq.3kCd6ca4ZeqfCJkTniPRp5lO', role_id: 1 },
-        { user_id: 2, email: 'company@test.com', password_hash: '$2a$10$BukqDjmK.Nc.AMG8yZxN6O8mqPR/s5fmq8ZMFNiEXYIL5lJMsb8Jm', role_id: 2 },
-        { user_id: 3, email: 'student@test.com', password_hash: '$2a$10$xe9KZlyOBaigKLeFpJomZ.gLhDTIVt9jsSaL9/iRttPSqwjpfoSiW', role_id: 3 },
-        { user_id: 4, email: 'test@example.com', password_hash: '$2a$10$IQHd4uBdkCS7hoV4uVDI1OCfW7aq.3kCd6ca4ZeqfCJkTniPRp5lO.', role_id: 1 },
-        { user_id: 11, email: 'sang22102005@gmail.com', password_hash: '$2b$10$z4alfCAmpcYnmDZMi/9g6ewB0NdDBvHODzqsJ27pOK9uHQGnXr.ja', role_id: 2, oauth_provider: 'google', oauth_provider_id: '100844144305870518667' },
-        { user_id: 12, email: '23521348@gm.uit.edu.vn', password_hash: null, role_id: null, oauth_provider: 'google', oauth_provider_id: '102693512867141333079' },
+        { user_id: 1000, email: 'admin@test.com', password_hash: '$2a$10$IQHd4uBdkCS7hoV4uVDI1OCfW7aq.3kCd6ca4ZeqfCJkTniPRp5lO', role_id: 1 },
+        { user_id: 2000, email: 'company@test.com', password_hash: '$2a$10$BukqDjmK.Nc.AMG8yZxN6O8mqPR/s5fmq8ZMFNiEXYIL5lJMsb8Jm', role_id: 2 },
+        { user_id: 3000, email: 'student@test.com', password_hash: '$2a$10$xe9KZlyOBaigKLeFpJomZ.gLhDTIVt9jsSaL9/iRttPSqwjpfoSiW', role_id: 3 },
+        { user_id: 4000, email: 'test@example.com', password_hash: '$2a$10$IQHd4uBdkCS7hoV4uVDI1OCfW7aq.3kCd6ca4ZeqfCJkTniPRp5lO.', role_id: 1 },
+        { user_id: 1100, email: 'sang22102005@gmail.com', password_hash: '$2b$10$z4alfCAmpcYnmDZMi/9g6ewB0NdDBvHODzqsJ27pOK9uHQGnXr.ja', role_id: 2, oauth_provider: 'google', oauth_provider_id: '100844144305870518667' },
+        { user_id: 1200, email: '23521348@gm.uit.edu.vn', password_hash: null, role_id: null, oauth_provider: 'google', oauth_provider_id: '102693512867141333079' },
         { user_id: 100, email: 'nguyenvana@student.edu.vn', password_hash: '$2a$10$xe9KZlyOBaigKLeFpJomZ.gLhDTIVt9jsSaL9/iRttPSqwjpfoSiW', role_id: 3 },
     ]);
 
@@ -61,7 +61,7 @@ async function main() {
     console.log('📦 Thêm Students...');
     await db.insert(schema.students).values([
         {
-            student_id: 1,
+            student_id: 100,
             user_id: 100,
             student_code: '2021601234',
             full_name: 'Nguyễn Văn A',
@@ -79,9 +79,9 @@ async function main() {
     // 7. Thêm STUDENT_SKILLS (Phụ thuộc vào Students và Skills)
     console.log('📦 Thêm Student_Skills...');
     await db.insert(schema.student_skills).values([
-        { student_id: 1, skill_id: 1 },
-        { student_id: 1, skill_id: 2 },
-        { student_id: 1, skill_id: 3 },
+        { student_id: 100, skill_id: 1 },
+        { student_id: 100, skill_id: 2 },
+        { student_id: 100, skill_id: 3 },
     ]);
 
     console.log('✅ Hoàn thành Seeding! Dữ liệu đã sẵn sàng trong Docker.');
