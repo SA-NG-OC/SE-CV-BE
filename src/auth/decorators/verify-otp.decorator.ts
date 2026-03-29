@@ -12,7 +12,15 @@ const VerifyOtpDocs = () => applyDecorators(
     ApiBody({ type: VerifyOtpDto }),
     ApiOkResponse({
         description: 'OTP hợp lệ. Trả về `resetToken`.',
-        schema: { example: { resetToken: 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx' } },
+        schema: {
+            example: {
+                success: true,
+                message: "OTP hợp lệ",
+                data: {
+                    resetToken: "3d860e33-ab36-4bbf-bd39-910b8550dbcc"
+                }
+            }
+        },
     }),
 );
 
