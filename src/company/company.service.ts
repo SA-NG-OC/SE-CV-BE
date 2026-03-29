@@ -1,5 +1,5 @@
-import { Injectable, BadRequestException, NotFoundException, InternalServerErrorException } from '@nestjs/common';
-import { CompanyRepository } from './company.repository'; // Import Repo mới
+import { Injectable, BadRequestException, NotFoundException, InternalServerErrorException, Inject } from '@nestjs/common';
+import type { ICompanyRepository } from './repositories/company-repository.interface';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { CompanyResponseDto } from './dto/company-response.dto';
 import { UpdateCompanyBasicDto } from './dto/update-company-basic.dto';
@@ -9,9 +9,12 @@ import { UpdateCompanyDetailDto } from './dto/update-company-detail.dto';
 import { ChangeCompanyStatusDto } from './dto/change-company-status.dto';
 import { PaginationResponse } from 'src/common/types/PaginationResponse';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { I_COMPANY_REPOSITORY } from './company.tokens';
+
 @Injectable()
 export class CompanyService {
-    constructor(private readonly companyRepo: CompanyRepository,
+    constructor(
+        @Inject(I_COMPANY_REPOSITORY) private readonly companyRepo: ICompanyRepository,
         private readonly eventEmitter: EventEmitter2,
     ) { }
 
@@ -49,9 +52,9 @@ export class CompanyService {
         return { ...company, office_images: officeImages };
     }
 
-    async getMyCompany(userId: number): Promise<CompanyResponseDto> {
+    async getMyCompany(userId: number): Promise<CompanyResponseDto | null> {
         const company = await this.companyRepo.findByUserId(userId);
-        if (!company) throw new NotFoundException('Bạn chưa đăng ký công ty nào.');
+        if (!company) return null;
 
         const officeImages = await this.companyRepo.getOfficeImages(company.company_id);
         return { ...company, office_images: officeImages };

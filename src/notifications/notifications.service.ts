@@ -1,12 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { NotificationsRepository } from './notifications.repository';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import type { INotificationsRepository } from './repositories/notifications-repository.interface';
 import { NotificationsGateway } from './notifications.gateway';
 import { CreateNotificationDto, MarkReadDto } from './dto/notification.dto';
+import { I_NOTIFICATIONS_REPOSITORY } from './notification.token';
 
 @Injectable()
 export class NotificationsService {
     constructor(
-        private readonly repo: NotificationsRepository,
+        @Inject(I_NOTIFICATIONS_REPOSITORY)
+        private readonly repo: INotificationsRepository,
         private readonly gateway: NotificationsGateway
     ) {
 
@@ -40,7 +42,12 @@ export class NotificationsService {
         return savedNotifications;
     }
     async getUserNotifications(userId: number) {
-        return this.repo.findByUserId(userId);
+        const notifications = await this.repo.findByUserId(userId);
+        return { notifications };
+    }
+
+    async getUnreadCount(userId: number) {
+        return await this.repo.getUnreadCount(userId);
     }
 
     async markAsRead(userId: number, dto: MarkReadDto) {

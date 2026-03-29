@@ -1,12 +1,13 @@
 // notifications.repository.ts
 import { Inject, Injectable } from '@nestjs/common';
-import * as schema from '../database/schema';
+import * as schema from '../../database/schema';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { eq, and, inArray, desc } from 'drizzle-orm';
+import { eq, and, inArray, desc, count } from 'drizzle-orm';
 import { DATABASE_CONNECTION } from 'src/database/database.module';
 import { Role } from 'src/common/types/role.enum';
+import { INotificationsRepository } from './notifications-repository.interface';
 @Injectable()
-export class NotificationsRepository {
+export class NotificationsRepository implements INotificationsRepository {
     constructor(
         @Inject(DATABASE_CONNECTION) private readonly db: NodePgDatabase<typeof schema>,
     ) { }
@@ -41,6 +42,18 @@ export class NotificationsRepository {
             where: eq(schema.notifications.user_id, userId),
             orderBy: [desc(schema.notifications.created_at)],
         });
+    }
+
+    async getUnreadCount(userId: number) {
+        const result = await this.db.select({ count: count() })
+            .from(schema.notifications)
+            .where(
+                and(
+                    eq(schema.notifications.user_id, userId),
+                    eq(schema.notifications.is_read, false)
+                )
+            )
+        return result;
     }
 
     async markAsRead(userId: number, notificationIds?: number[]) {

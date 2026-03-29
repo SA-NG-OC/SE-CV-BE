@@ -29,9 +29,8 @@ export class NotificationsController {
     @GetUnreadCountDocs()
     async getUnreadCount(@Req() req) {
         const userId = req.user.userId;
-        const notifications = await this.service.getUserNotifications(userId);
-        const count = notifications.filter(n => !n.is_read).length;
-        return new ResponseSuccess('Lấy thông tin thành công', { unread_count: count });
+        const data = await this.service.getUnreadCount(userId);
+        return new ResponseSuccess('Lấy thông tin thành công', { unread_count: data });
     }
 
     @Patch('mark-read')

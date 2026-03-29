@@ -1,14 +1,16 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { StudentRepository } from './student.repository';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { GeneralInformationDto } from './dto/general-information.dto';
 import { StudentListDto } from './dto/get-student-items.dto';
 import { InternalServerErrorException } from '@nestjs/common';
 import { StudentDetailDto } from './dto/student-detail.dto';
 import { CreateResumeDto, UpdateJobStatusDto, UpdateSkillsDto } from './dto/update-student.dto';
+import { I_STUDENT_REPOSITORY } from './student.token';
+import type { IStudentRepository } from './repositories/student-repository.interface';
 @Injectable()
 export class StudentService {
   constructor(
-    private readonly repo: StudentRepository
+    @Inject(I_STUDENT_REPOSITORY)
+    private readonly repo: IStudentRepository
   ) {
 
   }

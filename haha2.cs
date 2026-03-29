@@ -55,27 +55,17 @@ namespace DecoratorPatternExample
             => base.GetCost() + 2000.0; // Đường thêm 2k
     }
 
-    // --- CHƯƠNG TRÌNH CHÍNH (CLIENT) ---
     class Program
     {
         static void Main(string[] args)
         {
-            // Bước 1: Gọi một ly cà phê đen cơ bản
             ICoffee myCoffee = new PlainCoffee();
-
-            // Bước 2: Khách muốn thêm sữa? Bọc nó lại!
             myCoffee = new MilkDecorator(myCoffee);
-
-            // Bước 3: Khách muốn thêm cả đường? Bọc tiếp lớp nữa!
             myCoffee = new SugarDecorator(myCoffee);
-
-            // Bước 4: Thậm chí thêm 1 phần đường nữa (Double Sugar)
             myCoffee = new SugarDecorator(myCoffee);
-
             // Kết quả cuối cùng
             Console.WriteLine($"Hóa đơn: {myCoffee.GetDescription()}");
             Console.WriteLine($"Tổng tiền: {myCoffee.GetCost():N0} VNĐ");
-
             // Output dự kiến:
             // Hóa đơn: Cà phê đen + Sữa + Đường + Đường
             // Tổng tiền: 24,000 VNĐ

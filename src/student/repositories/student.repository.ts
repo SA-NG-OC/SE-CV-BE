@@ -1,20 +1,20 @@
 import { Inject } from "@nestjs/common";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { DATABASE_CONNECTION } from "src/database/database.module";
-import * as schema from "../database/schema";
+import * as schema from "../../database/schema";
 import { sql, eq, and, desc, ilike, or } from "drizzle-orm";
 import {
     GeneralInformationDto,
     generalInformationSchema,
-} from "./dto/general-information.dto";
+} from "../dto/general-information.dto";
 import Redis from "ioredis";
 import {
-    StudentItemDto,
     StudentListDto,
-} from "./dto/get-student-items.dto";
-import { CreateResumeDto } from "./dto/update-student.dto";
+} from "../dto/get-student-items.dto";
+import { CreateResumeDto } from "../dto/update-student.dto";
+import { IStudentRepository } from "./student-repository.interface";
 
-export class StudentRepository {
+export class StudentRepository implements IStudentRepository {
     constructor(
         @Inject(DATABASE_CONNECTION)
         private readonly db: NodePgDatabase<typeof schema>,
@@ -216,7 +216,6 @@ export class StudentRepository {
 
     async addResume(studentId: number, data: CreateResumeDto) {
         return await this.db.transaction(async (tx) => {
-            // Nếu đánh dấu cái này là mặc định, phải gỡ mặc định của mấy cái cũ trước
             // if (data.isDefault) {
             //     await tx
             //         .update(schema.student_resumes)

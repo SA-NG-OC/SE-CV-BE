@@ -88,7 +88,7 @@ export class CompanyController {
     @Roles(Role.COMPANY)
     async getMyCompany(@Req() req) {
         const userId = req.user.userId;
-        const company: CompanyResponseDto = await this.companyService.getMyCompany(userId);
+        const company: CompanyResponseDto | null = await this.companyService.getMyCompany(userId);
         return new ResponseSuccess('Lấy thông tin công ty thành công', company);
     }
 
