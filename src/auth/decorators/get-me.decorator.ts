@@ -18,11 +18,11 @@ const GetMeDocs = () =>
                 success: true,
                 message: "Lấy thông tin người dùng thành công",
                 data: {
-                    userId: 2,
+                    user_id: 2,
                     email: "company@test.com",
-                    isActive: true,
-                    isVerified: true,
-                    role: 2
+                    is_active: true,
+                    is_verified: true,
+                    role: "COMPANY"
                 },
             }
         }),

@@ -47,7 +47,11 @@ export class AuthController {
             sameSite: 'lax',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
-        return new ResponseSuccess('Đăng nhập thành công', result);
+        const data = {
+            access_token: result.data.access_token,
+            user: result.data.user,
+        }
+        return new ResponseSuccess('Đăng nhập thành công', data);
     }
 
     @Post('register')

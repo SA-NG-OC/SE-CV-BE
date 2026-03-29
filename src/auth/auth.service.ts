@@ -178,7 +178,7 @@ export class AuthService {
                 password_hash: schema.users.password_hash,
                 is_active: schema.users.is_active,
                 is_verified: schema.users.is_verified,
-                role_name: schema.roles.role_name
+                role_name: schema.roles.role_name,
             })
             .from(schema.users)
             .leftJoin(schema.roles, eq(schema.users.role_id, schema.roles.role_id))
@@ -380,11 +380,11 @@ export class AuthService {
         }
 
         return {
-            userId: user.userId,
+            user_id: user.userId,
             email: user.email,
-            isActive: user.isActive,
-            isVerified: user.isVerified,
-            role: user.roleId,
+            is_active: user.isActive,
+            is_verified: user.isVerified,
+            role: user.roleName?.toLocaleUpperCase() || null,
         };
     }
 

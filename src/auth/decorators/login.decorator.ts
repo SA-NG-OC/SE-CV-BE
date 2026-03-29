@@ -17,7 +17,6 @@ const LoginDocs = () => applyDecorators(
                 message: 'Đăng nhập thành công',
                 data: {
                     access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-                    refresh_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
                     user: {
                         user_id: 11,
                         email: "sang22102005@gmail.com",

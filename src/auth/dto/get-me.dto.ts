@@ -6,11 +6,11 @@ extendZodWithOpenApi(z);
 
 // User response schema
 export const userResponseSchema = z.object({
-    userId: z.number().openapi({ example: 1 }),
+    user_id: z.number().openapi({ example: 1 }),
     email: z.email().openapi({ example: 'admin@test.com' }),
-    isActive: z.boolean().openapi({ example: true }).nullable(),
-    isVerified: z.boolean().openapi({ example: true }).nullable(),
-    role: z.number().nullable(),
+    is_active: z.boolean().openapi({ example: true }).nullable(),
+    is_verified: z.boolean().openapi({ example: true }).nullable(),
+    role: z.string().openapi({ example: 'ADMIN' }).nullable(),
 });
 
 export class UserResponseDto extends createZodDto(userResponseSchema) { }
