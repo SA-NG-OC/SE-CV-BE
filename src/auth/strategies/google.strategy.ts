@@ -21,7 +21,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 
     async validate(
         accessToken: string,
-        refeshToken: string,
+        refreshToken: string,
         profile: any,
         done: VerifyCallback,
     ): Promise<any> {
@@ -31,6 +31,9 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
             email: profile.emails[0].value,
         };
         const user = await this.authService.findOrCreateOAuthUser(googleUser);
-        done(null, user);
+        done(null, {
+            ...user,
+            googleAccessToken: accessToken,
+        });
     }
 }

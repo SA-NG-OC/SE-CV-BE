@@ -139,11 +139,11 @@ export class AuthController {
     @UseGuards(GoogleOAuthGuard)
     async googleCallback(@Request() req, @Res() res: Response) {
         // req.user là kết quả từ GoogleStrategy.validate()
-        const { accessToken } = req.user;
+        const { googleAccessToken } = req.user;
 
         // Redirect về frontend kèm token
         return res.redirect(
-            `${this.configService.get('FRONTEND_URL')}/oauth/callback?token=${accessToken}`
+            `${this.configService.get('FRONTEND_URL')}/oauth/callback?token=${googleAccessToken}`
         );
     }
 
