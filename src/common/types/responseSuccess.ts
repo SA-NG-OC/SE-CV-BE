@@ -1,9 +1,9 @@
-export default class ResponseSuccess {
+export default class ResponseSuccess<T> {
     success: boolean;
     message: string;
-    data: any;
+    data: T;
 
-    constructor(message: string, data: any) {
+    constructor(message: string, data: T) {
         this.success = true;
         this.message = message;
         this.data = data;

@@ -3,17 +3,18 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module';
 import { ConfigModule } from '@nestjs/config';
-import { AuthModule } from './auth/auth.module';
+import { AuthModule } from './modules/auth/auth.module';
 import { RedisModule } from './redis/redis.module';
 import { MailModule } from './mail/mail.module';
-import { CompanyModule } from './company/company.module';
+import { CompanyModule } from './modules/company/company.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { EventsGateway } from './events/events.gateway';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { StudentModule } from './student/student.module';
-import { NotificationsGateway } from './notifications/notifications.gateway';
-import { NotificationsModule } from './notifications/notifications.module';
+import { StudentModule } from './modules/student/student.module';
+import { NotificationsGateway } from './modules/notifications/notifications.gateway';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { JobPostingModule } from './modules/job-posting/job-posting.module';
 
 @Module({
   imports: [
@@ -38,7 +39,8 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 
     }),
     StudentModule,
-    NotificationsModule
+    NotificationsModule,
+    JobPostingModule
   ],
   controllers: [AppController],
   providers: [AppService, EventsGateway, NotificationsGateway],

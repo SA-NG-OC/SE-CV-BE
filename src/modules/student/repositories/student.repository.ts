@@ -1,7 +1,7 @@
 import { Inject } from "@nestjs/common";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { DATABASE_CONNECTION } from "src/database/database.module";
-import * as schema from "../../database/schema";
+import * as schema from "../../../database/schema";
 import { sql, eq, and, desc, ilike, or } from "drizzle-orm";
 import {
     GeneralInformationDto,

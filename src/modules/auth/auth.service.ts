@@ -1,11 +1,11 @@
 import { Injectable, UnauthorizedException, Inject, NotFoundException, ConflictException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import * as schema from '../database/schema';
+import * as schema from '../../database/schema';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { LoginDto } from './dto/login.dto';
-import { DATABASE_CONNECTION } from '../database/database.module';
-import { eq, and } from 'drizzle-orm';
+import { DATABASE_CONNECTION } from '../../database/database.module';
+import { eq, and, sql } from 'drizzle-orm';
 import { InferSelectModel } from 'drizzle-orm';
 import { Redis } from 'ioredis';
 import { MailService } from 'src/mail/mail.service';
@@ -17,8 +17,7 @@ import { GoogleUserDto } from './dto/google-user.dto';
 import { Role } from 'src/common/types/role.enum';
 import { UserResponseDto } from './dto/get-me.dto';
 
-type User = InferSelectModel<typeof schema.users>;
-type AuthUser = { user_id: string | number; email: string; role: string; is_active: boolean; is_verified: boolean; };
+type AuthUser = { user_id: string | number; email: string; role: string; full_name: string, avatar_url: string, is_active: boolean; is_verified: boolean; };
 @Injectable()
 export class AuthService {
     constructor(private jwtService: JwtService,
@@ -32,12 +31,13 @@ export class AuthService {
         return bcrypt.hash(password, saltRounds);
     }
 
-    async generateTokens(user: Partial<User>, student?) {
+    async generateTokens(user, student?, company?) {
         const payload = {
             sub: user.user_id,
             email: user.email,
-            roleId: user.role_id,
-            studentId: student?.studentId
+            roleName: user.role_name,
+            studentId: student,
+            companyId: company,
         };
         const [accessToken, refreshToken] = await Promise.all([
             this.jwtService.signAsync(payload),
@@ -178,10 +178,24 @@ export class AuthService {
                 password_hash: schema.users.password_hash,
                 is_active: schema.users.is_active,
                 is_verified: schema.users.is_verified,
+                role_id: schema.users.role_id,
                 role_name: schema.roles.role_name,
+
+                student_id: schema.students.student_id,
+                company_id: schema.companies.company_id,
+
+                full_name: sql<string>`
+            COALESCE(${schema.students.full_name}, ${schema.companies.company_name})
+        `,
+
+                avatar_url: sql<string>`
+            COALESCE(${schema.students.avatar_url}, ${schema.companies.logo_url})
+        `,
             })
             .from(schema.users)
             .leftJoin(schema.roles, eq(schema.users.role_id, schema.roles.role_id))
+            .leftJoin(schema.students, eq(schema.students.user_id, schema.users.user_id))
+            .leftJoin(schema.companies, eq(schema.companies.user_id, schema.users.user_id))
             .where(eq(schema.users.email, loginDto.email))
             .limit(1);
 
@@ -206,13 +220,7 @@ export class AuthService {
             throw new UnauthorizedException('Email hoặc mật khẩu không chính xác');
         }
 
-        const [student] = await this.db
-            .select({ studentId: schema.students.student_id })
-            .from(schema.students)
-            .where(eq(schema.students.user_id, user.user_id))
-            .limit(1);
-
-        const { accessToken, refreshToken } = await this.generateTokens(user, student);
+        const { accessToken, refreshToken } = await this.generateTokens(user, user.student_id, user.company_id);
 
         await this.redisClient.set(
             `refresh_token:${user.user_id}`,
@@ -231,6 +239,8 @@ export class AuthService {
             user_id: user.user_id,
             email: user.email,
             role: (user.role_name ?? 'USER').toUpperCase() as string,
+            full_name: user.full_name,
+            avatar_url: user.avatar_url,
             is_active: user.is_active ?? false,
             is_verified: user.is_verified ?? false,
         };

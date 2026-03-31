@@ -1,5 +1,5 @@
 import { Controller, Req, UseGuards, HttpStatus, Patch, HttpCode, Body, Delete, Param } from '@nestjs/common';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 import { NotificationsService } from './notifications.service';
 import { Get } from '@nestjs/common';
 import { MarkReadDto } from './dto/notification.dto';

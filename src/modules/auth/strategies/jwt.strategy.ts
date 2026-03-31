@@ -15,6 +15,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     async validate(payload: any) {
         // đoạn này cần async nên vì sau này sẽ gọi về db để check thêm thông tin user trươc khi return 
-        return { userId: payload.sub, email: payload.email, roleId: payload.roleId, studentId: payload.studentId };
+        console.log('PAYLOAD', payload);
+        return { userId: payload.sub, email: payload.email, roleName: payload.roleName, studentId: payload.studentId, companyId: payload.companyId };
     }
 }

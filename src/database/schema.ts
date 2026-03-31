@@ -231,10 +231,16 @@ export const skills = pgTable("skills", {
 // 4. BẢNG TIN TUYỂN DỤNG
 // =============================================
 
+export const jobStatusEnum = pgEnum("job_status", [
+    "pending",
+    "approved",
+    "rejected",
+    "restricted"
+]);
+
 export const job_categories = pgTable("job_categories", {
     category_id: serial("category_id").primaryKey(),
     category_name: varchar("category_name", { length: 100 }).unique().notNull(),
-    description: text("description"),
     created_at: timestamp("created_at").defaultNow(),
 });
 
@@ -260,13 +266,10 @@ export const job_postings = pgTable(
         salary_max: integer("salary_max"),
         salary_type: varchar("salary_type", { length: 20 }),
         is_salary_negotiable: boolean("is_salary_negotiable").default(true),
-        work_location: varchar("work_location", { length: 255 }),
         city: varchar("city", { length: 100 }),
-        district: varchar("district", { length: 100 }),
-        is_remote: boolean("is_remote").default(false),
         application_deadline: date("application_deadline"),
         start_date: date("start_date"),
-        status: varchar("status", { length: 20 }).default("pending"),
+        status: jobStatusEnum("status").default("pending"),
         is_featured: boolean("is_featured").default(false),
         is_urgent: boolean("is_urgent").default(false),
         view_count: integer("view_count").default(0),
@@ -304,8 +307,6 @@ export const job_required_skills = pgTable(
         skill_id: integer("skill_id").references(() => skills.skill_id, {
             onDelete: "cascade",
         }),
-        is_required: boolean("is_required").default(true),
-        proficiency_level: varchar("proficiency_level", { length: 20 }),
         created_at: timestamp("created_at").defaultNow(),
     },
     (t) => [

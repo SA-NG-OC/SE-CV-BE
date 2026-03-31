@@ -1,10 +1,10 @@
 import { Controller, Get, Post, Body, Patch, Param, Put, UseGuards, Query, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { StudentService } from './student.service';
 import ResponseSuccess from 'src/common/types/responseSuccess';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/modules/auth/guards/roles.guard';
 import { Role } from 'src/common/types/role.enum';
-import { Roles } from 'src/auth/decorators/roles.decorator';
+import { Roles } from 'src/modules/auth/decorators/roles.decorator';
 import { Req } from '@nestjs/common';
 import { ParseIntPipe } from '@nestjs/common';
 import GetGeneralInformationDocs from './decorators/get-general-information.decorator';

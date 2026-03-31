@@ -1,10 +1,10 @@
 import { Controller, Post, Get, Patch, Delete, Body, UseGuards, UseInterceptors, Req, UploadedFiles, UsePipes, Param, Query, DefaultValuePipe, ValidationPipe } from '@nestjs/common';
 import { CompanyService } from './company.service';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
-import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { RolesGuard } from 'src/modules/auth/guards/roles.guard';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 import { CreateCompanyDto, createCompanySchema } from './dto/create-company.dto';
 import { Role } from 'src/common/types/role.enum';
 import ResponseSuccess from 'src/common/types/responseSuccess';

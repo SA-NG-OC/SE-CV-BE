@@ -22,6 +22,7 @@ async function main() {
     await db.delete(schema.skills);
     await db.delete(schema.majors);
     await db.delete(schema.roles);
+    await db.delete(schema.job_categories);
 
     // 2. Thêm ROLES (Độc lập)
     console.log('📦 Thêm Roles...');
@@ -43,6 +44,26 @@ async function main() {
         { skill_id: 1, skill_name: 'React' },
         { skill_id: 2, skill_name: 'Node.js' },
         { skill_id: 3, skill_name: 'TypeScript' },
+    ]);
+
+    // 4.1 Thêm JOB CATEGORIES (Độc lập)
+    console.log('📦 Thêm Job Categories...');
+    await db.insert(schema.job_categories).values([
+        {
+            category_name: 'Software Development',
+        },
+        {
+            category_name: 'Data & AI',
+        },
+        {
+            category_name: 'DevOps & Cloud',
+        },
+        {
+            category_name: 'Mobile Development',
+        },
+        {
+            category_name: 'UI/UX Design',
+        },
     ]);
 
     // 5. Thêm USERS (Phụ thuộc vào Roles)

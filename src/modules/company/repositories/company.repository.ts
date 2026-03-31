@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DATABASE_CONNECTION } from 'src/database/database.module';
-import * as schema from '../../database/schema';
+import * as schema from '../../../database/schema';
 import { eq, and, sql, desc, count } from 'drizzle-orm';
 import { CreateCompanyDto } from '../dto/create-company.dto';
 import { companyStatus } from 'src/common/types/comapnyStatus.enum';

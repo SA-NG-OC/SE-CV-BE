@@ -1,6 +1,6 @@
 // notifications.repository.ts
 import { Inject, Injectable } from '@nestjs/common';
-import * as schema from '../../database/schema';
+import * as schema from '../../../database/schema';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { eq, and, inArray, desc, count } from 'drizzle-orm';
 import { DATABASE_CONNECTION } from 'src/database/database.module';

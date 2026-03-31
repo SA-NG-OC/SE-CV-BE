@@ -43,4 +43,21 @@ export class NotificationsListener {
         });
     }
 
+    @OnEvent('job.created')
+    async handleJobCreated() {
+        await this.notificationsService.createAndNotifyToAdmin({
+            title: 'Một tin tuyển dụng mới vừa được thêm!!',
+            message: 'Một tin tuyển dụng mới đang chờ duyệt'
+        })
+    }
+
+    @OnEvent('job.updated')
+    async handleJobUpdated(payload: any) {
+        const { jobTitle } = payload;
+        await this.notificationsService.createAndNotifyToAdmin({
+            title: 'Một tin tuyển dụng đã được cập nhật gần đây',
+            message: `Tin tuyển dụng ${jobTitle} vừa được cập nhật`
+        })
+    }
+
 }
