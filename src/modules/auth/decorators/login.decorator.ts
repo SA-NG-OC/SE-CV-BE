@@ -21,6 +21,8 @@ const LoginDocs = () => applyDecorators(
                         user_id: 11,
                         email: "sang22102005@gmail.com",
                         role: "ADMIN",
+                        full_name: "Sơn Sơn Sơn",
+                        avatar_url: "https://www.youtube.com/watch?v=6Lrb6Yf21m8&list=RD6Lrb6Yf21m8&start_radio=1",
                         is_active: true,
                         is_verified: true
                     }
