@@ -1,4 +1,14 @@
-import { Controller, Req, UseGuards, HttpStatus, Patch, HttpCode, Body, Delete, Param } from '@nestjs/common';
+import {
+    Controller,
+    Req,
+    UseGuards,
+    HttpStatus,
+    Patch,
+    HttpCode,
+    Body,
+    Delete,
+    Param,
+} from '@nestjs/common';
 import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 import { NotificationsService } from './notifications.service';
 import { Get } from '@nestjs/common';
@@ -9,7 +19,7 @@ import {
     GetMyNotificationsDocs,
     GetUnreadCountDocs,
     MarkAsReadDocs,
-    DeleteNotificationDocs
+    DeleteNotificationDocs,
 } from './decorators';
 
 @Controller('notifications')
@@ -22,7 +32,7 @@ export class NotificationsController {
     async getMyNotifications(@Req() req) {
         const userId = req.user.userId;
         const notifications = await this.service.getUserNotifications(userId);
-        return new ResponseSuccess('Lấy thông tin thành công', { notifications });
+        return new ResponseSuccess('Lấy thông tin thành công', notifications);
     }
 
     @Get('unread-count')
@@ -30,16 +40,13 @@ export class NotificationsController {
     async getUnreadCount(@Req() req) {
         const userId = req.user.userId;
         const data = await this.service.getUnreadCount(userId);
-        return new ResponseSuccess('Lấy thông tin thành công', { unread_count: data });
+        return new ResponseSuccess('Lấy thông tin thành công', data);
     }
 
     @Patch('mark-read')
     @MarkAsReadDocs()
     @HttpCode(HttpStatus.OK)
-    async markAsRead(
-        @Req() req,
-        @Body() dto: MarkReadDto
-    ) {
+    async markAsRead(@Req() req, @Body() dto: MarkReadDto) {
         const userId = req.user.userId;
         await this.service.markAsRead(userId, dto);
         return new ResponseSuccess('Cập nhật trạng thái thành công', {});
@@ -48,10 +55,7 @@ export class NotificationsController {
     @Delete(':id')
     @DeleteNotificationDocs()
     @HttpCode(HttpStatus.NO_CONTENT)
-    async deleteNotification(
-        @Req() req,
-        @Param('id', ParseIntPipe) id: number
-    ) {
+    async deleteNotification(@Req() req, @Param('id', ParseIntPipe) id: number) {
         const userId = req.user.userId;
         await this.service.deleteNotification(userId, id);
         return new ResponseSuccess('Xóa thông báo thành công', {});

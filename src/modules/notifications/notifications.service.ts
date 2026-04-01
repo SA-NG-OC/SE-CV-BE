@@ -9,10 +9,8 @@ export class NotificationsService {
     constructor(
         @Inject(I_NOTIFICATIONS_REPOSITORY)
         private readonly repo: INotificationsRepository,
-        private readonly gateway: NotificationsGateway
-    ) {
-
-    }
+        private readonly gateway: NotificationsGateway,
+    ) { }
 
     async createAndNotify(data: CreateNotificationDto) {
         const notification = await this.repo.create(data);
@@ -43,11 +41,13 @@ export class NotificationsService {
     }
     async getUserNotifications(userId: number) {
         const notifications = await this.repo.findByUserId(userId);
-        return { notifications };
+        console.log('CODE NHƯ SHIT:', notifications);
+        return notifications;
     }
 
     async getUnreadCount(userId: number) {
-        return await this.repo.getUnreadCount(userId);
+        const [data] = await this.repo.getUnreadCount(userId);
+        return data;
     }
 
     async markAsRead(userId: number, dto: MarkReadDto) {
@@ -61,5 +61,4 @@ export class NotificationsService {
     async deleteAllNotifications(userId: number) {
         return this.repo.deleteAll(userId);
     }
-
 }

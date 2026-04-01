@@ -7,7 +7,7 @@ export interface INotificationsRepository {
 
     findByUserId(userId: number): Promise<any[]>;
 
-    getUnreadCount(userId: number): Promise<{ count: number }[]>;
+    getUnreadCount(userId: number): Promise<{ unread_count: number }[]>;
 
     markAsRead(userId: number, notificationIds?: number[]): Promise<any[]>;
 

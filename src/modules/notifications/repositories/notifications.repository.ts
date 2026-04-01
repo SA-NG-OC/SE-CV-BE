@@ -9,7 +9,8 @@ import { INotificationsRepository } from './notifications-repository.interface';
 @Injectable()
 export class NotificationsRepository implements INotificationsRepository {
     constructor(
-        @Inject(DATABASE_CONNECTION) private readonly db: NodePgDatabase<typeof schema>,
+        @Inject(DATABASE_CONNECTION)
+        private readonly db: NodePgDatabase<typeof schema>,
     ) { }
 
     async create(data: any) {
@@ -31,10 +32,7 @@ export class NotificationsRepository implements INotificationsRepository {
 
     // notifications.repository.ts
     async createMany(data: any[]) {
-        return await this.db
-            .insert(schema.notifications)
-            .values(data)
-            .returning();
+        return await this.db.insert(schema.notifications).values(data).returning();
     }
 
     async findByUserId(userId: number) {
@@ -45,20 +43,24 @@ export class NotificationsRepository implements INotificationsRepository {
     }
 
     async getUnreadCount(userId: number) {
-        const result = await this.db.select({ count: count() })
+        const result = await this.db
+            .select({ unread_count: count() })
             .from(schema.notifications)
             .where(
                 and(
                     eq(schema.notifications.user_id, userId),
-                    eq(schema.notifications.is_read, false)
-                )
-            )
+                    eq(schema.notifications.is_read, false),
+                ),
+            );
         return result;
     }
 
     async markAsRead(userId: number, notificationIds?: number[]) {
         const condition = notificationIds
-            ? and(eq(schema.notifications.user_id, userId), inArray(schema.notifications.notification_id, notificationIds))
+            ? and(
+                eq(schema.notifications.user_id, userId),
+                inArray(schema.notifications.notification_id, notificationIds),
+            )
             : eq(schema.notifications.user_id, userId);
 
         return await this.db
@@ -74,8 +76,8 @@ export class NotificationsRepository implements INotificationsRepository {
             .where(
                 and(
                     eq(schema.notifications.user_id, userId),
-                    eq(schema.notifications.notification_id, notificationId)
-                )
+                    eq(schema.notifications.notification_id, notificationId),
+                ),
             );
     }
 
