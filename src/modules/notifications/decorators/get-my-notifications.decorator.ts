@@ -11,28 +11,26 @@ export const GetMyNotificationsDocs = () => applyDecorators(
         example: {
             success: true,
             message: "Lấy thông tin thành công",
-            data: [
-                {
-                    notification_id: 6,
-                    user_id: 1,
-                    type: "ADMIN_REVIEW_REQUIRED",
-                    title: "Yêu cầu phê duyệt công ty mới",
-                    message: "Người dùng 11 vừa đăng ký công ty: TechNova Solutions",
-                    link: null,
-                    is_read: false,
-                    created_at: "2026-03-24T23:35:28.403Z"
-                },
-                {
-                    notification_id: 3,
-                    user_id: 1,
-                    type: "ADMIN_REVIEW_REQUIRED",
-                    title: "Yêu cầu phê duyệt công ty mới",
-                    message: "Người dùng 2 vừa đăng ký công ty: TechNova Solutions",
-                    link: null,
-                    is_read: false,
-                    created_at: "2026-03-24T23:27:39.244Z"
+            data: {
+                data: [
+                    {
+                        notification_id: 7,
+                        user_id: 2000,
+                        type: "COMPANY_CREATED",
+                        title: "Đăng ký công ty thành công",
+                        message: 'Yêu cầu tạo công ty "TechNova Solutions" đang chờ duyệt.',
+                        link: null,
+                        is_read: false,
+                        created_at: "2026-03-30T03:31:41.558Z"
+                    }
+                ],
+                meta: {
+                    currentPage: 1,
+                    itemsPerPage: 10,
+                    totalItems: 1,
+                    totalPages: 1
                 }
-            ]
-        },
+            }
+        }
     }),
 );

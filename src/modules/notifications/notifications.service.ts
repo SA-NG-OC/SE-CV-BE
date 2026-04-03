@@ -39,9 +39,8 @@ export class NotificationsService {
 
         return savedNotifications;
     }
-    async getUserNotifications(userId: number) {
-        const notifications = await this.repo.findByUserId(userId);
-        console.log('CODE NHƯ SHIT:', notifications);
+    async getUserNotifications(userId: number, page: number, limit: number) {
+        const notifications = await this.repo.findByUserId(userId, page, limit);
         return notifications;
     }
 

@@ -8,6 +8,7 @@ import {
     Body,
     Delete,
     Param,
+    Query,
 } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 import { NotificationsService } from './notifications.service';
@@ -29,9 +30,12 @@ export class NotificationsController {
 
     @Get()
     @GetMyNotificationsDocs()
-    async getMyNotifications(@Req() req) {
+    async getMyNotifications(
+        @Req() req,
+        @Query('page') page: number = 1,
+        @Query('limit') limit: number = 10) {
         const userId = req.user.userId;
-        const notifications = await this.service.getUserNotifications(userId);
+        const notifications = await this.service.getUserNotifications(userId, page, limit);
         return new ResponseSuccess('Lấy thông tin thành công', notifications);
     }
 

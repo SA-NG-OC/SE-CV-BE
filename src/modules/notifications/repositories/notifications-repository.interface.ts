@@ -1,3 +1,5 @@
+import { PaginationResponse } from "src/common/types/PaginationResponse";
+
 export interface INotificationsRepository {
     create(data: any): Promise<any>;
 
@@ -5,7 +7,7 @@ export interface INotificationsRepository {
 
     createMany(data: any[]): Promise<any[]>;
 
-    findByUserId(userId: number): Promise<any[]>;
+    findByUserId(userId: number, page: number, limit: number): Promise<PaginationResponse<any>>;
 
     getUnreadCount(userId: number): Promise<{ unread_count: number }[]>;
 

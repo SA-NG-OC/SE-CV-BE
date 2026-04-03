@@ -6,6 +6,7 @@ import { eq, and, inArray, desc, count } from 'drizzle-orm';
 import { DATABASE_CONNECTION } from 'src/database/database.module';
 import { Role } from 'src/common/types/role.enum';
 import { INotificationsRepository } from './notifications-repository.interface';
+import { PaginationResponse } from 'src/common/types/PaginationResponse';
 @Injectable()
 export class NotificationsRepository implements INotificationsRepository {
     constructor(
@@ -35,11 +36,34 @@ export class NotificationsRepository implements INotificationsRepository {
         return await this.db.insert(schema.notifications).values(data).returning();
     }
 
-    async findByUserId(userId: number) {
-        return await this.db.query.notifications.findMany({
+    async findByUserId(userId: number, page: number = 1, limit: number = 10) {
+        // Tính toán vị trí bắt đầu lấy dữ liệu
+        const offset = (page - 1) * limit;
+
+        // 1. Truy vấn lấy dữ liệu có giới hạn (limit/offset)
+        const dataPromise = this.db.query.notifications.findMany({
             where: eq(schema.notifications.user_id, userId),
             orderBy: [desc(schema.notifications.created_at)],
+            limit: limit,
+            offset: offset,
         });
+
+        // 2. Truy vấn đếm tổng số thông báo của user đó để tính tổng trang
+        const countPromise = this.db
+            .select({ value: count() })
+            .from(schema.notifications)
+            .where(eq(schema.notifications.user_id, userId));
+
+        // Chạy song song cả 2 query để tối ưu hiệu năng
+        const [data, [totalCountRes]] = await Promise.all([
+            dataPromise,
+            countPromise
+        ]);
+
+        const totalItems = Number(totalCountRes?.value ?? 0);
+
+        // Trả về instance của PaginationResponse
+        return new PaginationResponse(data, page, limit, totalItems);
     }
 
     async getUnreadCount(userId: number) {
