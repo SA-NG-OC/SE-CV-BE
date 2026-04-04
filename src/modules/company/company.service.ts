@@ -1,15 +1,21 @@
-import { Injectable, BadRequestException, NotFoundException, InternalServerErrorException, Inject } from '@nestjs/common';
+import {
+    Injectable,
+    BadRequestException,
+    NotFoundException,
+    InternalServerErrorException,
+    Inject,
+} from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { ICompanyRepository } from './repositories/company-repository.interface';
+import { I_COMPANY_REPOSITORY } from './company.tokens';
+import { CompanyDomainError } from './domain/company.domain';
 import { CreateCompanyDto } from './dto/create-company.dto';
-import { CompanyResponseDto } from './dto/company-response.dto';
 import { UpdateCompanyBasicDto } from './dto/update-company-basic.dto';
 import { UpdateCompanyDescriptionDto } from './dto/update-company-description.dto';
 import { UpdateCompanyContactDto } from './dto/update-company-contact.dto';
 import { UpdateCompanyDetailDto } from './dto/update-company-detail.dto';
 import { ChangeCompanyStatusDto } from './dto/change-company-status.dto';
-import { PaginationResponse } from 'src/common/types/PaginationResponse';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { I_COMPANY_REPOSITORY } from './company.tokens';
+import { PaginationResponse } from 'src/common/types/pagination-response';
 
 @Injectable()
 export class CompanyService {
@@ -17,6 +23,13 @@ export class CompanyService {
         @Inject(I_COMPANY_REPOSITORY) private readonly companyRepo: ICompanyRepository,
         private readonly eventEmitter: EventEmitter2,
     ) { }
+
+    private rethrow(error: unknown): never {
+        if (error instanceof CompanyDomainError) {
+            throw new BadRequestException(error.message);
+        }
+        throw error;
+    }
 
     async createCompany(
         userId: number,
@@ -26,7 +39,9 @@ export class CompanyService {
         officeImageUrls?: string[],
     ) {
         try {
-            const company = await this.companyRepo.createCompanyWithImages(userId, data, logoUrl, coverUrl, officeImageUrls);
+            const company = await this.companyRepo.createCompanyWithImages(
+                userId, data, logoUrl, coverUrl, officeImageUrls,
+            );
             if (!company) {
                 throw new InternalServerErrorException('Có lỗi khi tạo lập công ty, vui lòng thử lại sau!');
             }
@@ -35,80 +50,100 @@ export class CompanyService {
                 userId,
                 companyName: data.company_name,
             });
+
             return company;
-        } catch (error) {
+        } catch (error: any) {
             if (error.code === '23505') {
                 throw new BadRequestException('Tài khoản này đã đăng ký công ty rồi.');
             }
-            throw error;
+            this.rethrow(error);
         }
     }
 
-    async getCompanyById(companyId: number, includeAllStatus = false): Promise<CompanyResponseDto> {
+    async getCompanyById(companyId: number, includeAllStatus = false) {
         const company = await this.companyRepo.findById(companyId, includeAllStatus);
-        if (!company) throw new NotFoundException('Không tìm thấy công ty.');
-
-        const officeImages = await this.companyRepo.getOfficeImages(companyId);
-        return { ...company, office_images: officeImages };
-    }
-
-    async getMyCompany(userId: number): Promise<CompanyResponseDto | null> {
-        const company = await this.companyRepo.findByUserId(userId);
-        if (!company) return null;
-
-        const officeImages = await this.companyRepo.getOfficeImages(company.company_id);
-        return { ...company, office_images: officeImages };
-    }
-
-    private async checkCompanyExist(userId: number) {
-        const company = await this.companyRepo.findByUserId(userId);
-        console.log("userID NÈ: ", userId);
         if (!company) throw new NotFoundException('Không tìm thấy công ty.');
         return company;
     }
 
+    async getMyCompany(userId: number) {
+        const company = await this.companyRepo.findByUserId(userId);
+        if (!company) return null;
+        return company;
+    }
+
     async updateCompanyBasic(userId: number, dto: UpdateCompanyBasicDto) {
-        await this.checkCompanyExist(userId);
-        return await this.companyRepo.updateByUserId(userId, dto);
+        try {
+            const result = await this.companyRepo.updateBasic(userId, dto);
+            if (!result) throw new NotFoundException('Không tìm thấy công ty.');
+            return result;
+        } catch (error) {
+            this.rethrow(error);
+        }
     }
 
     async updateCompanyDescription(userId: number, dto: UpdateCompanyDescriptionDto) {
-        await this.checkCompanyExist(userId);
-        return await this.companyRepo.updateByUserId(userId, { description: dto.description });
+        try {
+            const result = await this.companyRepo.updateDescription(userId, dto);
+            if (!result) throw new NotFoundException('Không tìm thấy công ty.');
+            return result;
+        } catch (error) {
+            this.rethrow(error);
+        }
     }
 
     async updateCompanyContact(userId: number, dto: UpdateCompanyContactDto) {
-        await this.checkCompanyExist(userId);
-        return await this.companyRepo.updateByUserId(userId, dto);
+        try {
+            const result = await this.companyRepo.updateContact(userId, dto);
+            if (!result) throw new NotFoundException('Không tìm thấy công ty.');
+            return result;
+        } catch (error) {
+            this.rethrow(error);
+        }
     }
 
     async updateCompanyDetail(userId: number, dto: UpdateCompanyDetailDto) {
-        await this.checkCompanyExist(userId);
-        return await this.companyRepo.updateByUserId(userId, dto);
+        try {
+            const result = await this.companyRepo.updateDetail(userId, dto);
+            if (!result) throw new NotFoundException('Không tìm thấy công ty.');
+            return result;
+        } catch (error) {
+            this.rethrow(error);
+        }
     }
 
     async updateCompanyLogo(userId: number, logoUrl: string) {
-        await this.checkCompanyExist(userId);
-        return await this.companyRepo.updateByUserId(userId, { logo_url: logoUrl });
+        try {
+            const result = await this.companyRepo.updateLogo(userId, logoUrl);
+            if (!result) throw new NotFoundException('Không tìm thấy công ty.');
+            return result;
+        } catch (error) {
+            this.rethrow(error);
+        }
     }
 
     async updateCompanyCover(userId: number, coverUrl: string) {
-        await this.checkCompanyExist(userId);
-        return await this.companyRepo.updateByUserId(userId, { cover_image_url: coverUrl });
+        try {
+            const result = await this.companyRepo.updateCover(userId, coverUrl);
+            if (!result) throw new NotFoundException('Không tìm thấy công ty.');
+            return result;
+        } catch (error) {
+            this.rethrow(error);
+        }
     }
 
-    // --- XỬ LÝ ẢNH VĂN PHÒNG ---
-
     async addOfficeImages(userId: number, imageUrls: string[]) {
-        const company = await this.checkCompanyExist(userId);
-        return await this.companyRepo.insertOfficeImages(company.company_id, imageUrls);
+        const company = await this.companyRepo.findByUserId(userId);
+        if (!company) throw new NotFoundException('Không tìm thấy công ty.');
+        return this.companyRepo.insertOfficeImages(company.companyId, imageUrls);
     }
 
     async deleteOfficeImage(userId: number, imageId: number) {
-        const company = await this.checkCompanyExist(userId);
+        const company = await this.companyRepo.findByUserId(userId);
+        if (!company) throw new NotFoundException('Không tìm thấy công ty.');
 
-        const image = await this.companyRepo.findImageByIdAndCompany(imageId, company.company_id);
-        if (!image) throw new NotFoundException("Không tìm thấy ảnh hoặc ảnh không thuộc về công ty này.");
+        const image = await this.companyRepo.findImageByIdAndCompany(imageId, company.companyId);
+        if (!image) throw new NotFoundException('Không tìm thấy ảnh hoặc ảnh không thuộc về công ty này.');
 
         await this.companyRepo.deleteImage(imageId);
     }
@@ -116,47 +151,50 @@ export class CompanyService {
     async getCompanyCardAdmin(
         page: number,
         limit: number,
-        status?: "PENDING" | "APPROVED" | "REJECTED" | "RESTRICTED"
+        status?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'RESTRICTED',
     ) {
         const { companies, totalItems, statusCount } =
-            await this.companyRepo.getCompanyCardAdmin(page, limit, status);
-
-        const pagination = new PaginationResponse(
-            companies,
-            page,
-            limit,
-            totalItems
-        );
+            await this.companyRepo.getCompanyListForAdmin(page, limit, status);
 
         return {
-            ...pagination,
-            status: statusCount, // thêm field riêng
+            ...new PaginationResponse(companies, page, limit, totalItems),
+            status: statusCount,
         };
     }
 
     async getCompanyCardForUser(page: number, limit: number) {
-        const { companies, totalItems } = await this.companyRepo.getCompanyCardForUser(page, limit);
+        const { companies, totalItems } =
+            await this.companyRepo.getCompanyListForUser(page, limit);
 
         return new PaginationResponse(companies, page, limit, totalItems);
     }
 
     async changeCompanyStatus(companyId: number, dto: ChangeCompanyStatusDto) {
-        let noteToSave = dto.admin_note;
-        if (dto.status === 'APPROVED' || dto.status === 'PENDING') {
-            noteToSave = null;
-        }
-        const updatedCompany = await this.companyRepo.updateCompanyStatus(companyId, dto.status, noteToSave);
-        this.eventEmitter.emit('company.statusChanged', {
-            email: updatedCompany.email,
-            companyName: updatedCompany.company_name,
-            userId: updatedCompany.user_id,
-            newStatus: dto.status,
-            note: dto.admin_note,
-        });
+        try {
+            let result;
+            if (dto.status === 'APPROVED') {
+                result = await this.companyRepo.approveCompany(companyId);
+            } else if (dto.status === 'REJECTED') {
+                result = await this.companyRepo.rejectCompany(companyId, dto.admin_note ?? '');
+            } else if (dto.status === 'RESTRICTED') {
+                result = await this.companyRepo.restrictCompany(companyId, dto.admin_note ?? '');
+            } else {
+                throw new BadRequestException(`Không hỗ trợ chuyển sang trạng thái "${dto.status}"`);
+            }
 
-        if (!updatedCompany) {
-            throw new NotFoundException(`Không tìm thấy công ty với ID ${companyId}`);
+            if (!result) throw new NotFoundException(`Không tìm thấy công ty với ID ${companyId}`);
+
+            this.eventEmitter.emit('company.statusChanged', {
+                email: result.email,
+                companyName: result.adminNote,
+                userId: companyId,
+                newStatus: dto.status,
+                note: dto.admin_note,
+            });
+
+            return result;
+        } catch (error) {
+            this.rethrow(error);
         }
-        return updatedCompany;
     }
 }

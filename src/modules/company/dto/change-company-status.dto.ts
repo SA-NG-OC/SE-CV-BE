@@ -1,6 +1,6 @@
 import z from 'zod'
 import { createZodDto } from 'nestjs-zod';
-import { companyStatus } from 'src/common/types/comapnyStatus.enum';
+import { companyStatus } from 'src/common/types/comapny-status.enum';
 
 export const ChangeCompanyStatusSchema = z.object({
     status: z.enum(companyStatus, {

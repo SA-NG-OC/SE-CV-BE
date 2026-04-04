@@ -1,51 +1,60 @@
-import { companyStatus } from 'src/common/types/comapnyStatus.enum';
 import { CreateCompanyDto } from '../dto/create-company.dto';
-
-export interface CompanyCardAdmin {
-    companies: any[];
-    totalItems: number;
-    statusCount: any[];
-}
-
-export interface CompanyCardUser {
-    companies: any[];
-    totalItems: number;
-}
+import { UpdateCompanyBasicDto } from '../dto/update-company-basic.dto';
+import { UpdateCompanyDescriptionDto } from '../dto/update-company-description.dto';
+import { UpdateCompanyContactDto } from '../dto/update-company-contact.dto';
+import { UpdateCompanyDetailDto } from '../dto/update-company-detail.dto';
+import {
+    CompanyResponse,
+    CompanyImageItem,
+    CompanyAdminListResult,
+    CompanyUserListResult,
+    CompanyStatusUpdateResult,
+} from '../interfaces/company.interface'
+import { CompanyStatus } from '../domain/company.props';
 
 export interface ICompanyRepository {
+
+    // ── Create ──────────────────────────────────────────────────────────────
     createCompanyWithImages(
         userId: number,
-        data: CreateCompanyDto,
+        dto: CreateCompanyDto,
         logoUrl?: string,
         coverUrl?: string,
-        officeImageUrls?: string[]
-    ): Promise<any>;
+        officeImageUrls?: string[],
+    ): Promise<CompanyResponse>;
 
-    findById(companyId: number, includeAllStatus?: boolean): Promise<any>;
+    // ── Find ────────────────────────────────────────────────────────────────
+    findById(companyId: number, includeAllStatus?: boolean): Promise<CompanyResponse | null>;
+    findByUserId(userId: number): Promise<CompanyResponse | null>;
 
-    findByUserId(userId: number): Promise<any>;
+    // ── Update — mỗi @Patch một method rõ ràng, không dùng updateData: any ─
+    updateBasic(userId: number, dto: UpdateCompanyBasicDto): Promise<CompanyResponse>;
+    updateDescription(userId: number, dto: UpdateCompanyDescriptionDto): Promise<CompanyResponse>;
+    updateContact(userId: number, dto: UpdateCompanyContactDto): Promise<CompanyResponse>;
+    updateDetail(userId: number, dto: UpdateCompanyDetailDto): Promise<CompanyResponse>;
+    updateLogo(userId: number, logoUrl: string): Promise<CompanyResponse>;
+    updateCover(userId: number, coverUrl: string): Promise<CompanyResponse>;
 
-    getOfficeImages(companyId: number): Promise<any[]>;
+    // ── Admin actions ────────────────────────────────────────────────────────
+    approveCompany(companyId: number): Promise<CompanyStatusUpdateResult>;
+    rejectCompany(companyId: number, reason: string): Promise<CompanyStatusUpdateResult>;
+    restrictCompany(companyId: number, reason: string): Promise<CompanyStatusUpdateResult>;
 
-    updateByUserId(userId: number, updateData: any): Promise<any>;
-
-    insertOfficeImages(companyId: number, imageUrls: string[]): Promise<any>;
-
-    findImageByIdAndCompany(imageId: number, companyId: number): Promise<any>;
-
+    // ── Office images ────────────────────────────────────────────────────────
+    getOfficeImages(companyId: number): Promise<CompanyImageItem[]>;
+    insertOfficeImages(companyId: number, imageUrls: string[]): Promise<CompanyImageItem[]>;
+    findImageByIdAndCompany(imageId: number, companyId: number): Promise<CompanyImageItem | null>;
     deleteImage(imageId: number): Promise<void>;
 
-    getCompanyCardAdmin(
+    // ── Lists ────────────────────────────────────────────────────────────────
+    getCompanyListForAdmin(
         page: number,
         limit: number,
-        status?: "PENDING" | "APPROVED" | "REJECTED" | "RESTRICTED"
-    ): Promise<CompanyCardAdmin>;
+        status?: CompanyStatus,
+    ): Promise<CompanyAdminListResult>;
 
-    getCompanyCardForUser(page: number, limit: number): Promise<CompanyCardUser>;
-
-    updateCompanyStatus(
-        companyId: number,
-        status: companyStatus,
-        admin_note?: string | null
-    ): Promise<any>;
+    getCompanyListForUser(
+        page: number,
+        limit: number,
+    ): Promise<CompanyUserListResult>;
 }

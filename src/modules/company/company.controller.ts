@@ -7,21 +7,21 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 import { CreateCompanyDto, createCompanySchema } from './dto/create-company.dto';
 import { Role } from 'src/common/types/role.enum';
-import ResponseSuccess from 'src/common/types/responseSuccess';
+import ResponseSuccess from 'src/common/types/response-success';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { GetCompanyParamDto } from './dto/get-company.dto';
-import { CompanyResponseDto } from './dto/company-response.dto';
-import { UpdateCompanyBasicDto, updateCompanyBasicSchema } from './dto/update-company-basic.dto';
-import { UpdateCompanyDescriptionDto, updateCompanyDescriptionSchema } from './dto/update-company-description.dto';
-import { UpdateCompanyContactDto, updateCompanyContactSchema } from './dto/update-company-contact.dto';
-import { UpdateCompanyDetailDto, updateCompanyDetailSchema } from './dto/update-company-detail.dto';
+import { UpdateCompanyBasicDto } from './dto/update-company-basic.dto';
+import { UpdateCompanyDescriptionDto } from './dto/update-company-description.dto';
+import { UpdateCompanyContactDto } from './dto/update-company-contact.dto';
+import { UpdateCompanyDetailDto } from './dto/update-company-detail.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { BadRequestException } from '@nestjs/common';
 import { UploadedFile } from '@nestjs/common';
 import { ParseIntPipe } from '@nestjs/common';
 import { AdminCompanyFilterDto } from './dto/admin-company-filter.dto';
 import { ChangeCompanyStatusDto } from './dto/change-company-status.dto';
-import { ChangeCompanyStatusDocs, CreateCompanyDocs, DeleteOfficeImageDocs, GetCompanyByIdDocs, GetCompanyCardAdminDocs, GetCompanyCardsForUserDocs, GetMyCompanyDocs, UpdateCompanyBasicDocs, UpdateCompanyContactDocs, UpdateCompanyCoverDocs, UpdateCompanyDescriptionDocs, UpdateCompanyDetailDocs, UpdateCompanyLogoDocs, UploadOfficeImagesDocs } from './decorators';
+import { CompanyResponse } from './interfaces/company.interface';
+import { CreateCompanyDocs, DeleteOfficeImageDocs, GetCompanyByIdDocs, GetCompanyCardAdminDocs, GetCompanyCardsForUserDocs, GetMyCompanyDocs, UpdateCompanyBasicDocs, UpdateCompanyContactDocs, UpdateCompanyCoverDocs, UpdateCompanyDetailDocs, UpdateCompanyLogoDocs, UpdateCompanyStatusDocs, UploadOfficeImagesDocs } from './decorators';
 
 @Controller('company')
 export class CompanyController {
@@ -88,7 +88,7 @@ export class CompanyController {
     @Roles(Role.COMPANY)
     async getMyCompany(@Req() req) {
         const userId = req.user.userId;
-        const company: CompanyResponseDto | null = await this.companyService.getMyCompany(userId);
+        const company: CompanyResponse | null = await this.companyService.getMyCompany(userId);
         return new ResponseSuccess('Lấy thông tin công ty thành công', company);
     }
 
@@ -120,12 +120,12 @@ export class CompanyController {
 
         return new ResponseSuccess(
             "Cập nhật thông tin cơ bản công ty thành công",
-            company
+            {}
         );
     }
 
     @Patch("description")
-    @UpdateCompanyDescriptionDocs()
+    @UpdateCompanyContactDocs()
     @UseGuards(JwtAuthGuard, RolesGuard)
     //@UsePipes(new ZodValidationPipe(updateCompanyDescriptionSchema))
     @Roles(Role.COMPANY)
@@ -139,7 +139,7 @@ export class CompanyController {
             dto,
         );
 
-        return new ResponseSuccess("Cập nhật mô tả công ty thành công", data);
+        return new ResponseSuccess("Cập nhật mô tả công ty thành công", {});
     }
 
     @Patch("contact")
@@ -157,7 +157,7 @@ export class CompanyController {
             dto,
         );
 
-        return new ResponseSuccess("Cập nhật thông tin liên hệ thành công", data);
+        return new ResponseSuccess("Cập nhật thông tin liên hệ thành công", {});
     }
 
     @Patch("detail")
@@ -175,7 +175,7 @@ export class CompanyController {
             dto,
         );
 
-        return new ResponseSuccess("Cập nhật thông tin chi tiết công ty thành công", data);
+        return new ResponseSuccess("Cập nhật thông tin chi tiết công ty thành công", {});
     }
 
     @Patch("logo")
@@ -200,7 +200,7 @@ export class CompanyController {
             uploadRes.secure_url,
         );
 
-        return new ResponseSuccess("Cập nhật logo công ty thành công", company);
+        return new ResponseSuccess("Cập nhật logo công ty thành công", {});
     }
 
     @Patch("cover-image")
@@ -225,7 +225,7 @@ export class CompanyController {
             uploadRes.secure_url,
         );
 
-        return new ResponseSuccess("Cập nhật ảnh bìa công ty thành công", company);
+        return new ResponseSuccess("Cập nhật ảnh bìa công ty thành công", {});
     }
 
     @Patch("office-images")
@@ -256,7 +256,7 @@ export class CompanyController {
             imageUrls,
         );
 
-        return new ResponseSuccess("Tải ảnh văn phòng thành công", images);
+        return new ResponseSuccess("Tải ảnh văn phòng thành công", {});
     }
 
     @Delete("office-images/:imageId")
@@ -296,7 +296,7 @@ export class CompanyController {
     }
 
     @Patch(":id/status/admin")
-    @ChangeCompanyStatusDocs()
+    @UpdateCompanyStatusDocs()
     @UseGuards(JwtAuthGuard, RolesGuard)
     //@UsePipes(new ZodValidationPipe(ChangeCompanyStatusSchema))
     @Roles(Role.ADMIN)
