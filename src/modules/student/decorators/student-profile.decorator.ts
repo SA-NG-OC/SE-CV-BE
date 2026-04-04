@@ -23,7 +23,7 @@ export const UpdateJobStatusDocs = () => applyDecorators(
     ApiBody({ type: UpdateJobStatusDto }),
     ApiOkResponse({
         description: 'Cập nhật thông tin thành công.',
-        schema: { example: { success: true, message: 'Cập nhật thông tin thành công', data: { message: "Cập nhật trạng thái tìm việc thành công" } } },
+        schema: { example: { success: true, message: 'Cập nhật thông tin thành công', data: {} } },
     }),
 );
 
@@ -43,7 +43,7 @@ export const UpdateSkillsDocs = () => applyDecorators(
                 success: true,
                 message: "Cập nhật thông tin thành công",
                 data: {
-                    message: "Cập nhật danh sách kỹ năng thành công"
+
                 }
             }
         },

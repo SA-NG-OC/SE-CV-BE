@@ -1,171 +1,50 @@
-import { Inject } from "@nestjs/common";
-import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { DATABASE_CONNECTION } from "src/database/database.module";
-import * as schema from "../../../database/schema";
-import { sql, eq, and, desc, ilike, or } from "drizzle-orm";
-import {
-    GeneralInformationDto,
-    generalInformationSchema,
-} from "../dto/general-information.dto";
-import Redis from "ioredis";
-import {
-    StudentListDto,
-} from "../dto/get-student-items.dto";
-import { CreateResumeDto } from "../dto/update-student.dto";
-import { IStudentRepository } from "./student-repository.interface";
+import { Inject, Injectable } from '@nestjs/common';
+import { NodePgDatabase } from 'drizzle-orm/node-postgres';
+import { DATABASE_CONNECTION } from 'src/database/database.module';
+import * as schema from '../../../database/schema';
+import { sql, eq, and, desc, ilike, or } from 'drizzle-orm';
+import Redis from 'ioredis';
 
+import { IStudentRepository } from './student-repository.interface';
+import { StudentDomain } from '../domain/student.domain';
+import { StudentMapper } from '../domain/student.mapper';
+import { CreateResumeDto } from '../dto/update-student.dto';
+import {
+    StudentResponse,
+    StudentResumeItem,
+    StudentGeneralInfo,
+    StudentAdminListResult,
+} from '../interfaces/student.interface';
+
+@Injectable()
 export class StudentRepository implements IStudentRepository {
     constructor(
         @Inject(DATABASE_CONNECTION)
         private readonly db: NodePgDatabase<typeof schema>,
 
-        @Inject("REDIS_CLIENT")
-        private readonly redisClient: Redis
+        @Inject('REDIS_CLIENT')
+        private readonly redisClient: Redis,
     ) { }
 
-    // Read
-    async getGeneralInformation(): Promise<GeneralInformationDto> {
-        const [result] = await this.db
-            .select({
-                totalStudents: sql<number>`cast(count(*) as int)`,
-                studying: sql<number>`cast(count(*) filter (where ${schema.students.student_status} = 'STUDYING') as int)`,
-                graduated: sql<number>`cast(count(*) filter (where ${schema.students.student_status} = 'GRADUATED') as int)`,
-            })
-            .from(schema.students);
+    // =========================================================================
+    // PRIVATE HELPERS
+    // =========================================================================
 
-        return generalInformationSchema.parse(
-            result || { totalStudents: 0, studying: 0, graduated: 0 }
-        );
-    }
-
-    async getStudentListAdmin(
-        page: number,
-        limit: number,
-        status?: "STUDYING" | "GRADUATED" | "DROPPED_OUT",
-        keyword?: string
-    ): Promise<StudentListDto> {
-        const offset = (page - 1) * limit;
-
-        const cacheKey = `students:page=${page}:limit=${limit}:status=${status ?? "all"}:keyword=${keyword ?? ""}`;
-
-        // 1. Check cache
-        const cached = await this.redisClient.get(cacheKey);
-        if (cached) {
-            return JSON.parse(cached);
-        }
-
-        // 2. Condition
-        const condition = and(
-            status
-                ? eq(schema.students.student_status, status)
-                : undefined,
-            keyword
-                ? or(
-                    ilike(schema.students.full_name, `%${keyword}%`),
-                    ilike(schema.students.student_code, `%${keyword}%`)
-                )
-                : undefined
-        );
-
-        const [students, [{ totalItem }]] = await Promise.all([
-            // DATA
-            this.db
-                .select({
-                    studentId: schema.students.student_id,
-                    fullName: schema.students.full_name,
-                    studentCode: schema.students.student_code,
-                    email: schema.students.email_student,
-                    currentYear: schema.students.current_year,
-                    enrollmentYear: schema.students.enrollment_year,
-                    studentStatus: schema.students.student_status,
-
-                    totalApplications: sql<number>`
-                        coalesce(count(${schema.applications.application_id}), 0)
-                    `.mapWith(Number),
-                })
-                .from(schema.students)
-                .leftJoin(
-                    schema.applications,
-                    eq(
-                        schema.applications.student_id,
-                        schema.students.student_id
-                    )
-                )
-                .where(condition)
-                .groupBy(schema.students.student_id)
-                .orderBy(desc(schema.students.created_at))
-                .limit(limit)
-                .offset(offset),
-
-            // TOTAL
-            this.db
-                .select({
-                    totalItem: sql<number>`count(*)`.mapWith(Number),
-                })
-                .from(schema.students)
-                .where(condition),
-        ]);
-
-        const totalPages = Math.ceil(totalItem / limit);
-
-        const result: StudentListDto = {
-            data: students,
-            meta: {
-                currentPage: page,
-                itemsPerPage: limit,
-                totalItem,
-                totalPages,
-            },
-        };
-
-        // 3. Save cache (TTL 60s)
-        await this.redisClient.set(
-            cacheKey,
-            JSON.stringify(result),
-            "EX",
-            60
-        );
-
-        return result;
-    }
-
-    async getStudentBasicInfo(studentId: number) {
-        const [student] = await this.db
-            .select({
-                studentId: schema.students.student_id,
-                fullName: schema.students.full_name,
-                studentCode: schema.students.student_code,
-                email: schema.students.email_student,
-                phone: schema.students.phone,
-                createdAt: schema.students.created_at,
-                studentStatus: schema.students.student_status,
-                currentYear: schema.students.current_year,
-                enrollmentYear: schema.students.enrollment_year,
-                gpa: schema.students.gpa,
-                isOpenToWork: schema.students.is_open_to_work,
-                majorName: schema.majors.major_name,
-            })
-            .from(schema.students)
-            .leftJoin(schema.majors, eq(schema.majors.major_id, schema.students.major_id))
-            .where(eq(schema.students.student_id, studentId));
-
-        return student;
-    }
-
-    async getStudentSkills(studentId: number) {
-        const skills = await this.db
-            .select({
-                skillName: schema.skills.skill_name,
-            })
+    private async fetchSkills(studentId: number): Promise<string[]> {
+        const rows = await this.db
+            .select({ skillName: schema.skills.skill_name })
             .from(schema.student_skills)
-            .innerJoin(schema.skills, eq(schema.skills.skill_id, schema.student_skills.skill_id))
+            .innerJoin(
+                schema.skills,
+                eq(schema.skills.skill_id, schema.student_skills.skill_id),
+            )
             .where(eq(schema.student_skills.student_id, studentId));
 
-        return skills.map(s => s.skillName);
+        return rows.map((r) => r.skillName);
     }
 
-    async getStudentResumes(studentId: number) {
-        return await this.db
+    private async fetchResumes(studentId: number): Promise<StudentResumeItem[]> {
+        const rows = await this.db
             .select({
                 resumeId: schema.student_resumes.resume_id,
                 resumeName: schema.student_resumes.resume_name,
@@ -174,9 +53,11 @@ export class StudentRepository implements IStudentRepository {
             })
             .from(schema.student_resumes)
             .where(eq(schema.student_resumes.student_id, studentId));
+
+        return rows.map(StudentMapper.toResumeItem);
     }
 
-    async getStudentApplicationCount(studentId: number): Promise<number> {
+    private async fetchApplicationCount(studentId: number): Promise<number> {
         const [result] = await this.db
             .select({
                 total: sql<number>`cast(count(${schema.applications.application_id}) as int)`,
@@ -187,78 +68,242 @@ export class StudentRepository implements IStudentRepository {
         return result?.total ?? 0;
     }
 
-    // Update 
-    async updateJobStatus(studentId: number, isOpenToWork: boolean) {
-        return await this.db
-            .update(schema.students)
-            .set({ is_open_to_work: isOpenToWork, updated_at: new Date() })
-            .where(eq(schema.students.student_id, studentId))
-            .returning();
+    async getGeneralInformation(): Promise<StudentGeneralInfo> {
+        const [result] = await this.db
+            .select({
+                totalStudents: sql<number>`cast(count(*) as int)`,
+                studying: sql<number>`cast(count(*) filter (where ${schema.students.student_status} = 'STUDYING') as int)`,
+                graduated: sql<number>`cast(count(*) filter (where ${schema.students.student_status} = 'GRADUATED') as int)`,
+            })
+            .from(schema.students);
+
+        return StudentMapper.toGeneralInfo(
+            result ?? { totalStudents: 0, studying: 0, graduated: 0 },
+        );
     }
 
-    async syncStudentSkills(studentId: number, skillIds: number[]) {
-        return await this.db.transaction(async (tx) => {
-            // Bước 1: Xóa trắng list skill cũ của student này
+    async getStudentListAdmin(
+        page: number,
+        limit: number,
+        status?: 'STUDYING' | 'GRADUATED' | 'DROPPED_OUT',
+        keyword?: string,
+    ): Promise<StudentAdminListResult> {
+        const cacheKey = `students:page=${page}:limit=${limit}:status=${status ?? 'all'}:keyword=${keyword ?? ''}`;
+
+        // 1. Check cache
+        const cached = await this.redisClient.get(cacheKey);
+        if (cached) return JSON.parse(cached);
+
+        // 2. Build condition
+        const offset = (page - 1) * limit;
+        const condition = and(
+            status ? eq(schema.students.student_status, status) : undefined,
+            keyword
+                ? or(
+                    ilike(schema.students.full_name, `%${keyword}%`),
+                    ilike(schema.students.student_code, `%${keyword}%`),
+                )
+                : undefined,
+        );
+
+        const [rows, [{ totalItem }]] = await Promise.all([
+            this.db
+                .select({
+                    studentId: schema.students.student_id,
+                    fullName: schema.students.full_name,
+                    studentCode: schema.students.student_code,
+                    email: schema.students.email_student,
+                    currentYear: schema.students.current_year,
+                    enrollmentYear: schema.students.enrollment_year,
+                    studentStatus: schema.students.student_status,
+                    totalApplications: sql<number>`
+                        coalesce(count(${schema.applications.application_id}), 0)
+                    `.mapWith(Number),
+                })
+                .from(schema.students)
+                .leftJoin(
+                    schema.applications,
+                    eq(schema.applications.student_id, schema.students.student_id),
+                )
+                .where(condition)
+                .groupBy(schema.students.student_id)
+                .orderBy(desc(schema.students.created_at))
+                .limit(limit)
+                .offset(offset),
+
+            this.db
+                .select({ totalItem: sql<number>`count(*)`.mapWith(Number) })
+                .from(schema.students)
+                .where(condition),
+        ]);
+
+        const result: StudentAdminListResult = {
+            data: rows.map(StudentMapper.toAdminCard),
+            meta: {
+                currentPage: page,
+                itemsPerPage: limit,
+                totalItem,
+                totalPages: Math.ceil(totalItem / limit),
+            },
+        };
+
+        // 3. Save cache TTL 60s
+        await this.redisClient.set(cacheKey, JSON.stringify(result), 'EX', 60);
+
+        return result;
+    }
+
+    async getStudentBasicInfo(studentId: number): Promise<StudentResponse | null> {
+        const [row] = await this.db
+            .select({
+                student: schema.students,
+                majorName: schema.majors.major_name,
+            })
+            .from(schema.students)
+            .leftJoin(schema.majors, eq(schema.majors.major_id, schema.students.major_id))
+            .where(eq(schema.students.student_id, studentId))
+            .limit(1);
+
+        if (!row) return null;
+
+        const domain = StudentDomain.fromPersistence(row.student);
+
+        const [skills, resumes, totalApplications] = await Promise.all([
+            this.fetchSkills(studentId),
+            this.fetchResumes(studentId),
+            this.fetchApplicationCount(studentId),
+        ]);
+
+        return StudentMapper.toResponse(domain, {
+            majorName: row.majorName ?? null,
+            skills,
+            resumes,
+            totalApplications,
+        });
+    }
+
+    async getStudentSkills(studentId: number): Promise<string[]> {
+        return this.fetchSkills(studentId);
+    }
+
+    async getStudentResumes(studentId: number): Promise<StudentResumeItem[]> {
+        return this.fetchResumes(studentId);
+    }
+
+    async getStudentApplicationCount(studentId: number): Promise<number> {
+        return this.fetchApplicationCount(studentId);
+    }
+
+    // =========================================================================
+    // UPDATE
+    // Pattern: load row → fromPersistence → domain method → save
+    // =========================================================================
+
+    async updateJobStatus(studentId: number, isOpenToWork: boolean): Promise<StudentResponse | null> {
+        const [row] = await this.db
+            .select()
+            .from(schema.students)
+            .where(eq(schema.students.student_id, studentId))
+            .limit(1);
+
+        if (!row) return null;
+
+        const domain = StudentDomain.fromPersistence(row);
+        domain.setOpenToWork(isOpenToWork);   // domain mutate
+
+        await this.db
+            .update(schema.students)
+            .set(domain.toUpdatePersistence())
+            .where(eq(schema.students.student_id, studentId));
+
+        // Trả về full response sau khi update
+        const [skills, resumes, totalApplications] = await Promise.all([
+            this.fetchSkills(studentId),
+            this.fetchResumes(studentId),
+            this.fetchApplicationCount(studentId),
+        ]);
+
+        return StudentMapper.toResponse(domain, {
+            majorName: null,  // không cần join major cho update này
+            skills,
+            resumes,
+            totalApplications,
+        });
+    }
+
+    async syncStudentSkills(studentId: number, skillIds: number[]): Promise<void> {
+        // Validate qua domain trước khi thao tác DB
+        const [row] = await this.db
+            .select()
+            .from(schema.students)
+            .where(eq(schema.students.student_id, studentId))
+            .limit(1);
+
+        if (!row) return;
+
+        const domain = StudentDomain.fromPersistence(row);
+        domain.validateSkillIds(skillIds);   // domain throw nếu input sai
+
+        await this.db.transaction(async (tx) => {
             await tx
                 .delete(schema.student_skills)
                 .where(eq(schema.student_skills.student_id, studentId));
 
-            // Bước 2: Insert list skill mới (nếu mảng skillIds không rỗng)
             if (skillIds.length > 0) {
-                const valuesToInsert = skillIds.map(skillId => ({
-                    student_id: studentId,
-                    skill_id: skillId,
-                }));
-                await tx.insert(schema.student_skills).values(valuesToInsert);
+                await tx.insert(schema.student_skills).values(
+                    skillIds.map((skillId) => ({
+                        student_id: studentId,
+                        skill_id: skillId,
+                    })),
+                );
             }
         });
     }
 
-    async addResume(studentId: number, data: CreateResumeDto) {
-        return await this.db.transaction(async (tx) => {
-            // if (data.isDefault) {
-            //     await tx
-            //         .update(schema.student_resumes)
-            //         .set({ is_default: false })
-            //         .where(eq(schema.student_resumes.student_id, studentId));
-            // }
+    async addResume(studentId: number, data: CreateResumeDto): Promise<StudentResumeItem> {
+        const [newResume] = await this.db
+            .insert(schema.student_resumes)
+            .values({
+                student_id: studentId,
+                resume_name: data.resumeName,
+                cv_url: data.cvUrl,
+            })
+            .returning();
 
-            // Insert CV mới
-            const [newResume] = await tx
-                .insert(schema.student_resumes)
-                .values({
-                    student_id: studentId,
-                    resume_name: data.resumeName,
-                    cv_url: data.cvUrl,
-                    //is_default: data.isDefault,
-                })
-                .returning();
-
-            return newResume;
+        return StudentMapper.toResumeItem({
+            resumeId: newResume.resume_id,
+            resumeName: newResume.resume_name,
+            cvUrl: newResume.cv_url,
+            isDefault: newResume.is_default,
         });
     }
 
-    async setResumeAsDefault(studentId: number, resumeId: number) {
-        return await this.db.transaction(async (tx) => {
-            // Gỡ mặc định của tất cả CV thuộc về sinh viên này
+    async setResumeAsDefault(studentId: number, resumeId: number): Promise<StudentResumeItem | null> {
+        return this.db.transaction(async (tx) => {
             await tx
                 .update(schema.student_resumes)
                 .set({ is_default: false })
                 .where(eq(schema.student_resumes.student_id, studentId));
 
-            // Set mặc định cho CV được chọn
-            const [updatedResume] = await tx
+            const [updated] = await tx
                 .update(schema.student_resumes)
                 .set({ is_default: true })
                 .where(
                     and(
                         eq(schema.student_resumes.student_id, studentId),
-                        eq(schema.student_resumes.resume_id, resumeId)
-                    )
+                        eq(schema.student_resumes.resume_id, resumeId),
+                    ),
                 )
                 .returning();
 
-            return updatedResume;
+            if (!updated) return null;
+
+            return StudentMapper.toResumeItem({
+                resumeId: updated.resume_id,
+                resumeName: updated.resume_name,
+                cvUrl: updated.cv_url,
+                isDefault: updated.is_default,
+            });
         });
     }
 }

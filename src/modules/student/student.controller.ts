@@ -72,7 +72,7 @@ export class StudentController {
   async updateStatus(@Req() req: any, @Body() body: UpdateJobStatusDto) {
     const studentId = req.user.studentId;
     const data = await this.studentsService.updateJobStatus(studentId, body);
-    return new ResponseSuccess('Cập nhật thông tin thành công', data);
+    return new ResponseSuccess('Cập nhật thông tin thành công', {});
   }
 
   @Put('me/skills')
@@ -83,7 +83,7 @@ export class StudentController {
     const studentId = req.user.studentId;
     console.log('Id của sinh viên', `${studentId}`);
     const data = await this.studentsService.updateSkills(studentId, body);
-    return new ResponseSuccess('Cập nhật thông tin thành công', data);
+    return new ResponseSuccess('Cập nhật thông tin thành công', {});
   }
 
   @Post('me/resumes')
