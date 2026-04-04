@@ -1,4 +1,4 @@
-import { PaginationResponse } from "src/common/types/PaginationResponse";
+import { PaginationResponse } from "src/common/types/pagination-response";
 
 export interface INotificationsRepository {
     create(data: any): Promise<any>;

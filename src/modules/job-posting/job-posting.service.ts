@@ -11,7 +11,7 @@ import { AdminJobCard, CategoryItem, CompanyJobCard, JobPostingResponse, JobSkil
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { UpdateJobPostingDto } from './dto/update-job-posting.dto';
 import { RoleName } from 'src/common/types/role.enum';
-import { PaginationResponse } from 'src/common/types/PaginationResponse';
+import { PaginationResponse } from 'src/common/types/pagination-response';
 import { ListJobPostingDto } from './dto/list-job-posting.dto';
 
 @Injectable()
@@ -67,8 +67,8 @@ export class JobPostingService {
     return data as CategoryItem[];
   }
 
-  async getJobSkill(): Promise<JobSkillItem[]> {
-    const data = await this.jobPostingRepository.getJobSkill();
+  async getJobSkills(): Promise<JobSkillItem[]> {
+    const data = await this.jobPostingRepository.getJobSkills();
     return data as JobSkillItem[];
   }
 

@@ -14,7 +14,7 @@ import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 import { NotificationsService } from './notifications.service';
 import { Get } from '@nestjs/common';
 import { MarkReadDto } from './dto/notification.dto';
-import ResponseSuccess from 'src/common/types/responseSuccess';
+import ResponseSuccess from 'src/common/types/response-success';
 import { ParseIntPipe } from '@nestjs/common';
 import {
     GetMyNotificationsDocs,

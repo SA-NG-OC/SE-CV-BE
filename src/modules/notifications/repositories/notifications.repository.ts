@@ -6,7 +6,7 @@ import { eq, and, inArray, desc, count } from 'drizzle-orm';
 import { DATABASE_CONNECTION } from 'src/database/database.module';
 import { Role } from 'src/common/types/role.enum';
 import { INotificationsRepository } from './notifications-repository.interface';
-import { PaginationResponse } from 'src/common/types/PaginationResponse';
+import { PaginationResponse } from 'src/common/types/pagination-response';
 @Injectable()
 export class NotificationsRepository implements INotificationsRepository {
     constructor(

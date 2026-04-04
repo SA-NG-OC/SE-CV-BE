@@ -26,8 +26,6 @@ export interface JobPostingResponse {
     jobDescription: string;
     requirements: string;
     benefits: string | null;
-
-    employmentType: string | null;
     experienceLevel: string | null;
     positionLevel: string | null;
 
@@ -42,8 +40,6 @@ export interface JobPostingResponse {
     applicationDeadline: string | null;
 
     status: string;
-    isUrgent: boolean;
-    isFeatured: boolean;
     applicantCount: number;
     createdAt: Date;
     updatedAt: Date;
@@ -76,28 +72,6 @@ export interface AdminJobCard {
     status: 'pending' | 'approved' | 'rejected' | 'restricted';
 }
 
-export interface StudentJobCard {
-    jobId: number;
-    companyId: number;
-    companyName: string;
-    logoUrl: string | null;
-
-    jobTitle: string;
-    city: string | null;
-
-    salaryMin: number | null;
-    salaryMax: number | null;
-    salaryType: 'FIXED' | 'RANGE' | 'NEGOTIABLE' | null;
-    isSalaryNegotiable: boolean;
-
-    postedAt: string;
-
-    applicantCount: number;
-
-    skills: JobSkillItem[];
-
-    employmentType: string | null;
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Card dùng cho STUDENT
@@ -125,7 +99,6 @@ export interface StudentJobCard {
 
     skills: JobSkillItem[];
 
-    employmentType: string | null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

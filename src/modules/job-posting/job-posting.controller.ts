@@ -19,7 +19,7 @@ import { Roles } from 'src/modules/auth/decorators/roles.decorator';
 import { Role, RoleName } from 'src/common/types/role.enum';
 import { CreateJobPostingDto } from './dto/create-job-posting.dto';
 import { JobSkillItem, CategoryItem, UpdateJobResponse, JobPostingResponse } from './interfaces';
-import ResponseSuccess from 'src/common/types/responseSuccess';
+import ResponseSuccess from 'src/common/types/response-success';
 import { UpdateJobPostingDto } from './dto/update-job-posting.dto';
 import { ListJobPostingDto } from './dto/list-job-posting.dto';
 
@@ -68,7 +68,7 @@ export class JobPostingController {
 
   @Get('skills')
   async getJobSkills(): Promise<ResponseSuccess<JobSkillItem[]>> {
-    const data = await this.jobPostingService.getJobSkill();
+    const data = await this.jobPostingService.getJobSkills();
     return new ResponseSuccess('Lấy thông tin thành công', data);
   }
 
@@ -81,7 +81,7 @@ export class JobPostingController {
     @Query() dto: ListJobPostingDto,
   ) {
     const role: RoleName = req.user.roleName;
-    const companyId = role === RoleName.COMPANY ? req.user.company_id : undefined;
+    const companyId = role === RoleName.COMPANY ? req.user.companyId : undefined;
 
     const result = await this.jobPostingService.listJobPostings(role, dto, companyId);
     return { success: true, ...result };

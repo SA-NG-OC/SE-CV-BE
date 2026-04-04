@@ -1,4 +1,4 @@
-import { PaginationResponse } from 'src/common/types/PaginationResponse';
+import { PaginationResponse } from 'src/common/types/pagination-response';
 import { CreateJobPostingDto } from '../dto/create-job-posting.dto';
 import { ListJobPostingDto } from '../dto/list-job-posting.dto';
 import { UpdateJobPostingDto } from '../dto/update-job-posting.dto';
@@ -20,7 +20,7 @@ export interface IJobPostingRepository {
 
     getJobCategories(): Promise<CategoryItem[]>;
 
-    getJobSkill(): Promise<JobSkillItem[]>
+    getJobSkills(): Promise<JobSkillItem[]>
 
     findJobById(
         jobId: number,

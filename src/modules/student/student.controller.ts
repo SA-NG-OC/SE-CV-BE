@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Patch, Param, Put, UseGuards, Query, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { StudentService } from './student.service';
-import ResponseSuccess from 'src/common/types/responseSuccess';
+import ResponseSuccess from 'src/common/types/response-success';
 import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/modules/auth/guards/roles.guard';
 import { Role } from 'src/common/types/role.enum';

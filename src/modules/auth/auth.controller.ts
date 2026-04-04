@@ -12,7 +12,7 @@ import { ChangePasswordDto, changePasswordSchema } from './dto/change-password.d
 import { forgotPasswordSchema, ForgotPasswordDto } from './dto/forgot-password.dto';
 import { verifyOtpSchema, VerifyOtpDto } from './dto/verify-otp.dto';
 import { resetPasswordSchema, ResetPasswordDto } from './dto/reset-password.dto';
-import ResponseSuccess from 'src/common/types/responseSuccess';
+import ResponseSuccess from 'src/common/types/response-success';
 import ChangePasswordDocs from './decorators/change-password.decorator';
 import LoginDocs from './decorators/login.decorator';
 import VerifyOtpDocs from './decorators/verify-otp.decorator';

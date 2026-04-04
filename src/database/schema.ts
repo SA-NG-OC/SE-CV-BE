@@ -81,11 +81,8 @@ export const companies = pgTable(
         cover_image_url: varchar("cover_image_url", { length: 500 }),
         description: text("description"),
         address: text("address"),
-        city: varchar("city", { length: 100 }),
-        district: varchar("district", { length: 100 }),
         contact_email: varchar("contact_email", { length: 255 }),
         contact_phone: varchar("contact_phone", { length: 20 }),
-        is_verified: boolean("is_verified").default(false),
         status: companyStatusEnum("status").default("PENDING").notNull(),
         admin_note: text("admin_note"),
         rating: decimal("rating", { precision: 2, scale: 1 }).default("0.0"),
@@ -96,8 +93,7 @@ export const companies = pgTable(
     },
     (t) => [
         index("idx_companies_user_id").on(t.user_id),
-        index("idx_companies_is_verified").on(t.is_verified),
-        index("idx_companies_city").on(t.city),
+        index("idx_companies_status").on(t.status),
         index("idx_companies_fulltext").using(
             "gin",
             sql`to_tsvector('english', ${t.company_name} || ' ' || coalesce(${t.description}, ''))`
@@ -258,7 +254,6 @@ export const job_postings = pgTable(
         job_description: text("job_description").notNull(),
         requirements: text("requirements").notNull(),
         benefits: text("benefits"),
-        employment_type: varchar("employment_type", { length: 50 }),
         experience_level: varchar("experience_level", { length: 50 }),
         position_level: varchar("position_level", { length: 50 }),
         number_of_positions: integer("number_of_positions").default(1),
@@ -268,11 +263,7 @@ export const job_postings = pgTable(
         is_salary_negotiable: boolean("is_salary_negotiable").default(true),
         city: varchar("city", { length: 100 }),
         application_deadline: date("application_deadline"),
-        start_date: date("start_date"),
         status: jobStatusEnum("status").default("pending"),
-        is_featured: boolean("is_featured").default(false),
-        is_urgent: boolean("is_urgent").default(false),
-        view_count: integer("view_count").default(0),
         application_count: integer("application_count").default(0),
         admin_notes: text("admin_notes"),
         rejection_reason: text("rejection_reason"),
@@ -289,7 +280,6 @@ export const job_postings = pgTable(
         index("idx_jobs_deadline").on(t.application_deadline),
         index("idx_jobs_city").on(t.city),
         index("idx_jobs_created_at").on(t.created_at),
-        index("idx_jobs_featured").on(t.is_featured),
         index("idx_jobs_fulltext").using(
             "gin",
             sql`to_tsvector('english', ${t.job_title} || ' ' || ${t.job_description})`

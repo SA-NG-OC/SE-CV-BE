@@ -21,6 +21,9 @@ export const CreateJobPostingSchema = z.object({
     applicationDeadline: z
         .string()
         .datetime({ message: 'Ngày không hợp lệ' })
+        .refine((d) => new Date(d) > new Date(), {
+            message: 'Hạn chót phải là ngày trong tương lai',
+        })
         .optional(),
 
     salaryMin: z.coerce
