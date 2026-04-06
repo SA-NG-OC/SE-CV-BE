@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { StudentService } from './student.service';
 import { StudentController } from './student.controller';
 import { StudentRepository } from './repositories/student.repository';
-import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
+import { CloudinaryModule } from 'src/shared/cloudinary/cloudinary.module';
 import { I_STUDENT_REPOSITORY } from './student.token';
 
 @Module({

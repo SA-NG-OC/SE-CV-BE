@@ -6,9 +6,7 @@ import * as bcrypt from 'bcrypt';
 import { LoginDto } from './dto/login.dto';
 import { DATABASE_CONNECTION } from '../../database/database.module';
 import { eq, and, sql } from 'drizzle-orm';
-import { InferSelectModel } from 'drizzle-orm';
 import { Redis } from 'ioredis';
-import { MailService } from 'src/mail/mail.service';
 import { RegisterDto } from './dto/register.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { randomInt } from 'crypto';
@@ -16,12 +14,13 @@ import { v4 as uuidv4 } from 'uuid';
 import { GoogleUserDto } from './dto/google-user.dto';
 import { Role } from 'src/common/types/role.enum';
 import { UserResponseDto } from './dto/get-me.dto';
+import { MailQueueService } from 'src/shared/mail/mail-queue.service';
 
 type AuthUser = { user_id: string | number; email: string; role: string; full_name: string, avatar_url: string, is_active: boolean; is_verified: boolean; };
 @Injectable()
 export class AuthService {
     constructor(private jwtService: JwtService,
-        private mailService: MailService,
+        private readonly mailQueueService: MailQueueService,
         @Inject(DATABASE_CONNECTION) private readonly db: NodePgDatabase<typeof schema>,
         @Inject('REDIS_CLIENT') private readonly redisClient: Redis,
     ) { }
@@ -115,18 +114,10 @@ export class AuthService {
                 role_id: Role.COMPANY,
             })
             .returning();
-        try {
-            await this.mailService.sendVerificationEmail({
-                email: newUser.email,
-                token: verificationToken,
-            });
-        } catch (error) {
-            console.error(`Gửi mail thất bại cho ${email}:`, error.message);
-            return {
-                message: 'Đăng ký thành công nhưng gửi mail thất bại. Vui lòng dùng chức năng gửi lại mail xác nhận.',
-                userId: newUser.user_id,
-            };
-        }
+        await this.mailQueueService.sendVerificationEmail(
+            newUser.email,
+            verificationToken
+        )
         return { newUser };
     }
 
@@ -305,10 +296,7 @@ export class AuthService {
         await this.redisClient.set(`otp:${email}`, otp, 'EX', OTP_TTL);
 
         // 4. Gửi email OTP
-        await this.mailService.sendOtp(
-            { email: user.email, name: user.email },
-            otp,
-        );
+        await this.mailQueueService.sendResetPasswordEmail(email, otp);
 
         return { message: 'Nếu email tồn tại, OTP đã được gửi đến hộp thư của bạn' };
     }

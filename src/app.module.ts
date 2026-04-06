@@ -2,12 +2,12 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthModule } from './modules/auth/auth.module';
-import { RedisModule } from './redis/redis.module';
-import { MailModule } from './mail/mail.module';
+import { RedisModule } from './shared/redis/redis.module';
+import { MailModule } from './shared/mail/mail.module';
 import { CompanyModule } from './modules/company/company.module';
-import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { CloudinaryModule } from './shared/cloudinary/cloudinary.module';
 import { EventsGateway } from './events/events.gateway';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { StudentModule } from './modules/student/student.module';
@@ -15,6 +15,7 @@ import { NotificationsGateway } from './modules/notifications/notifications.gate
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { JobPostingModule } from './modules/job-posting/job-posting.module';
+import { BullModule } from '@nestjs/bullmq';
 
 @Module({
   imports: [
@@ -24,6 +25,16 @@ import { JobPostingModule } from './modules/job-posting/job-posting.module';
     EventEmitterModule.forRoot({
       wildcard: true,
       maxListeners: 11
+    }),
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        connection: {
+          host: configService.get('REDIS_HOST', 'localhost'),
+          port: configService.get<number>('REDIS_PORT', 6379),
+        },
+      }),
+      inject: [ConfigService],
     }),
     ConfigModule.forRoot({ isGlobal: true }),
     AuthModule,

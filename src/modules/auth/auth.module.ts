@@ -5,9 +5,10 @@ import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
-import { MailModule } from 'src/mail/mail.module';
+import { MailModule } from 'src/shared/mail/mail.module';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { GoogleOAuthGuard } from './guards/google.guard';
+import { MailQueueService } from 'src/shared/mail/mail-queue.service';
 
 @Module({
   imports: [
@@ -22,7 +23,7 @@ import { GoogleOAuthGuard } from './guards/google.guard';
     }),
     MailModule,
   ],
-  providers: [AuthService, JwtStrategy, GoogleStrategy, GoogleOAuthGuard],
+  providers: [AuthService, JwtStrategy, GoogleStrategy, GoogleOAuthGuard, MailQueueService],
   controllers: [AuthController],
   exports: [JwtModule],
 })

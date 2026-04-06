@@ -1,6 +1,6 @@
 import { Controller, Post, Get, Patch, Delete, Body, UseGuards, UseInterceptors, Req, UploadedFiles, UsePipes, Param, Query, DefaultValuePipe, ValidationPipe } from '@nestjs/common';
 import { CompanyService } from './company.service';
-import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { CloudinaryService } from 'src/shared/cloudinary/cloudinary.service';
 import { RolesGuard } from 'src/modules/auth/guards/roles.guard';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { Roles } from '../auth/decorators/roles.decorator';

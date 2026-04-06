@@ -14,7 +14,7 @@ import { CreateResumeDto, UpdateJobStatusDto, UpdateSkillsDto } from './dto/upda
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ParseFilePipeBuilder } from '@nestjs/common/pipes';
 import { HttpStatus } from '@nestjs/common';
-import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { CloudinaryService } from 'src/shared/cloudinary/cloudinary.service';
 import { SetDefaultResumeDocs, UpdateJobStatusDocs, UpdateSkillsDocs, UploadResumeDocs } from './decorators/student-profile.decorator';
 
 @Controller('student')
