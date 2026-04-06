@@ -10,6 +10,17 @@ export interface UpdateJobResponse {
     jobTitle: string | undefined,
 }
 
+export interface ProfileJobCard {
+    jobId: number,
+    jobTitle: string | undefined,
+    city: string | null,
+    salaryMin: number | null,
+    salaryMax: number | null,
+    salaryType: string | null,
+    isSalaryNegotiable: boolean,
+    approvedAt: Date | null
+}
+
 // Item trả về cho FE (đã join thêm skillName)
 export interface JobSkillItem {
     skillId: number | null;
@@ -110,6 +121,8 @@ export interface CompanyJobCard {
 
     jobTitle: string;
     city: string | null;
+    companyName: string;
+    logoUrl: string | null;
 
     salaryMin: number | null;
     salaryMax: number | null;

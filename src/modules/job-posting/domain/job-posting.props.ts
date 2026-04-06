@@ -1,4 +1,4 @@
-export type JobPostingStatus = 'pending' | 'approved' | 'rejected';
+export type JobPostingStatus = 'pending' | 'approved' | 'rejected' | 'restricted';
 export type JobPostingProps = {
     id: number;
     companyId: number;
@@ -22,9 +22,10 @@ export type JobPostingProps = {
     applicationDeadline: string | null;
 
     status: JobPostingStatus;
-
+    adminNote: string | null;
     applicationCount: number;
-
+    approvedAt: Date | null,
+    approvedBy: number | null,
     createdAt: Date;
     updatedAt: Date;
 };

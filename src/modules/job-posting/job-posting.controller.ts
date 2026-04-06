@@ -10,7 +10,8 @@ import {
   Put,
   Param,
   ParseIntPipe,
-  Query
+  Query,
+  Patch
 } from '@nestjs/common';
 import { JobPostingService } from './job-posting.service';
 import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
@@ -22,12 +23,15 @@ import { JobSkillItem, CategoryItem, UpdateJobResponse, JobPostingResponse } fro
 import ResponseSuccess from 'src/common/types/response-success';
 import { UpdateJobPostingDto } from './dto/update-job-posting.dto';
 import { ListJobPostingDto } from './dto/list-job-posting.dto';
+import { ChangeJobPostingStatusDto } from './dto/change-job-posting-status.dto';
+import { ChangeJobStatusDocs, CreateJobPostingDocs, GetJobByIdDocs, GetJobCategoriesDocs, GetJobSkillsDocs, GetProfileJobDocs, ListJobPostingsDocs, UpdateJobPostingDocs } from './decorators';
 
 @Controller('job-postings')
 export class JobPostingController {
   constructor(private readonly jobPostingService: JobPostingService) { }
 
   @Post()
+  @CreateJobPostingDocs()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.COMPANY)
   @HttpCode(HttpStatus.CREATED)
@@ -43,6 +47,7 @@ export class JobPostingController {
   }
 
   @Put(':id')
+  @UpdateJobPostingDocs()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.COMPANY)
   @HttpCode(HttpStatus.OK)
@@ -60,19 +65,34 @@ export class JobPostingController {
     return new ResponseSuccess('Cập nhật thông tin tuyển dụng thành công', updatedId);
   }
 
+  @Get('company/:companyId')
+  @GetProfileJobDocs()
+  @UseGuards(JwtAuthGuard)
+  async getProfileJob(
+    @Param('companyId', ParseIntPipe) companyId: number,
+    @Query('page', ParseIntPipe) page: number,
+    @Query('limit', ParseIntPipe) limit: number
+  ) {
+    const data = await this.jobPostingService.listProfileJobCard(companyId, page, limit);
+    return new ResponseSuccess('Lấy dữ liệu thành công', data);
+  }
+
   @Get('categories')
+  @GetJobCategoriesDocs()
   async getJobCategories(): Promise<ResponseSuccess<CategoryItem[]>> {
     const data = await this.jobPostingService.getJobCategories();
     return new ResponseSuccess('Lấy thông tin thành công', data);
   }
 
   @Get('skills')
+  @GetJobSkillsDocs()
   async getJobSkills(): Promise<ResponseSuccess<JobSkillItem[]>> {
     const data = await this.jobPostingService.getJobSkills();
     return new ResponseSuccess('Lấy thông tin thành công', data);
   }
 
   @Get('card')
+  @ListJobPostingsDocs()
   @Roles(Role.ADMIN, Role.COMPANY, Role.STUDENT)
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
@@ -88,6 +108,7 @@ export class JobPostingController {
   }
 
   @Get(':id')
+  @GetJobByIdDocs()
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)
   async getJobById(
@@ -107,5 +128,17 @@ export class JobPostingController {
 
     return new ResponseSuccess('Lấy thông tin thành công', job);
   }
-
+  @Patch(':id/status')
+  @ChangeJobStatusDocs()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  async changeJobStatus(
+    @Req() req,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ChangeJobPostingStatusDto,
+  ) {
+    const adminId = req.user.userId;
+    const data = await this.jobPostingService.changeJobStatus(id, dto, adminId);
+    return new ResponseSuccess('Cập nhật trạng thái bài đăng thành công', data);
+  }
 }

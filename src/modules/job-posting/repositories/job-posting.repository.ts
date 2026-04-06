@@ -1,4 +1,4 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { DATABASE_CONNECTION } from 'src/database/database.module';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { and, count, eq, ilike, inArray, sql, SQL } from 'drizzle-orm';
@@ -18,9 +18,11 @@ import {
     UpdateJobResponse,
     CategoryItem,
     JobSkillItem,
+    ProfileJobCard,
 } from '../interfaces';
 import { JobPostingDomain, JobPostingDomainError } from '../domain/job-posting.domain';
 import { JobPostingMapper } from '../domain/job-posting.mapper';
+import { ChangeJobPostingStatusDto } from '../dto/change-job-posting-status.dto';
 
 
 @Injectable()
@@ -29,6 +31,13 @@ export class JobPostingRepository implements IJobPostingRepository {
         @Inject(DATABASE_CONNECTION)
         private readonly db: NodePgDatabase<typeof schema>,
     ) { }
+
+    public async checkCompany(companyId: number) {
+        const [data] = await this.db.select({ id: schema.companies.company_id }).from(schema.companies).where(eq(schema.companies.company_id, companyId));
+        if (!data)
+            throw new NotFoundException('Không tìm thấy công ty');
+        return true;
+    }
 
     // =========================================================================
     // PRIVATE HELPERS — Fetch dữ liệu phụ (skills, applicant counts)
@@ -197,55 +206,6 @@ export class JobPostingRepository implements IJobPostingRepository {
     }
 
     // =========================================================================
-    // APPROVE / REJECT (Admin)
-    // Pattern giống update: load → domain method → save
-    // =========================================================================
-
-    async approveJob(jobId: number): Promise<boolean> {
-        return this.db.transaction(async (tx) => {
-            const [existing] = await tx
-                .select()
-                .from(schema.job_postings)
-                .where(eq(schema.job_postings.job_id, jobId))
-                .limit(1);
-
-            if (!existing) return false;
-
-            const domain = JobPostingDomain.fromPersistence(existing);
-            domain.approve();
-
-            await tx
-                .update(schema.job_postings)
-                .set(domain.toUpdatePersistence())
-                .where(eq(schema.job_postings.job_id, jobId));
-
-            return true;
-        });
-    }
-
-    async rejectJob(jobId: number): Promise<boolean> {
-        return this.db.transaction(async (tx) => {
-            const [existing] = await tx
-                .select()
-                .from(schema.job_postings)
-                .where(eq(schema.job_postings.job_id, jobId))
-                .limit(1);
-
-            if (!existing) return false;
-
-            const domain = JobPostingDomain.fromPersistence(existing);
-            domain.reject();
-
-            await tx
-                .update(schema.job_postings)
-                .set(domain.toUpdatePersistence())
-                .where(eq(schema.job_postings.job_id, jobId));
-
-            return true;
-        });
-    }
-
-    // =========================================================================
     // FIND ONE
     // =========================================================================
 
@@ -307,9 +267,38 @@ export class JobPostingRepository implements IJobPostingRepository {
         });
     }
 
-    // =========================================================================
-    // FIND ALL — ADMIN
-    // =========================================================================
+    async findByCompanyId(
+        companyId: number,
+        page: number,
+        limit: number
+    ): Promise<PaginationResponse<ProfileJobCard>> {
+
+        const offset = (page - 1) * limit;
+
+        const [raw, totalResult] = await Promise.all([
+            // Query data
+            this.db
+                .select()
+                .from(schema.job_postings)
+                .where(eq(schema.job_postings.company_id, companyId))
+                .orderBy(sql`${schema.job_postings.created_at} desc`)
+                .limit(limit)
+                .offset(offset),
+
+            // Query total count
+            this.db
+                .select({ count: sql<number>`count(*)::int` })
+                .from(schema.job_postings)
+                .where(eq(schema.job_postings.company_id, companyId))
+        ]);
+
+        const totalItems = totalResult[0]?.count ?? 0;
+
+        const domain = raw.map((raw) => JobPostingDomain.fromPersistence(raw));
+        const data = domain.map((item) => JobPostingMapper.toProfileJobCard(item));
+
+        return new PaginationResponse(data, page, limit, totalItems);
+    }
 
     async findAllForAdmin(
         dto: ListJobPostingDto,
@@ -369,7 +358,7 @@ export class JobPostingRepository implements IJobPostingRepository {
         const { page, limit, search, status, city } = dto;
         const offset = (page - 1) * limit;
 
-        const conditions = [eq(schema.job_postings.company_id, companyId)];
+        const conditions: SQL[] = [eq(schema.job_postings.company_id, companyId)];
         if (search) conditions.push(ilike(schema.job_postings.job_title, `%${search}%`));
         if (status) conditions.push(eq(schema.job_postings.status, status));
         if (city) conditions.push(ilike(schema.job_postings.city, `%${city}%`));
@@ -378,8 +367,16 @@ export class JobPostingRepository implements IJobPostingRepository {
 
         const [rows, [{ total }]] = await Promise.all([
             this.db
-                .select()
+                .select({
+                    job: schema.job_postings,
+                    company_name: schema.companies.company_name,
+                    logo_url: schema.companies.logo_url,
+                })
                 .from(schema.job_postings)
+                .innerJoin(
+                    schema.companies,
+                    eq(schema.job_postings.company_id, schema.companies.company_id),
+                )
                 .where(whereClause)
                 .orderBy(sql`${schema.job_postings.created_at} desc`)
                 .limit(limit)
@@ -391,17 +388,19 @@ export class JobPostingRepository implements IJobPostingRepository {
                 .where(whereClause),
         ]);
 
-        const jobIds = rows.map((r) => r.job_id);
+        const jobIds = rows.map((r) => r.job.job_id);
         const [skillMap, countMap] = await Promise.all([
             this.fetchSkillMap(jobIds),
             this.fetchApplicantCountMap(jobIds),
         ]);
 
         const items = rows.map((r) => {
-            const domain = JobPostingDomain.fromPersistence(r);
+            const domain = JobPostingDomain.fromPersistence(r.job);
             return JobPostingMapper.toCompanyCard(domain, {
-                skills: skillMap.get(r.job_id) ?? [],
-                applicantCount: countMap.get(r.job_id) ?? 0,
+                companyName: r.company_name,
+                logoUrl: r.logo_url ?? null,
+                skills: skillMap.get(r.job.job_id) ?? [],
+                applicantCount: countMap.get(r.job.job_id) ?? 0,
             });
         });
 
@@ -464,5 +463,34 @@ export class JobPostingRepository implements IJobPostingRepository {
         });
 
         return new PaginationResponse(items, page, limit, Number(total));
+    }
+
+    async changeJobStatus(
+        jobId: number,
+        dto: ChangeJobPostingStatusDto,
+        adminId: number,
+    ): Promise<number | null> {
+        // 1. Load row hiện tại
+        const [existing] = await this.db
+            .select()
+            .from(schema.job_postings)
+            .where(eq(schema.job_postings.job_id, jobId))
+            .limit(1);
+
+        if (!existing) return null;
+
+        // 2. Khôi phục domain — tự validate transition bên trong
+        const domain = JobPostingDomain.fromPersistence(existing);
+
+        // 3. Domain xử lý transition + ghi note, throw nếu không hợp lệ
+        domain.changeStatus(dto, adminId);
+
+        // 4. Lưu lại
+        await this.db
+            .update(schema.job_postings)
+            .set(domain.toUpdatePersistence())
+            .where(eq(schema.job_postings.job_id, jobId));
+
+        return jobId;
     }
 }

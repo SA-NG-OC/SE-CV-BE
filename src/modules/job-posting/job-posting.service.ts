@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Inject,
   Injectable,
@@ -7,12 +8,14 @@ import {
 import { I_JOB_POSTING_REPOSITORY } from './job-posting.tokens';
 import type { IJobPostingRepository } from './repositories/job-posting-repository.interface';
 import { CreateJobPostingDto } from './dto/create-job-posting.dto';
-import { AdminJobCard, CategoryItem, CompanyJobCard, JobPostingResponse, JobSkillItem, StudentJobCard, UpdateJobResponse } from './interfaces';
+import { AdminJobCard, CategoryItem, CompanyJobCard, JobPostingResponse, JobSkillItem, ProfileJobCard, StudentJobCard, UpdateJobResponse } from './interfaces';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { UpdateJobPostingDto } from './dto/update-job-posting.dto';
 import { RoleName } from 'src/common/types/role.enum';
 import { PaginationResponse } from 'src/common/types/pagination-response';
 import { ListJobPostingDto } from './dto/list-job-posting.dto';
+import { ChangeJobPostingStatusDto } from './dto/change-job-posting-status.dto';
+import { JobPostingDomainError } from './domain/job-posting.domain';
 
 @Injectable()
 export class JobPostingService {
@@ -84,6 +87,11 @@ export class JobPostingService {
     return job;
   }
 
+  async listProfileJobCard(companyId: number, page: number, limit: number): Promise<PaginationResponse<ProfileJobCard>> {
+    await this.jobPostingRepository.checkCompany(companyId);
+    return await this.jobPostingRepository.findByCompanyId(companyId, page, limit);
+  }
+
   async listJobPostings(
     role: RoleName,
     dto: ListJobPostingDto,
@@ -108,5 +116,22 @@ export class JobPostingService {
     // STUDENT — bỏ qua filter status dù FE có truyền lên
     const data = await this.jobPostingRepository.findAllForStudent(dto);
     return data;
+  }
+
+  async changeJobStatus(
+    jobId: number,
+    dto: ChangeJobPostingStatusDto,
+    adminId: number,
+  ) {
+    try {
+      const result = await this.jobPostingRepository.changeJobStatus(jobId, dto, adminId);
+      if (!result) throw new NotFoundException(`Không tìm thấy job với ID ${jobId}`);
+      return result;
+    } catch (error) {
+      if (error instanceof JobPostingDomainError) {
+        throw new BadRequestException(error.message);
+      }
+      throw error;
+    }
   }
 }

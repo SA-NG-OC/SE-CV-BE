@@ -2,9 +2,12 @@ import { PaginationResponse } from 'src/common/types/pagination-response';
 import { CreateJobPostingDto } from '../dto/create-job-posting.dto';
 import { ListJobPostingDto } from '../dto/list-job-posting.dto';
 import { UpdateJobPostingDto } from '../dto/update-job-posting.dto';
-import { AdminJobCard, CategoryItem, CompanyJobCard, JobPostingResponse, JobSkillItem, StudentJobCard, UpdateJobResponse } from '../interfaces';
+import { AdminJobCard, CategoryItem, CompanyJobCard, JobPostingResponse, JobSkillItem, ProfileJobCard, StudentJobCard, UpdateJobResponse } from '../interfaces';
+import { ChangeJobPostingStatusDto } from '../dto/change-job-posting-status.dto';
 
 export interface IJobPostingRepository {
+    checkCompany(companyId: number): Promise<boolean>
+
     createJobPosting(
         companyId: number,
         dto: CreateJobPostingDto,
@@ -33,4 +36,9 @@ export interface IJobPostingRepository {
     findAllForCompany(companyId: number, dto: ListJobPostingDto): Promise<PaginationResponse<CompanyJobCard>>;
 
     findAllForStudent(dto: ListJobPostingDto): Promise<PaginationResponse<StudentJobCard>>;
+
+    findByCompanyId(companyId: number, page: number, limit: number): Promise<PaginationResponse<ProfileJobCard>>;
+
+    changeJobStatus(jobId: number, dto: ChangeJobPostingStatusDto, adminId: number): Promise<number | null>;
+
 }

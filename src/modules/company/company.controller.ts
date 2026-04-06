@@ -305,8 +305,6 @@ export class CompanyController {
         @Param('id', ParseIntPipe) id: number,
         @Body() body: ChangeCompanyStatusDto
     ) {
-        console.log('RAW BODY:', req.body);
-        console.log('TYPE:', typeof req.body);
         const data = await this.companyService.changeCompanyStatus(id, body);
         return new ResponseSuccess("Cập nhật thành công", data);
     }

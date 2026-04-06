@@ -266,7 +266,6 @@ export const job_postings = pgTable(
         status: jobStatusEnum("status").default("pending"),
         application_count: integer("application_count").default(0),
         admin_notes: text("admin_notes"),
-        rejection_reason: text("rejection_reason"),
         approved_by: integer("approved_by").references(() => users.user_id),
         approved_at: timestamp("approved_at"),
         created_at: timestamp("created_at").defaultNow(),

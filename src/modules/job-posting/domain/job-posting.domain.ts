@@ -1,14 +1,14 @@
-import { NotFoundException } from '@nestjs/common';
-import { CreateJobPostingDto } from "../dto/create-job-posting.dto";
-import { UpdateJobPostingDto } from "../dto/update-job-posting.dto";
-import { JobPostingEntity } from "./job-posting.entity";
+import { CreateJobPostingDto } from '../dto/create-job-posting.dto';
+import { UpdateJobPostingDto } from '../dto/update-job-posting.dto';
+import { ChangeJobPostingStatusDto } from '../dto/change-job-posting-status.dto';
+import { JobPostingEntity } from './job-posting.entity';
 import { DomainErrorType } from 'src/common/types/domain-error.enum';
 import { JobPostingProps, JobPostingStatus } from './job-posting.props';
 
 export class JobPostingDomainError extends Error {
     constructor(
         message: string,
-        public readonly type: DomainErrorType = DomainErrorType.INVALID_BUSINESS_RULE
+        public readonly type: DomainErrorType = DomainErrorType.INVALID_BUSINESS_RULE,
     ) {
         super(message);
         this.name = 'JobPostingDomainError';
@@ -19,61 +19,8 @@ export class JobPostingDomain {
     private constructor(private props: JobPostingProps) { }
 
     // =========================================================================
-    // FACTORY — KHÔI PHỤC TỪ DB
+    // FACTORY
     // =========================================================================
-    static fromPersistence(raw: JobPostingEntity): JobPostingDomain {
-        return new JobPostingDomain({
-            id: raw.job_id,
-            companyId: raw.company_id!,
-            categoryId: raw.category_id,
-
-            jobTitle: raw.job_title,
-            jobDescription: raw.job_description,
-            requirements: raw.requirements,
-            benefits: raw.benefits,
-
-            experienceLevel: raw.experience_level,
-            positionLevel: raw.position_level,
-            numberOfPositions: raw.number_of_positions ?? 1,
-
-            salaryMin: raw.salary_min ? Number(raw.salary_min) : null,
-            salaryMax: raw.salary_max ? Number(raw.salary_max) : null,
-            salaryType: raw.salary_type,
-            isSalaryNegotiable: raw.is_salary_negotiable ?? true,
-
-            city: raw.city,
-            applicationDeadline: raw.application_deadline,
-
-            status: raw.status as JobPostingStatus,
-            applicationCount: raw.application_count ?? 0,
-
-            createdAt: raw.created_at!,
-            updatedAt: raw.updated_at!,
-        });
-    }
-
-    // =========================================================================
-    // GETTERS
-    // =========================================================================
-    get jobId() { return this.props.id; }
-    get companyId() { return this.props.companyId!; }
-    get categoryId() { return this.props.categoryId; }
-    get jobTitle() { return this.props.jobTitle; }
-    get jobDescription() { return this.props.jobDescription; }
-    get requirements() { return this.props.requirements; }
-    get benefits() { return this.props.benefits; }
-    get experienceLevel() { return this.props.experienceLevel; }
-    get positionLevel() { return this.props.positionLevel; }
-    get numberOfPositions() { return this.props.numberOfPositions ?? 1; }
-    get salaryMin() { return this.props.salaryMin ? Number(this.props.salaryMin) : null; }
-    get salaryMax() { return this.props.salaryMax ? Number(this.props.salaryMax) : null; }
-    get salaryType() { return this.props.salaryType; }
-    get isSalaryNegotiable() { return this.props.isSalaryNegotiable ?? true; }
-    get city() { return this.props.city; }
-    get applicationDeadline() { return this.props.applicationDeadline; }
-    get status() { return this.props.status as JobPostingStatus; }
-    get createdAt() { return this.props.createdAt!; }
-    get updatedAt() { return this.props.updatedAt!; }
 
     static create(dto: CreateJobPostingDto, companyId: number): JobPostingDomain {
         this.guardSalary(dto.salaryMin, dto.salaryMax);
@@ -81,62 +28,129 @@ export class JobPostingDomain {
         this.guardPositions(dto.numberOfPositions);
 
         const now = new Date();
-
         return new JobPostingDomain({
             id: 0,
             companyId,
             categoryId: dto.categoryId ?? null,
-
             jobTitle: dto.jobTitle,
             jobDescription: dto.jobDescription,
             requirements: dto.requirements,
             benefits: dto.benefits ?? null,
-
             experienceLevel: dto.experienceLevel ?? null,
             positionLevel: dto.positionLevel ?? null,
             numberOfPositions: dto.numberOfPositions ?? 1,
-
             salaryMin: dto.salaryMin ?? null,
             salaryMax: dto.salaryMax ?? null,
             salaryType: dto.salaryType ?? null,
             isSalaryNegotiable: dto.isSalaryNegotiable ?? true,
-
             city: dto.city ?? null,
             applicationDeadline: dto.applicationDeadline
                 ? dto.applicationDeadline.split('T')[0]
                 : null,
-
             status: 'pending',
+            adminNote: null,
             applicationCount: 0,
-
+            approvedAt: null,
+            approvedBy: null,
             createdAt: now,
             updatedAt: now,
         });
     }
 
-    // =========================================================================
-    // BEHAVIOR — THAY ĐỔI TRẠNG THÁI
-    // =========================================================================
-    approve(): void {
-        if (this.props.status !== 'pending') {
-            throw new JobPostingDomainError(`Không thể duyệt bài đăng đang ở trạng thái ${this.status}`, DomainErrorType.INVALID_BUSINESS_RULE);
-        }
-        this.props.status = 'approved';
+    static fromPersistence(raw: JobPostingEntity): JobPostingDomain {
+        return new JobPostingDomain({
+            id: raw.job_id,
+            companyId: raw.company_id!,
+            categoryId: raw.category_id,
+            jobTitle: raw.job_title,
+            jobDescription: raw.job_description,
+            requirements: raw.requirements,
+            benefits: raw.benefits,
+            experienceLevel: raw.experience_level,
+            positionLevel: raw.position_level,
+            numberOfPositions: raw.number_of_positions ?? 1,
+            salaryMin: raw.salary_min ? Number(raw.salary_min) : null,
+            salaryMax: raw.salary_max ? Number(raw.salary_max) : null,
+            salaryType: raw.salary_type,
+            isSalaryNegotiable: raw.is_salary_negotiable ?? true,
+            city: raw.city,
+            applicationDeadline: raw.application_deadline,
+            status: raw.status as JobPostingStatus,
+            adminNote: raw.admin_notes ?? null,
+            applicationCount: raw.application_count ?? 0,
+            approvedAt: raw.approved_at,
+            approvedBy: raw.approved_by,
+            createdAt: raw.created_at!,
+            updatedAt: raw.updated_at!,
+        });
     }
 
-    reject(): void {
+    // =========================================================================
+    // BEHAVIOR — STATE TRANSITION
+    // =========================================================================
+
+    approve(adminId: number): void {
         if (this.props.status !== 'pending') {
             throw new JobPostingDomainError(
-                `Không thể từ chối bài đăng đang ở trạng thái ${this.status}`, DomainErrorType.INVALID_BUSINESS_RULE
+                `Không thể duyệt bài đăng đang ở trạng thái "${this.props.status}"`,
             );
         }
+        this.props.status = 'approved';
+        this.props.approvedAt = new Date();
+        this.props.approvedBy = adminId;
+        this.props.adminNote = null;
+        this.props.updatedAt = new Date();
+    }
+
+    reject(adminNote?: string | null): void {
+        if (this.props.status !== 'pending') {
+            throw new JobPostingDomainError(
+                `Không thể từ chối bài đăng đang ở trạng thái "${this.props.status}"`,
+            );
+        }
+        this.props.adminNote = adminNote ?? null;
         this.props.status = 'rejected';
+        this.props.updatedAt = new Date();
+    }
+
+    restrict(adminNote?: string | null): void {
+        // Chỉ restrict được khi đang approved
+        if (this.props.status !== 'approved') {
+            throw new JobPostingDomainError(
+                `Không thể hạn chế bài đăng đang ở trạng thái "${this.props.status}"`,
+            );
+        }
+        this.props.status = 'restricted';
+        this.props.adminNote = adminNote?.trim() ?? null;
+        this.props.updatedAt = new Date();
+    }
+
+    /**
+     * Entrypoint duy nhất cho admin đổi status.
+     * Controller/Service chỉ gọi changeStatus() — không cần biết bên trong làm gì.
+     */
+    changeStatus(dto: ChangeJobPostingStatusDto, adminId: number): void {
+        switch (dto.status) {
+            case 'approved':
+                this.approve(adminId);
+                break;
+            case 'rejected':
+                this.reject(dto.admin_note);
+                break;
+            case 'restricted':
+                this.restrict(dto.admin_note);
+                break;
+            default:
+                throw new JobPostingDomainError(
+                    `Không hỗ trợ chuyển sang trạng thái "${dto.status}"`,
+                );
+        }
     }
 
     edit(dto: UpdateJobPostingDto): void {
         if (!this.canBeEditedByCompany()) {
             throw new JobPostingDomainError(
-                `Không thể chỉnh sửa khi trạng thái là ${this.props.status}`
+                `Không thể chỉnh sửa khi trạng thái là "${this.props.status}"`,
             );
         }
 
@@ -146,11 +160,9 @@ export class JobPostingDomain {
                 dto.salaryMax ?? this.props.salaryMax,
             );
         }
-
         if (dto.applicationDeadline !== undefined) {
             JobPostingDomain.guardDeadline(dto.applicationDeadline);
         }
-
         if (dto.numberOfPositions !== undefined) {
             JobPostingDomain.guardPositions(dto.numberOfPositions);
         }
@@ -177,16 +189,16 @@ export class JobPostingDomain {
         this.props.status = 'pending';
         this.props.updatedAt = new Date();
     }
+
     // =========================================================================
-    // QUERIES — ĐỌC TRẠNG THÁI
+    // QUERIES
     // =========================================================================
-    isVisible(): boolean {
-        return this.status === 'approved';
-    }
+
+    isVisible(): boolean { return this.props.status === 'approved'; }
 
     isExpired(): boolean {
-        if (!this.applicationDeadline) return false;
-        return new Date(this.applicationDeadline) < new Date();
+        if (!this.props.applicationDeadline) return false;
+        return new Date(this.props.applicationDeadline) < new Date();
     }
 
     canBeEditedByCompany(): boolean {
@@ -201,20 +213,15 @@ export class JobPostingDomain {
         if (this.props.isSalaryNegotiable || (!this.salaryMin && !this.salaryMax)) {
             return 'Thỏa thuận';
         }
-        const fmt = (n: number) =>
-            new Intl.NumberFormat('vi-VN').format(n) + ' VNĐ';
-
-        if (this.salaryMin && this.salaryMax) {
-            return `${fmt(this.salaryMin)} – ${fmt(this.salaryMax)}`;
-        }
-        return this.salaryMin
-            ? `Từ ${fmt(this.salaryMin)}`
-            : `Đến ${fmt(this.salaryMax!)}`;
+        const fmt = (n: number) => new Intl.NumberFormat('vi-VN').format(n) + ' VNĐ';
+        if (this.salaryMin && this.salaryMax) return `${fmt(this.salaryMin)} – ${fmt(this.salaryMax)}`;
+        return this.salaryMin ? `Từ ${fmt(this.salaryMin)}` : `Đến ${fmt(this.salaryMax!)}`;
     }
 
-    /**
-     * Dùng khi INSERT mới — trả về toàn bộ props (trừ job_id do DB tự generate)
-     */
+    // =========================================================================
+    // PERSISTENCE
+    // =========================================================================
+
     toPersistence(): Omit<JobPostingEntity, 'job_id'> {
         return {
             company_id: this.props.companyId,
@@ -233,21 +240,16 @@ export class JobPostingDomain {
             city: this.props.city,
             application_deadline: this.props.applicationDeadline,
             status: this.props.status,
+            admin_notes: this.props.adminNote,
             application_count: this.props.applicationCount,
+            approved_at: this.props.approvedAt,
+            approved_by: this.props.approvedBy,
+            expires_at: null,
             created_at: this.props.createdAt,
             updated_at: this.props.updatedAt,
-            admin_notes: null,
-            rejection_reason: null,
-            approved_by: null,
-            approved_at: null,
-            expires_at: null,
         };
     }
 
-
-    /**
-     * Dùng khi UPDATE — chỉ trả về các field có thể thay đổi
-     */
     toUpdatePersistence(): Partial<JobPostingEntity> {
         return {
             category_id: this.props.categoryId,
@@ -265,35 +267,65 @@ export class JobPostingDomain {
             city: this.props.city,
             application_deadline: this.props.applicationDeadline,
             status: this.props.status,
+            admin_notes: this.props.adminNote,
+            approved_at: this.props.approvedAt,
+            approved_by: this.props.approvedBy,
             updated_at: this.props.updatedAt,
         };
     }
 
     // =========================================================================
-    // PRIVATE GUARDS — Validation thuần, throw JobPostingDomainError
+    // GETTERS
+    // =========================================================================
+    get jobId() { return this.props.id; }
+    get companyId() { return this.props.companyId; }
+    get categoryId() { return this.props.categoryId; }
+    get jobTitle() { return this.props.jobTitle; }
+    get jobDescription() { return this.props.jobDescription; }
+    get requirements() { return this.props.requirements; }
+    get benefits() { return this.props.benefits; }
+    get experienceLevel() { return this.props.experienceLevel; }
+    get positionLevel() { return this.props.positionLevel; }
+    get numberOfPositions() { return this.props.numberOfPositions; }
+    get salaryMin() { return this.props.salaryMin; }
+    get salaryMax() { return this.props.salaryMax; }
+    get salaryType() { return this.props.salaryType; }
+    get isSalaryNegotiable() { return this.props.isSalaryNegotiable; }
+    get city() { return this.props.city; }
+    get applicationDeadline() { return this.props.applicationDeadline; }
+    get status() { return this.props.status; }
+    get adminNote() { return this.props.adminNote; }
+    get applicationCount() { return this.props.applicationCount; }
+    get approvedAt() { return this.props.approvedAt; }
+    get approvedBy() { return this.props.approvedBy; }
+    get createdAt() { return this.props.createdAt; }
+    get updatedAt() { return this.props.updatedAt; }
+
+    // =========================================================================
+    // PRIVATE GUARDS
     // =========================================================================
 
     private static guardSalary(min?: number | null, max?: number | null): void {
         if (min != null && min < 0)
-            throw new JobPostingDomainError('Lương tối thiểu không được âm', DomainErrorType.INVALID_BUSINESS_RULE);
+            throw new JobPostingDomainError('Lương tối thiểu không được âm');
         if (max != null && max < 0)
-            throw new JobPostingDomainError('Lương tối đa không được âm', DomainErrorType.INVALID_BUSINESS_RULE);
+            throw new JobPostingDomainError('Lương tối đa không được âm');
         if (min != null && max != null && min > max)
-            throw new JobPostingDomainError('Lương tối thiểu không được lớn hơn lương tối đa', DomainErrorType.INVALID_BUSINESS_RULE);
+            throw new JobPostingDomainError('Lương tối thiểu không được lớn hơn lương tối đa');
     }
 
     private static guardDeadline(deadline?: string | null): void {
         if (!deadline) return;
         const date = new Date(deadline);
         if (isNaN(date.getTime()))
-            throw new JobPostingDomainError('Ngày hết hạn không hợp lệ', DomainErrorType.INVALID_BUSINESS_RULE);
+            throw new JobPostingDomainError('Ngày hết hạn không hợp lệ');
         if (date <= new Date())
-            throw new JobPostingDomainError('Ngày hết hạn phải ở trong tương lai', DomainErrorType.INVALID_BUSINESS_RULE);
+            throw new JobPostingDomainError('Ngày hết hạn phải ở trong tương lai');
     }
 
     private static guardPositions(count?: number): void {
         if (count == null) return;
         if (!Number.isInteger(count) || count < 1)
-            throw new JobPostingDomainError('Số lượng vị trí phải là số nguyên dương', DomainErrorType.INVALID_BUSINESS_RULE);
+            throw new JobPostingDomainError('Số lượng vị trí phải là số nguyên dương');
     }
 }

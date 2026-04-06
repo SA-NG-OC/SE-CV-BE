@@ -1,8 +1,22 @@
 import { toRelativeTime } from "src/utils/relative-time.util";
-import { AdminJobCard, CompanyJobCard, JobPostingResponse, JobSkillItem, StudentJobCard } from "../interfaces";
+import { AdminJobCard, CompanyJobCard, JobPostingResponse, JobSkillItem, ProfileJobCard, StudentJobCard } from "../interfaces";
 import { JobPostingDomain } from "./job-posting.domain";
 
 export class JobPostingMapper {
+
+    static toProfileJobCard(domain: JobPostingDomain): ProfileJobCard {
+        return {
+            jobId: domain.jobId,
+            jobTitle: domain.jobTitle,
+            city: domain.city,
+            salaryMin: domain.salaryMin,
+            salaryMax: domain.salaryMax,
+            salaryType: domain.salaryType,
+            isSalaryNegotiable: domain.isSalaryNegotiable,
+            approvedAt: domain.approvedAt
+        }
+    }
+
     static toStudentCard(
         domain: JobPostingDomain,
         extra: {
@@ -36,6 +50,8 @@ export class JobPostingMapper {
     static toCompanyCard(
         domain: JobPostingDomain,
         extra: {
+            companyName: string;
+            logoUrl: string | null;
             skills: JobSkillItem[];
             applicantCount: number;
         },
@@ -44,6 +60,8 @@ export class JobPostingMapper {
             jobId: domain.jobId,
             jobTitle: domain.jobTitle,
             city: domain.city,
+            companyName: extra.companyName,
+            logoUrl: extra.logoUrl,
             salaryMin: domain.salaryMin,
             salaryMax: domain.salaryMax,
             salaryType: domain.salaryType as CompanyJobCard['salaryType'],
