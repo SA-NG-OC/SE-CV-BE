@@ -309,6 +309,13 @@ export const job_required_skills = pgTable(
 // 5. BẢNG ỨNG TUYỂN
 // =============================================
 
+export const applicationStatusEnum = pgEnum("application_status", [
+    "submitted",     // chờ duyệt (default)
+    "interviewing",  // hẹn phỏng vấn
+    "passed",        // đã đậu
+    "rejected",      // Rớt phỏng vấn
+]);
+
 export const applications = pgTable(
     "applications",
     {
@@ -321,18 +328,8 @@ export const applications = pgTable(
         }),
         cv_url: varchar("cv_url", { length: 500 }).notNull(),
         cover_letter: text("cover_letter"),
-        status: varchar("status", { length: 50 }).default("submitted"),
-        company_notes: text("company_notes"),
-        student_notes: text("student_notes"),
-        interview_date: timestamp("interview_date"),
-        interview_location: varchar("interview_location", { length: 255 }),
-        interview_type: varchar("interview_type", { length: 50 }),
-        interview_notes: text("interview_notes"),
-        company_rating: integer("company_rating"),
-        company_review: text("company_review"),
-        viewed_at: timestamp("viewed_at"),
-        responded_at: timestamp("responded_at"),
-        created_at: timestamp("created_at").defaultNow(),
+        status: applicationStatusEnum("status").default("submitted").notNull(),
+        created_at: timestamp("created_at").defaultNow().notNull(),
         updated_at: timestamp("updated_at").defaultNow(),
     },
     (t) => [
@@ -355,9 +352,40 @@ export const application_status_history = pgTable(
         old_status: varchar("old_status", { length: 50 }),
         new_status: varchar("new_status", { length: 50 }),
         changed_by: integer("changed_by").references(() => users.user_id),
-        notes: text("notes"),
         created_at: timestamp("created_at").defaultNow(),
     }
+);
+
+// =============================================
+// 5.1. BẢNG LỜI MỜI ỨNG TUYỂN
+// =============================================
+
+export const invitationStatusEnum = pgEnum("invitation_status", [
+    "pending",   // Đang chờ ứng viên phản hồi
+    "accepted",  // Ứng viên đã chấp nhận và nộp đơn
+    "rejected",  // Ứng viên từ chối lời mời
+    "expired"    // Lời mời hết hạn (nếu tin tuyển dụng đóng)
+]);
+
+export const job_invitations = pgTable(
+    "job_invitations",
+    {
+        invitation_id: serial("invitation_id").primaryKey(),
+        job_id: integer("job_id")
+            .notNull()
+            .references(() => job_postings.job_id, { onDelete: "cascade" }),
+        student_id: integer("student_id")
+            .notNull()
+            .references(() => students.student_id, { onDelete: "cascade" }),
+        message: text("message"),
+        status: invitationStatusEnum("status").default("pending").notNull(),
+        created_at: timestamp("created_at").defaultNow().notNull(),
+        updated_at: timestamp("updated_at").defaultNow().notNull(),
+    },
+    (t) => [
+        index("idx_invitations_student").on(t.student_id),
+        uniqueIndex("uq_job_student_invitation").on(t.job_id, t.student_id),
+    ]
 );
 
 // =============================================
@@ -541,10 +569,22 @@ export const studentsRelations = relations(students, ({ one, many }) => ({
     search_history: many(search_history),
     saved_searches: many(saved_searches),
     followed_companies: many(followed_companies),
+    invitations: many(job_invitations),
 }));
 
 export const majorsRelations = relations(majors, ({ many }) => ({
     students: many(students),
+}));
+
+export const jobInvitationsRelations = relations(job_invitations, ({ one }) => ({
+    job: one(job_postings, {
+        fields: [job_invitations.job_id],
+        references: [job_postings.job_id],
+    }),
+    student: one(students, {
+        fields: [job_invitations.student_id],
+        references: [students.student_id],
+    }),
 }));
 
 export const job_postingsRelations = relations(
@@ -562,6 +602,7 @@ export const job_postingsRelations = relations(
         applications: many(applications),
         saved_by: many(saved_jobs),
         views: many(job_views),
+        invitations: many(job_invitations),
     })
 );
 
@@ -575,4 +616,22 @@ export const applicationsRelations = relations(applications, ({ one, many }) => 
         references: [students.student_id],
     }),
     status_history: many(application_status_history),
+}));
+
+export const jobCategoriesRelations = relations(job_categories, ({ many }) => ({
+    job_postings: many(job_postings),
+}));
+
+export const companyImagesRelations = relations(company_images, ({ one }) => ({
+    company: one(companies, {
+        fields: [company_images.company_id],
+        references: [companies.company_id],
+    }),
+}));
+
+export const applicationStatusHistoryRelations = relations(application_status_history, ({ one }) => ({
+    application: one(applications, {
+        fields: [application_status_history.application_id],
+        references: [applications.application_id],
+    }),
 }));

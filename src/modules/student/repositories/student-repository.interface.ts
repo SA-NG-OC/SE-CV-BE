@@ -1,7 +1,6 @@
-import { GeneralInformationDto } from "../dto/general-information.dto";
-import { StudentListDto } from "../dto/get-student-items.dto";
+import { PaginationResponse } from "src/common/types/pagination-response";
 import { CreateResumeDto } from "../dto/update-student.dto";
-import { StudentAdminListResult, StudentGeneralInfo, StudentResponse, StudentResumeItem } from "../interfaces/student.interface";
+import { GetStudentsQuery, StudentAdminListResult, StudentCard, StudentGeneralInfo, StudentResponse, StudentResumeItem } from "../interfaces/student.interface";
 
 export interface IStudentRepository {
   // Read
@@ -30,4 +29,8 @@ export interface IStudentRepository {
   addResume(studentId: number, data: CreateResumeDto): Promise<StudentResumeItem>;
 
   setResumeAsDefault(studentId: number, resumeId: number): Promise<StudentResumeItem | null>;
+
+  findStudentCards(
+    query: GetStudentsQuery
+  ): Promise<PaginationResponse<StudentCard>>;
 }

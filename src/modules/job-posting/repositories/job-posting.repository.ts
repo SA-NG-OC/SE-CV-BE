@@ -19,6 +19,7 @@ import {
     CategoryItem,
     JobSkillItem,
     ProfileJobCard,
+    JobList,
 } from '../interfaces';
 import { JobPostingDomain, JobPostingDomainError } from '../domain/job-posting.domain';
 import { JobPostingMapper } from '../domain/job-posting.mapper';
@@ -267,6 +268,15 @@ export class JobPostingRepository implements IJobPostingRepository {
         });
     }
 
+    async findById(jobId: number): Promise<number | null> {
+        const [data] = await this.db
+            .select({ id: schema.job_postings.company_id })
+            .from(schema.job_postings)
+            .where(eq(schema.job_postings.job_id, jobId));
+
+        return data ? data.id : null;
+    }
+
     async findByCompanyId(
         companyId: number,
         page: number,
@@ -350,6 +360,29 @@ export class JobPostingRepository implements IJobPostingRepository {
     // =========================================================================
     // FIND ALL — COMPANY
     // =========================================================================
+
+    async findAllJobList(companyId: number, page: number, limit: number): Promise<PaginationResponse<JobList>> {
+        const offset = (page - 1) * limit;
+        const [total, rows] = await Promise.all([
+            this.db.select({ total: count() })
+                .from(schema.job_postings)
+                .where(eq(schema.job_postings.company_id, companyId)),
+
+            this.db
+                .select({
+                    jobId: schema.job_postings.job_id,
+                    jobTitle: schema.job_postings.job_title,
+                })
+                .from(schema.job_postings)
+                .where(eq(schema.job_postings.company_id, companyId))
+                .limit(limit)
+                .offset(offset),
+        ]);
+
+        const totalResult = Number(total[0]?.total ?? 0);
+        return new PaginationResponse(rows, page, limit, totalResult);
+
+    }
 
     async findAllForCompany(
         companyId: number,

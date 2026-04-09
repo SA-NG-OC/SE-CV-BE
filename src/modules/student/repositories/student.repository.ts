@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DATABASE_CONNECTION } from 'src/database/database.module';
 import * as schema from '../../../database/schema';
-import { sql, eq, and, desc, ilike, or } from 'drizzle-orm';
+import { sql, eq, and, desc, ilike, or, exists, gte, SQL, inArray, count } from 'drizzle-orm';
 import Redis from 'ioredis';
 
 import { IStudentRepository } from './student-repository.interface';
@@ -14,7 +14,10 @@ import {
     StudentResumeItem,
     StudentGeneralInfo,
     StudentAdminListResult,
+    GetStudentsQuery,
+    StudentCard,
 } from '../interfaces/student.interface';
+import { PaginationResponse } from 'src/common/types/pagination-response';
 
 @Injectable()
 export class StudentRepository implements IStudentRepository {
@@ -305,5 +308,149 @@ export class StudentRepository implements IStudentRepository {
                 isDefault: updated.is_default,
             });
         });
+    }
+
+    async findStudentCards(
+        query: GetStudentsQuery
+    ): Promise<PaginationResponse<StudentCard>> {
+
+        const {
+            page,
+            limit,
+            search,
+            majorId,
+            years,
+            minGpa,
+            skillIds,
+            isOpenToWork
+        } = query;
+
+        const offset = (page - 1) * limit;
+        const conditions: (SQL | undefined)[] = [];
+
+        // 1. Search theo tên
+        if (search) {
+            conditions.push(
+                ilike(schema.students.full_name, `%${search}%`)
+            );
+        }
+
+        // 2. Major
+        if (majorId) {
+            conditions.push(
+                eq(schema.students.major_id, majorId)
+            );
+        }
+
+        // 3. Years + Graduated
+        if (years && years.length > 0) {
+            const yearNumbers = years.filter((y): y is number => typeof y === 'number');
+            const hasGraduated = years.some((y) => y === 'GRADUATED');
+            const yearConditions: (SQL | undefined)[] = [];
+
+            if (yearNumbers.length > 0) {
+                yearConditions.push(inArray(schema.students.current_year, yearNumbers));
+            }
+            if (hasGraduated) {
+                yearConditions.push(eq(schema.students.student_status, 'GRADUATED'));
+            }
+            if (yearConditions.length > 0) {
+                conditions.push(or(...yearConditions));
+            }
+        }
+
+        // 4. GPA
+        if (minGpa !== undefined) {
+            conditions.push(
+                gte(schema.students.gpa, minGpa.toString())
+            );
+        }
+
+        // 5. Skills (EXISTS subquery)
+        if (skillIds && skillIds.length > 0) {
+            conditions.push(
+                exists(
+                    this.db
+                        .select({ id: schema.student_skills.student_id })
+                        .from(schema.student_skills)
+                        .where(
+                            and(
+                                eq(
+                                    schema.student_skills.student_id,
+                                    schema.students.student_id
+                                ),
+                                inArray(schema.student_skills.skill_id, skillIds)
+                            )
+                        )
+                )
+            );
+        }
+
+        // 6. Open to work
+        conditions.push(
+            eq(schema.students.is_open_to_work, true)
+        );
+
+
+        const whereClause =
+            conditions.length > 0 ? and(...conditions) : undefined;
+
+        const [totalRes] = await this.db
+            .select({ total: count() })
+            .from(schema.students)
+            .where(whereClause ?? undefined);
+
+        const totalItems = Number(totalRes?.total || 0);
+
+        const rows = await this.db
+            .select({
+                student_id: schema.students.student_id,
+                full_name: schema.students.full_name,
+                avatar_url: schema.students.avatar_url,
+                current_year: schema.students.current_year,
+                gpa: schema.students.gpa,
+                is_open_to_work: sql<boolean>`
+        COALESCE(${schema.students.is_open_to_work}, false)
+      `,
+                skills: sql`
+        COALESCE(
+          ARRAY_AGG(${schema.skills.skill_name})
+          FILTER (WHERE ${schema.skills.skill_name} IS NOT NULL),
+          '{}'
+        )
+      `
+            })
+            .from(schema.students)
+            .leftJoin(
+                schema.student_skills,
+                eq(schema.students.student_id, schema.student_skills.student_id)
+            )
+            .leftJoin(
+                schema.skills,
+                eq(schema.student_skills.skill_id, schema.skills.skill_id)
+            )
+            .where(whereClause ?? undefined)
+            .groupBy(schema.students.student_id)
+            .orderBy(desc(schema.students.created_at))
+            .limit(limit)
+            .offset(offset);
+
+        // =========================
+        // RESPONSE
+        // =========================
+        return {
+            data: rows.map(row =>
+                StudentMapper.toStudentCard({
+                    ...row,
+                    skills: row.skills as string[]
+                })
+            ),
+            meta: {
+                totalItems,
+                itemsPerPage: limit,
+                totalPages: Math.ceil(totalItems / limit),
+                currentPage: page,
+            }
+        };
     }
 }

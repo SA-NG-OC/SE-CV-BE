@@ -4,6 +4,8 @@ import {
     StudentAdminCard,
     StudentResumeItem,
     StudentGeneralInfo,
+    StudentSkillItem,
+    StudentCard,
 } from '../interfaces/student.interface';
 import { StudentStatus } from '../domain/student.props';
 
@@ -94,5 +96,25 @@ export class StudentMapper {
             studying: raw.studying,
             graduated: raw.graduated,
         };
+    }
+
+    static toStudentCard(raw: {
+        student_id: number;
+        full_name: string;
+        avatar_url: string | null;
+        current_year: number | null;
+        gpa: string | number | null;
+        is_open_to_work: boolean;
+        skills: string[];
+    }): StudentCard {
+        return {
+            studentId: raw.student_id,
+            fullName: raw.full_name,
+            avatarUrl: raw.avatar_url,
+            currentYear: raw.current_year,
+            gpa: raw.gpa,
+            isOpenToWork: raw.is_open_to_work,
+            skills: raw.skills,
+        }
     }
 }

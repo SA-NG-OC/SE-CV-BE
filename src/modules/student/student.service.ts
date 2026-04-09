@@ -4,6 +4,7 @@ import type { IStudentRepository } from './repositories/student-repository.inter
 import { StudentDomainError } from './domain/student.domain';
 import { GeneralInformationDto } from './dto/general-information.dto';
 import { CreateResumeDto, UpdateJobStatusDto, UpdateSkillsDto } from './dto/update-student.dto';
+import { GetStudentsQueryDto } from './dto/get-students-query.dto';
 
 @Injectable()
 export class StudentService {
@@ -91,5 +92,9 @@ export class StudentService {
     const result = await this.repo.setResumeAsDefault(studentId, resumeId);
     if (!result) throw new NotFoundException('Không tìm thấy CV này hoặc CV không thuộc về bạn');
     return { message: 'Đã cập nhật CV mặc định', data: result };
+  }
+
+  async getStudentCards(query: GetStudentsQueryDto) {
+    return await this.repo.findStudentCards(query);
   }
 }

@@ -16,6 +16,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { JobPostingModule } from './modules/job-posting/job-posting.module';
 import { BullModule } from '@nestjs/bullmq';
+import { ApplicationModule } from './modules/application/application.module';
 
 @Module({
   imports: [
@@ -51,7 +52,8 @@ import { BullModule } from '@nestjs/bullmq';
     }),
     StudentModule,
     NotificationsModule,
-    JobPostingModule
+    JobPostingModule,
+    ApplicationModule
   ],
   controllers: [AppController],
   providers: [AppService, EventsGateway, NotificationsGateway],

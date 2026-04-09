@@ -2,7 +2,7 @@ import { PaginationResponse } from 'src/common/types/pagination-response';
 import { CreateJobPostingDto } from '../dto/create-job-posting.dto';
 import { ListJobPostingDto } from '../dto/list-job-posting.dto';
 import { UpdateJobPostingDto } from '../dto/update-job-posting.dto';
-import { AdminJobCard, CategoryItem, CompanyJobCard, JobPostingResponse, JobSkillItem, ProfileJobCard, StudentJobCard, UpdateJobResponse } from '../interfaces';
+import { AdminJobCard, CategoryItem, CompanyJobCard, JobList, JobPostingResponse, JobSkillItem, ProfileJobCard, StudentJobCard, UpdateJobResponse } from '../interfaces';
 import { ChangeJobPostingStatusDto } from '../dto/change-job-posting-status.dto';
 
 export interface IJobPostingRepository {
@@ -30,6 +30,10 @@ export interface IJobPostingRepository {
         viewer: 'student' | 'company' | 'admin',
         companyId?: number,
     ): Promise<JobPostingResponse | null>;
+
+    findById(jobId: number): Promise<number | null>;
+
+    findAllJobList(companyId: number, page: number, limit: number): Promise<PaginationResponse<JobList>>;
 
     findAllForAdmin(dto: ListJobPostingDto): Promise<PaginationResponse<AdminJobCard>>;
 

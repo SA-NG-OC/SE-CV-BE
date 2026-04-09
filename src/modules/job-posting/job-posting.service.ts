@@ -92,6 +92,10 @@ export class JobPostingService {
     return await this.jobPostingRepository.findByCompanyId(companyId, page, limit);
   }
 
+  async listJob(companyId: number, page: number, limit: number) {
+    return await this.jobPostingRepository.findAllJobList(companyId, page, limit);
+  }
+
   async listJobPostings(
     role: RoleName,
     dto: ListJobPostingDto,

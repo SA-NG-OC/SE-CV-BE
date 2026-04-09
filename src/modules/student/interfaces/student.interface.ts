@@ -58,3 +58,24 @@ export interface StudentGeneralInfo {
     studying: number;
     graduated: number;
 }
+
+export interface StudentCard {
+    studentId: number;
+    fullName: string;
+    avatarUrl: string | null;
+    currentYear: number | null;
+    gpa: string | number | null;
+    isOpenToWork: boolean;
+    skills: string[];
+}
+
+export interface GetStudentsQuery {
+    page: number;
+    limit: number;
+    search?: string;
+    majorId?: number;
+    years?: (number | 'GRADUATED')[];
+    minGpa?: number;
+    skillIds?: number[];
+    isOpenToWork?: boolean;
+}

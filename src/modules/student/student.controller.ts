@@ -16,6 +16,8 @@ import { ParseFilePipeBuilder } from '@nestjs/common/pipes';
 import { HttpStatus } from '@nestjs/common';
 import { CloudinaryService } from 'src/shared/cloudinary/cloudinary.service';
 import { SetDefaultResumeDocs, UpdateJobStatusDocs, UpdateSkillsDocs, UploadResumeDocs } from './decorators/student-profile.decorator';
+import { GetStudentsQueryDto } from './dto/get-students-query.dto';
+import { GetStudentsCardDocs } from './decorators/get-student-card.decorator';
 
 @Controller('student')
 export class StudentController {
@@ -51,18 +53,13 @@ export class StudentController {
     return new ResponseSuccess('Lấy thông tin thành công', result)
   }
 
-  @Get(':id')
-  @GetStudentProfileDocs()
+  @Get('card')
+  @GetStudentsCardDocs()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.COMPANY)
-  async getStudentProfile(
-    @Param('id', ParseIntPipe) studentId: number,
-    @Req() req: any
-  ) {
-    const role = req.user?.role || 'student';
-
-    const result = await this.studentsService.getStudentDetail(studentId, role);
-    return new ResponseSuccess('Lấy thông tin thành công', result);
+  @Roles(Role.COMPANY)
+  async getStudentsCard(@Query() query: GetStudentsQueryDto) {
+    const data = await this.studentsService.getStudentCards(query);
+    return new ResponseSuccess('Lấy danh sách sinh viên thành công', data);
   }
 
   @Patch('me/job-status')
@@ -131,4 +128,19 @@ export class StudentController {
     const data = await this.studentsService.setDefaultResume(studentId, resumeId);
     return new ResponseSuccess('Cập nhật thông tin thành công', data);
   }
+
+  @Get(':id')
+  @GetStudentProfileDocs()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.COMPANY)
+  async getStudentProfile(
+    @Param('id', ParseIntPipe) studentId: number,
+    @Req() req: any
+  ) {
+    const role = req.user?.role || 'student';
+
+    const result = await this.studentsService.getStudentDetail(studentId, role);
+    return new ResponseSuccess('Lấy thông tin thành công', result);
+  }
+
 }

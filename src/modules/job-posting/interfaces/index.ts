@@ -10,6 +10,11 @@ export interface UpdateJobResponse {
     jobTitle: string | undefined,
 }
 
+export interface JobList {
+    jobId: number,
+    jobTitle: string | undefined,
+}
+
 export interface ProfileJobCard {
     jobId: number,
     jobTitle: string | undefined,
