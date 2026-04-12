@@ -8,7 +8,7 @@ import {
 import { I_JOB_POSTING_REPOSITORY } from './job-posting.tokens';
 import type { IJobPostingRepository } from './repositories/job-posting-repository.interface';
 import { CreateJobPostingDto } from './dto/create-job-posting.dto';
-import { AdminJobCard, CategoryItem, CompanyJobCard, JobPostingResponse, JobSkillItem, ProfileJobCard, StudentJobCard, UpdateJobResponse } from './interfaces';
+import { AdminJobCard, AdminJobStats, CategoryItem, CompanyJobCard, JobPostingResponse, JobPostingStats, JobSkillItem, ProfileJobCard, StudentJobCard, UpdateJobResponse } from './interfaces';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { UpdateJobPostingDto } from './dto/update-job-posting.dto';
 import { RoleName } from 'src/common/types/role.enum';
@@ -135,6 +135,29 @@ export class JobPostingService {
       if (error instanceof JobPostingDomainError) {
         throw new BadRequestException(error.message);
       }
+      throw error;
+    }
+  }
+
+  async getJobStatsByCompanyId(companyId: number): Promise<JobPostingStats> {
+    try {
+      const stats = await this.jobPostingRepository.getJobStatsByCompanyId(companyId);
+      if (!stats) {
+        throw new NotFoundException(`Không tìm thấy dữ liệu cho công ty ID ${companyId}`);
+      }
+      return stats;
+    } catch (error) {
+      if (error instanceof JobPostingDomainError) {
+        throw new BadRequestException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  async getAdminJobStats(): Promise<AdminJobStats> {
+    try {
+      return await this.jobPostingRepository.getAdminJobStats();
+    } catch (error) {
       throw error;
     }
   }

@@ -145,3 +145,17 @@ export interface CompanyJobCard {
 
     createdAt: Date;
 }
+
+export interface JobPostingStats {
+    total: number;       // Tổng tin
+    active: number;      // Đang hoạt động (Status = approved AND chưa hết hạn)
+    restricted: number;  // Tạm ẩn (Status = restricted)
+    closed: number;      // Đã đóng (Status = approved AND đã hết hạn)
+}
+
+export interface AdminJobStats {
+    pending: number;       // Chờ duyệt (status = pending)
+    approvedToday: number; // Đã duyệt hôm nay (status = approved AND approved_at trong ngày hôm nay)
+    rejected: number;      // Đã từ chối (status = rejected)
+    total: number;         // Tổng tin đăng
+}

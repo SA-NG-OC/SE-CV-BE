@@ -20,6 +20,8 @@ import {
     JobSkillItem,
     ProfileJobCard,
     JobList,
+    JobPostingStats,
+    AdminJobStats,
 } from '../interfaces';
 import { JobPostingDomain, JobPostingDomainError } from '../domain/job-posting.domain';
 import { JobPostingMapper } from '../domain/job-posting.mapper';
@@ -525,5 +527,61 @@ export class JobPostingRepository implements IJobPostingRepository {
             .where(eq(schema.job_postings.job_id, jobId));
 
         return jobId;
+    }
+
+    async getJobStatsByCompanyId(companyId: number): Promise<JobPostingStats> {
+        const [result] = await this.db
+            .select({
+                total: sql<number>`count(*)`,
+                active: sql<number>`
+                    count(*) filter (
+                        where ${schema.job_postings.status} = 'approved' 
+                        and (${schema.job_postings.expires_at} is null or ${schema.job_postings.expires_at} > now())
+                    )`,
+
+                restricted: sql<number>`
+                    count(*) filter (where ${schema.job_postings.status} = 'restricted')
+                `,
+
+                closed: sql<number>`
+                    count(*) filter (
+                        where ${schema.job_postings.status} = 'approved' 
+                        and ${schema.job_postings.expires_at} <= now()
+                    )`,
+            })
+            .from(schema.job_postings)
+            .where(eq(schema.job_postings.company_id, companyId));
+
+        return {
+            total: Number(result?.total ?? 0),
+            active: Number(result?.active ?? 0),
+            restricted: Number(result?.restricted ?? 0),
+            closed: Number(result?.closed ?? 0),
+        };
+    }
+
+    async getAdminJobStats(): Promise<AdminJobStats> {
+        const [result] = await this.db
+            .select({
+                total: count(),
+                // Đếm tin đang chờ duyệt
+                pending: sql<number>`count(*) filter (where ${schema.job_postings.status} = 'pending')`,
+                // Đếm tin đã duyệt trong ngày hôm nay
+                approvedToday: sql<number>`
+                count(*) filter (
+                    where ${schema.job_postings.status} = 'approved' 
+                    and ${schema.job_postings.approved_at} >= date_trunc('day', now())
+                )`,
+                // Đếm tin đã từ chối
+                rejected: sql<number>`count(*) filter (where ${schema.job_postings.status} = 'rejected')`,
+            })
+            .from(schema.job_postings);
+
+        return {
+            total: Number(result?.total ?? 0),
+            pending: Number(result?.pending ?? 0),
+            approvedToday: Number(result?.approvedToday ?? 0),
+            rejected: Number(result?.rejected ?? 0),
+        };
     }
 }

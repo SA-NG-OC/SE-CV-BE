@@ -2,7 +2,7 @@ import { PaginationResponse } from 'src/common/types/pagination-response';
 import { CreateJobPostingDto } from '../dto/create-job-posting.dto';
 import { ListJobPostingDto } from '../dto/list-job-posting.dto';
 import { UpdateJobPostingDto } from '../dto/update-job-posting.dto';
-import { AdminJobCard, CategoryItem, CompanyJobCard, JobList, JobPostingResponse, JobSkillItem, ProfileJobCard, StudentJobCard, UpdateJobResponse } from '../interfaces';
+import { AdminJobCard, AdminJobStats, CategoryItem, CompanyJobCard, JobList, JobPostingResponse, JobPostingStats, JobSkillItem, ProfileJobCard, StudentJobCard, UpdateJobResponse } from '../interfaces';
 import { ChangeJobPostingStatusDto } from '../dto/change-job-posting-status.dto';
 
 export interface IJobPostingRepository {
@@ -44,5 +44,9 @@ export interface IJobPostingRepository {
     findByCompanyId(companyId: number, page: number, limit: number): Promise<PaginationResponse<ProfileJobCard>>;
 
     changeJobStatus(jobId: number, dto: ChangeJobPostingStatusDto, adminId: number): Promise<number | null>;
+
+    getJobStatsByCompanyId(companyId: number): Promise<JobPostingStats>
+
+    getAdminJobStats(): Promise<AdminJobStats>
 
 }
