@@ -5,7 +5,14 @@ export const CreateJobPostingDocs = () => applyDecorators(
     ApiBearerAuth(),
     ApiOperation({
         summary: 'Tạo tin tuyển dụng',
-        description: 'Tạo mới một tin tuyển dụng cho công ty hiện tại. Yêu cầu role COMPANY.',
+        description: `
+            Tạo mới một tin tuyển dụng cho công ty hiện tại. Yêu cầu role COMPANY.
+            
+            **Danh sách giá trị chấp nhận cho các trường Enum:**
+            - **salaryType**: FIXED, RANGE, NEGOTIABLE
+            - **experienceLevel**: FRESHER, JUNIOR, MIDDLE, SENIOR, LEAD, MANAGER
+            - **positionLevel**: STAFF, TEAM_LEAD, SUPERVISOR, MANAGER, DIRECTOR, C_LEVEL
+        `,
     }),
     ApiBody({
         schema: {
@@ -18,7 +25,12 @@ export const CreateJobPostingDocs = () => applyDecorators(
                 applicationDeadline: { type: 'string', format: 'date-time', example: '2026-06-30T17:00:00.000Z' },
                 salaryMin: { type: 'integer', minimum: 0, example: 15000000 },
                 salaryMax: { type: 'integer', minimum: 1, example: 30000000 },
-                salaryType: { type: 'string', enum: ['FIXED', 'RANGE', 'NEGOTIABLE'], example: 'RANGE' },
+                salaryType: {
+                    type: 'string',
+                    description: 'Chế độ lương (FIXED | RANGE | NEGOTIABLE)',
+                    enum: ['FIXED', 'RANGE', 'NEGOTIABLE'],
+                    example: 'RANGE'
+                },
                 isSalaryNegotiable: { type: 'boolean', default: true, example: false },
                 numberOfPositions: { type: 'integer', minimum: 1, default: 1, example: 3 },
                 jobDescription: { type: 'string', minLength: 20, example: 'Mô tả chi tiết công việc...' },

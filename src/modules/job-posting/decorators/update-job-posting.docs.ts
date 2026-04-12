@@ -5,7 +5,16 @@ export const UpdateJobPostingDocs = () => applyDecorators(
     ApiBearerAuth(),
     ApiOperation({
         summary: 'Cập nhật tin tuyển dụng',
-        description: 'Cập nhật thông tin tin tuyển dụng theo ID. Yêu cầu role COMPANY và phải là chủ sở hữu tin. Nếu truyền skillIds thì sẽ thay thế toàn bộ skills cũ.',
+        description: `
+            Cập nhật thông tin tin tuyển dụng theo ID. Yêu cầu role **COMPANY** và phải là chủ sở hữu tin.
+            
+            **Các trường Enum chấp nhận giá trị:**
+            - **salaryType**: \`FIXED\`, \`RANGE\`, \`NEGOTIABLE\`
+            - **experienceLevel**: \`FRESHER\`, \`JUNIOR\`, \`MIDDLE\`, \`SENIOR\`, \`LEAD\`, \`MANAGER\`
+            - **positionLevel**: \`STAFF\`, \`TEAM_LEAD\`, \`SUPERVISOR\`, \`MANAGER\`, \`DIRECTOR\`, \`C_LEVEL\`
+            
+            *Ghi chú: Nếu truyền **skillIds**, hệ thống sẽ thay thế toàn bộ skills cũ bằng danh sách mới.*
+        `,
     }),
     ApiParam({ name: 'id', type: Number, description: 'ID của tin tuyển dụng', example: 42 }),
     ApiBody({

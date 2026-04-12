@@ -5,7 +5,17 @@ export const ChangeJobStatusDocs = () => applyDecorators(
     ApiBearerAuth(),
     ApiOperation({
         summary: 'Cập nhật trạng thái tin tuyển dụng (Admin)',
-        description: 'Admin duyệt, từ chối hoặc hạn chế tin tuyển dụng. Yêu cầu role ADMIN. Chỉ khi rejected hoặc restricted mới có thể thêm note nhưng không bắt buộc',
+        description: `
+            Admin duyệt, từ chối hoặc hạn chế tin tuyển dụng. Yêu cầu role ADMIN.
+            
+            **Các trạng thái hợp lệ (status):**
+            - \`pending\`: Chờ duyệt
+            - \`approved\`: Đã duyệt (hiển thị lên hệ thống)
+            - \`rejected\`: Từ chối (không hợp lệ)
+            - \`restricted\`: Bị hạn chế (vi phạm điều khoản)
+            
+            *Lưu ý: Chỉ khi chọn **rejected** hoặc **restricted** mới nên điền **admin_note**.*
+        `,
     }),
     ApiParam({ name: 'id', type: Number, description: 'ID của tin tuyển dụng', example: 42 }),
     ApiBody({
