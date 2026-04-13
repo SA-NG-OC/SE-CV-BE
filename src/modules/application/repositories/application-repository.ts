@@ -17,6 +17,7 @@ import { PaginationResponse } from 'src/common/types/pagination-response';
 import { ApplicationMapper } from '../domain/application/application.mapper';
 import { DATABASE_CONNECTION } from 'src/database/database.module';
 import { JobSkillItem } from 'src/modules/job-posting/interfaces';
+import { JobPostingDomainError } from 'src/modules/job-posting/domain/job-posting.domain';
 
 @Injectable()
 export class ApplicationRepository implements IApplicationRepository {
@@ -28,10 +29,35 @@ export class ApplicationRepository implements IApplicationRepository {
 
     async save(application: ApplicationDomain): Promise<ApplicationDomain> {
         if (application.applicationId === 0) {
+            const jobId = application.jobId;
+            const [job] = await this.db
+                .select({
+                    deadline: schema.job_postings.application_deadline
+                })
+                .from(schema.job_postings)
+                .where(eq(schema.job_postings.job_id, jobId))
+                .limit(1);
+
+            if (!job) {
+                throw new JobPostingDomainError("Không tìm thấy tin tuyển dụng này.");
+            }
+
+            if (job.deadline) {
+                const now = new Date();
+                const deadlineDate = new Date(job.deadline);
+                deadlineDate.setHours(23, 59, 59, 999);
+
+                if (now > deadlineDate) {
+                    throw new JobPostingDomainError("Hết hạn ứng tuyển! Bạn không thể nộp hồ sơ cho tin này nữa.");
+                }
+            }
+
+            // 3. Nếu còn hạn thì mới tiến hành insert
             const [inserted] = await this.db
                 .insert(schema.applications)
                 .values(application.toPersistence())
                 .returning();
+
             return ApplicationDomain.fromPersistence(inserted);
         }
 

@@ -270,7 +270,7 @@ export const job_postings = pgTable(
         approved_at: timestamp("approved_at"),
         created_at: timestamp("created_at").defaultNow(),
         updated_at: timestamp("updated_at").defaultNow(),
-        expires_at: timestamp("expires_at"),
+        //expires_at: timestamp("expires_at"),
     },
     (t) => [
         index("idx_jobs_company").on(t.company_id),

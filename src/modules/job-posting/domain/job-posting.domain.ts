@@ -244,7 +244,6 @@ export class JobPostingDomain {
             application_count: this.props.applicationCount,
             approved_at: this.props.approvedAt,
             approved_by: this.props.approvedBy,
-            expires_at: null,
             created_at: this.props.createdAt,
             updated_at: this.props.updatedAt,
         };

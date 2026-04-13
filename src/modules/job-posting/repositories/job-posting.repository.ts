@@ -1,7 +1,7 @@
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { DATABASE_CONNECTION } from 'src/database/database.module';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { and, count, eq, ilike, inArray, sql, SQL } from 'drizzle-orm';
+import { and, count, eq, gte, ilike, inArray, sql, SQL } from 'drizzle-orm';
 import * as schema from 'src/database/schema';
 
 import { IJobPostingRepository } from './job-posting-repository.interface';
@@ -453,6 +453,7 @@ export class JobPostingRepository implements IJobPostingRepository {
         const offset = (page - 1) * limit;
 
         const conditions = [eq(schema.job_postings.status, 'approved')];
+        conditions.push(gte(schema.job_postings.application_deadline, sql`CURRENT_DATE`));
         if (search) conditions.push(ilike(schema.job_postings.job_title, `%${search}%`));
         if (city) conditions.push(ilike(schema.job_postings.city, `%${city}%`));
 
@@ -536,7 +537,10 @@ export class JobPostingRepository implements IJobPostingRepository {
                 active: sql<number>`
                     count(*) filter (
                         where ${schema.job_postings.status} = 'approved' 
-                        and (${schema.job_postings.expires_at} is null or ${schema.job_postings.expires_at} > now())
+                        and (
+                        ${schema.job_postings.application_deadline} is null 
+                        or ${schema.job_postings.application_deadline} >= current_date
+                        )
                     )`,
 
                 restricted: sql<number>`
@@ -546,7 +550,7 @@ export class JobPostingRepository implements IJobPostingRepository {
                 closed: sql<number>`
                     count(*) filter (
                         where ${schema.job_postings.status} = 'approved' 
-                        and ${schema.job_postings.expires_at} <= now()
+                        and ${schema.job_postings.application_deadline} < current_date
                     )`,
             })
             .from(schema.job_postings)
