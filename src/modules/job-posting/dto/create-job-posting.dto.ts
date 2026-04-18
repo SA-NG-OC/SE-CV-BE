@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { createZodDto } from 'nestjs-zod';
 
-export const CreateJobPostingSchema = z.object({
+// 1. Định nghĩa Base Schema để xác định cấu trúc dữ liệu chuẩn
+const BaseJobPostingSchema = z.object({
     jobTitle: z
         .string()
         .min(5, 'Tiêu đề công việc phải có ít nhất 5 ký tự')
@@ -30,17 +31,19 @@ export const CreateJobPostingSchema = z.object({
         .number()
         .int()
         .nonnegative('Lương tối thiểu phải >= 0')
-        .optional(),
+        .optional()
+        .nullable(),
 
     salaryMax: z.coerce
         .number()
         .int()
         .positive('Lương tối đa phải > 0')
-        .optional(),
+        .optional()
+        .nullable(),
 
     salaryType: z.enum(['FIXED', 'RANGE', 'NEGOTIABLE']).optional(),
 
-    isSalaryNegotiable: z.boolean().default(true),
+    isSalaryNegotiable: z.boolean().default(false),
 
     numberOfPositions: z.coerce
         .number()
@@ -72,17 +75,35 @@ export const CreateJobPostingSchema = z.object({
         .optional(),
 
     isUrgent: z.boolean().default(false),
-}).refine(
-    (data) => {
-        if (data.salaryMin !== undefined && data.salaryMax !== undefined) {
-            return data.salaryMax >= data.salaryMin;
+});
+
+// 2. Tạo Schema hoàn chỉnh với Preprocess và Refine
+export const CreateJobPostingSchema = z
+    .preprocess((input: any) => {
+        if (input && (input.isSalaryNegotiable === true || input.isSalaryNegotiable === 'true')) {
+            return {
+                ...input,
+                salaryMin: null,
+                salaryMax: null,
+                salaryType: 'NEGOTIABLE',
+            };
         }
-        return true;
-    },
-    {
-        message: 'Lương tối đa phải lớn hơn hoặc bằng lương tối thiểu',
-        path: ['salaryMax'],
-    },
-);
+        return input;
+    }, BaseJobPostingSchema)
+    .refine(
+        (data) => {
+            if (
+                data.salaryMin !== null && data.salaryMin !== undefined &&
+                data.salaryMax !== null && data.salaryMax !== undefined
+            ) {
+                return data.salaryMax >= data.salaryMin;
+            }
+            return true;
+        },
+        {
+            message: 'Lương tối đa phải lớn hơn hoặc bằng lương tối thiểu',
+            path: ['salaryMax'],
+        },
+    );
 
 export class CreateJobPostingDto extends createZodDto(CreateJobPostingSchema) { }

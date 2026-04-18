@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Put, UseGuards, Query, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Put, UseGuards, Query, UseInterceptors, UploadedFile, NotFoundException } from '@nestjs/common';
 import { StudentService } from './student.service';
 import ResponseSuccess from 'src/common/types/response-success';
 import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
@@ -10,7 +10,7 @@ import { ParseIntPipe } from '@nestjs/common';
 import GetGeneralInformationDocs from './decorators/get-general-information.decorator';
 import GetStudentsDocs from './decorators/get-students.decorator';
 import GetStudentProfileDocs from './decorators/get-student-profile.decorator';
-import { CreateResumeDto, UpdateJobStatusDto, UpdateSkillsDto } from './dto/update-student.dto';
+import { CreateResumeDto, UpdateAvatarDto, UpdateGeneralInfoDto, UpdateJobStatusDto, UpdateSkillsDto } from './dto/update-student.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ParseFilePipeBuilder } from '@nestjs/common/pipes';
 import { HttpStatus } from '@nestjs/common';
@@ -60,6 +60,16 @@ export class StudentController {
   async getStudentsCard(@Query() query: GetStudentsQueryDto) {
     const data = await this.studentsService.getStudentCards(query);
     return new ResponseSuccess('Lấy danh sách sinh viên thành công', data);
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.STUDENT)
+  async getMe(@Req() req: any) {
+    const studentId = req.user.studentId;
+    const data = await this.studentsService.getMyProfile(studentId);
+    if (!data) throw new NotFoundException('Không tìm thấy profile');
+    return new ResponseSuccess('Lấy profile thành công', data);
   }
 
   @Patch('me/job-status')
@@ -126,6 +136,27 @@ export class StudentController {
   ) {
     const studentId = req.user.studentId;
     const data = await this.studentsService.setDefaultResume(studentId, resumeId);
+    return new ResponseSuccess('Cập nhật thông tin thành công', data);
+  }
+
+  @Patch('me/avatar')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.STUDENT)
+  @UseInterceptors(FileInterceptor("avatar"))
+  async updateAvatar(
+    @Req() req: any,
+    @UploadedFile() file: Express.Multer.File
+  ) {
+    const userId = req.user.studentId;
+    const data = await this.studentsService.updateAvatar(userId, file);
+    return new ResponseSuccess('Cập nhật ảnh đại diện thành công', data);
+  }
+
+  @Patch('me/info')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.STUDENT)
+  async updateInfo(@Req() req: any, @Body() dto: UpdateGeneralInfoDto) {
+    const data = await this.studentsService.updateGeneralInfo(req.user.studentId, dto);
     return new ResponseSuccess('Cập nhật thông tin thành công', data);
   }
 

@@ -7,7 +7,7 @@ const GetStudentProfileDocs = () => applyDecorators(
     ApiBearerAuth('access-token'),
     ApiOperation({
         summary: 'Lấy thông tin chi tiết của một sinh viên',
-        description: 'Yêu cầu `Bearer Token`. Dành cho quyền `ADMIN` hoặc `COMPANY` (để nhà tuyển dụng xem hồ sơ ứng viên).',
+        description: 'Yêu cầu `Bearer Token`. Dành cho quyền `ADMIN` hoặc `COMPANY` (để nhà tuyển dụng xem hồ sơ ứng viên), Chỉ lấy những hồ sơ mặc định.',
     }),
     ApiParam({ name: 'id', required: true, type: Number, description: 'ID của sinh viên cần xem hồ sơ', example: 1 }),
     ApiOkResponse({

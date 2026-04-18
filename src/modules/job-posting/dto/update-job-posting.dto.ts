@@ -42,6 +42,7 @@ export const UpdateJobPostingSchema = z.object({
     salaryType: z.enum(['FIXED', 'RANGE', 'NEGOTIABLE']).optional(),
 
     isSalaryNegotiable: z.boolean().optional(),
+    isActive: z.boolean().default(true),
 
     numberOfPositions: z.coerce
         .number()

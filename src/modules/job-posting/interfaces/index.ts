@@ -140,7 +140,7 @@ export interface CompanyJobCard {
     status: 'pending' | 'approved' | 'rejected' | 'restricted';
 
     applicantCount: number;
-
+    tag: 'Active' | 'Closed' | 'Hidden' | 'Pending' | 'Unknown';
     skills: JobSkillItem[];
 
     createdAt: Date;
@@ -149,7 +149,7 @@ export interface CompanyJobCard {
 export interface JobPostingStats {
     total: number;       // Tổng tin
     active: number;      // Đang hoạt động (Status = approved AND chưa hết hạn)
-    restricted: number;  // Tạm ẩn (Status = restricted)
+    hidden: number;  // Tạm ẩn (Status = restricted)
     closed: number;      // Đã đóng (Status = approved AND đã hết hạn)
 }
 

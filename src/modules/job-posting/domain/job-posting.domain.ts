@@ -47,6 +47,7 @@ export class JobPostingDomain {
             applicationDeadline: dto.applicationDeadline
                 ? dto.applicationDeadline.split('T')[0]
                 : null,
+            isActive: true,
             status: 'pending',
             adminNote: null,
             applicationCount: 0,
@@ -67,7 +68,7 @@ export class JobPostingDomain {
             requirements: raw.requirements,
             benefits: raw.benefits,
             experienceLevel: raw.experience_level,
-            positionLevel: raw.position_level,
+            positionLevel: raw.position_level, // Lưu ý check key mapping với entity
             numberOfPositions: raw.number_of_positions ?? 1,
             salaryMin: raw.salary_min ? Number(raw.salary_min) : null,
             salaryMax: raw.salary_max ? Number(raw.salary_max) : null,
@@ -75,6 +76,7 @@ export class JobPostingDomain {
             isSalaryNegotiable: raw.is_salary_negotiable ?? true,
             city: raw.city,
             applicationDeadline: raw.application_deadline,
+            isActive: raw.is_active ?? true, // Map từ db
             status: raw.status as JobPostingStatus,
             adminNote: raw.admin_notes ?? null,
             applicationCount: raw.application_count ?? 0,
@@ -114,7 +116,6 @@ export class JobPostingDomain {
     }
 
     restrict(adminNote?: string | null): void {
-        // Chỉ restrict được khi đang approved
         if (this.props.status !== 'approved') {
             throw new JobPostingDomainError(
                 `Không thể hạn chế bài đăng đang ở trạng thái "${this.props.status}"`,
@@ -126,9 +127,13 @@ export class JobPostingDomain {
     }
 
     /**
-     * Entrypoint duy nhất cho admin đổi status.
-     * Controller/Service chỉ gọi changeStatus() — không cần biết bên trong làm gì.
+     * Tạm ẩn hoặc mở lại bài đăng (do User chủ động)
      */
+    toggleVisibility(isActive: boolean): void {
+        this.props.isActive = isActive;
+        this.props.updatedAt = new Date();
+    }
+
     changeStatus(dto: ChangeJobPostingStatusDto, adminId: number): void {
         switch (dto.status) {
             case 'approved':
@@ -177,16 +182,21 @@ export class JobPostingDomain {
             experienceLevel: dto.experienceLevel ?? this.props.experienceLevel,
             positionLevel: dto.positionLevel ?? this.props.positionLevel,
             numberOfPositions: dto.numberOfPositions ?? this.props.numberOfPositions,
-            salaryMin: dto.salaryMin ?? this.props.salaryMin,
-            salaryMax: dto.salaryMax ?? this.props.salaryMax,
+            salaryMin: dto.salaryMin !== undefined ? dto.salaryMin : this.props.salaryMin,
+            salaryMax: dto.salaryMax !== undefined ? dto.salaryMax : this.props.salaryMax,
             salaryType: dto.salaryType ?? this.props.salaryType,
             isSalaryNegotiable: dto.isSalaryNegotiable ?? this.props.isSalaryNegotiable,
+            isActive: dto.isActive ?? this.props.isActive,
             applicationDeadline: dto.applicationDeadline
                 ? dto.applicationDeadline.split('T')[0]
                 : this.props.applicationDeadline,
         });
 
-        this.props.status = 'pending';
+        // Khi edit, nếu bài đăng bị Rejected thì đẩy lại về Pending để Admin duyệt lại
+        if (this.props.status === 'rejected') {
+            this.props.status = 'pending';
+        }
+
         this.props.updatedAt = new Date();
     }
 
@@ -194,15 +204,19 @@ export class JobPostingDomain {
     // QUERIES
     // =========================================================================
 
-    isVisible(): boolean { return this.props.status === 'approved'; }
+    isVisible(): boolean {
+        return this.props.status === 'approved' && this.props.isActive === true;
+    }
 
     isExpired(): boolean {
         if (!this.props.applicationDeadline) return false;
-        return new Date(this.props.applicationDeadline) < new Date();
+        const deadline = new Date(this.props.applicationDeadline);
+        deadline.setHours(23, 59, 59, 999);
+        return deadline < new Date();
     }
 
     canBeEditedByCompany(): boolean {
-        return this.props.status === 'pending' || this.props.status === 'rejected';
+        return this.props.status === 'pending' || this.props.status === 'rejected' || this.props.status === 'approved';
     }
 
     canAcceptApplications(): boolean {
@@ -210,12 +224,14 @@ export class JobPostingDomain {
     }
 
     getSalaryDisplay(): string {
-        if (this.props.isSalaryNegotiable || (!this.salaryMin && !this.salaryMax)) {
+        if (this.props.isSalaryNegotiable || (this.props.salaryMin === null && this.props.salaryMax === null)) {
             return 'Thỏa thuận';
         }
         const fmt = (n: number) => new Intl.NumberFormat('vi-VN').format(n) + ' VNĐ';
-        if (this.salaryMin && this.salaryMax) return `${fmt(this.salaryMin)} – ${fmt(this.salaryMax)}`;
-        return this.salaryMin ? `Từ ${fmt(this.salaryMin)}` : `Đến ${fmt(this.salaryMax!)}`;
+        if (this.props.salaryMin !== null && this.props.salaryMax !== null) {
+            return `${fmt(this.props.salaryMin)} – ${fmt(this.props.salaryMax)}`;
+        }
+        return this.props.salaryMin !== null ? `Từ ${fmt(this.props.salaryMin)}` : `Đến ${fmt(this.props.salaryMax!)}`;
     }
 
     // =========================================================================
@@ -237,6 +253,7 @@ export class JobPostingDomain {
             salary_max: this.props.salaryMax,
             salary_type: this.props.salaryType,
             is_salary_negotiable: this.props.isSalaryNegotiable,
+            is_active: this.props.isActive, // mapping
             city: this.props.city,
             application_deadline: this.props.applicationDeadline,
             status: this.props.status,
@@ -263,6 +280,7 @@ export class JobPostingDomain {
             salary_max: this.props.salaryMax,
             salary_type: this.props.salaryType,
             is_salary_negotiable: this.props.isSalaryNegotiable,
+            is_active: this.props.isActive, // mapping
             city: this.props.city,
             application_deadline: this.props.applicationDeadline,
             status: this.props.status,
@@ -290,6 +308,7 @@ export class JobPostingDomain {
     get salaryMax() { return this.props.salaryMax; }
     get salaryType() { return this.props.salaryType; }
     get isSalaryNegotiable() { return this.props.isSalaryNegotiable; }
+    get isActive() { return this.props.isActive; }
     get city() { return this.props.city; }
     get applicationDeadline() { return this.props.applicationDeadline; }
     get status() { return this.props.status; }
@@ -318,8 +337,10 @@ export class JobPostingDomain {
         const date = new Date(deadline);
         if (isNaN(date.getTime()))
             throw new JobPostingDomainError('Ngày hết hạn không hợp lệ');
-        if (date <= new Date())
-            throw new JobPostingDomainError('Ngày hết hạn phải ở trong tương lai');
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (date < today)
+            throw new JobPostingDomainError('Ngày hết hạn không được ở quá khứ');
     }
 
     private static guardPositions(count?: number): void {

@@ -3,14 +3,16 @@ import { I_STUDENT_REPOSITORY } from './student.token';
 import type { IStudentRepository } from './repositories/student-repository.interface';
 import { StudentDomainError } from './domain/student.domain';
 import { GeneralInformationDto } from './dto/general-information.dto';
-import { CreateResumeDto, UpdateJobStatusDto, UpdateSkillsDto } from './dto/update-student.dto';
+import { CreateResumeDto, UpdateAvatarDto, UpdateGeneralInfoDto, UpdateJobStatusDto, UpdateSkillsDto } from './dto/update-student.dto';
 import { GetStudentsQueryDto } from './dto/get-students-query.dto';
+import { CloudinaryService } from 'src/shared/cloudinary/cloudinary.service';
 
 @Injectable()
 export class StudentService {
   constructor(
     @Inject(I_STUDENT_REPOSITORY)
     private readonly repo: IStudentRepository,
+    private readonly cloudinaryService: CloudinaryService,
   ) { }
 
   // ── Convert domain error sang HTTP exception ───────────────────────────
@@ -96,5 +98,35 @@ export class StudentService {
 
   async getStudentCards(query: GetStudentsQueryDto) {
     return await this.repo.findStudentCards(query);
+  }
+
+  async getMyProfile(userId: number) {
+    return await this.repo.findStudentProfileByUserId(userId);
+  }
+
+  // Cập nhật ảnh đại diện
+  async updateAvatar(userId: number, file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('Vui lòng chọn ảnh đại diện.');
+    }
+
+    // 1. Upload lên Cloudinary
+    const uploadRes = await this.cloudinaryService.uploadImage(file);
+
+    // 2. Cập nhật URL vào Database
+    await this.repo.updateStudentFields(userId, {
+      avatar_url: uploadRes.secure_url
+    });
+
+    return { avatarUrl: uploadRes.secure_url };
+  }
+
+  // Cập nhật Họ tên và Email
+  async updateGeneralInfo(userId: number, dto: UpdateGeneralInfoDto) {
+    await this.repo.updateStudentFields(userId, {
+      full_name: dto.fullName,
+      email_student: dto.email
+    });
+    return dto;
   }
 }

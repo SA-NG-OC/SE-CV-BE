@@ -47,6 +47,27 @@ export class JobPostingMapper {
         };
     }
 
+    private static resolveTag(domain: JobPostingDomain): CompanyJobCard['tag'] {
+        const now = new Date();
+
+        if (domain.status !== 'approved') {
+            return 'Pending';
+        }
+
+        if (!domain.isActive) {
+            return 'Hidden';
+        }
+
+        if (domain.applicationDeadline) {
+            const deadline = new Date(domain.applicationDeadline);
+            if (deadline < now) {
+                return 'Closed';
+            }
+        }
+
+        return 'Active';
+    }
+
     static toCompanyCard(
         domain: JobPostingDomain,
         extra: {
@@ -68,12 +89,10 @@ export class JobPostingMapper {
             isSalaryNegotiable: domain.isSalaryNegotiable,
             applicationDeadline: domain.applicationDeadline,
             status: domain.status as CompanyJobCard['status'],
+            tag: this.resolveTag(domain),
             applicantCount: extra.applicantCount,
             skills: extra.skills,
             createdAt: domain.createdAt,
-            // Computed từ domain
-            //canEdit:             domain.canBeEditedByCompany(),
-            //isExpired:           domain.isExpired(),
         };
     }
 

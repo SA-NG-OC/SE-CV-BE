@@ -40,7 +40,7 @@ export const GetJobStatsDocs = () => applyDecorators(
                 data: {
                     total: 6,
                     active: 4,
-                    restricted: 1,
+                    hidden: 1,
                     closed: 1
                 }
             }

@@ -151,7 +151,7 @@ export const majors = pgTable("majors", {
 export const students = pgTable(
     "students",
     {
-        student_id: serial("student_id").primaryKey(),
+        student_id: serial("student_id").primaryKey().notNull(),
         user_id: integer("user_id")
             .unique()
             .references(() => users.user_id, { onDelete: "cascade" }),
@@ -196,7 +196,7 @@ export const students = pgTable(
 export const student_resumes = pgTable("student_resumes", {
     resume_id: serial("resume_id").primaryKey(),
     student_id: integer("student_id").references(() => students.student_id, { onDelete: "cascade" }),
-    resume_name: varchar("resume_name", { length: 255 }).notNull(), // VD: "CV Frontend Dev - Tieng Viet"
+    resume_name: varchar("resume_name", { length: 255 }).notNull(),
     cv_url: varchar("cv_url", { length: 500 }).notNull(),
     is_default: boolean("is_default").default(false),
     created_at: timestamp("created_at").defaultNow(),
@@ -207,11 +207,11 @@ export const student_skills = pgTable(
     {
         student_id: integer("student_id").references(() => students.student_id, { onDelete: "cascade" }),
         skill_id: integer("skill_id").references(() => skills.skill_id, { onDelete: "cascade" }),
-        proficiency_level: varchar("proficiency_level", { length: 50 }), // Tùy chọn (vd: Beginner, Expert)
+        proficiency_level: varchar("proficiency_level", { length: 50 }),
         created_at: timestamp("created_at").defaultNow(),
     },
     (t) => [
-        primaryKey({ columns: [t.student_id, t.skill_id] }), // Primary key tổ hợp
+        primaryKey({ columns: [t.student_id, t.skill_id] }),
         index("idx_student_skills_student").on(t.student_id),
         index("idx_student_skills_skill").on(t.skill_id),
     ]
@@ -264,6 +264,7 @@ export const job_postings = pgTable(
         city: varchar("city", { length: 100 }),
         application_deadline: date("application_deadline"),
         status: jobStatusEnum("status").default("pending"),
+        is_active: boolean("is_active").default(true).notNull(),
         application_count: integer("application_count").default(0),
         admin_notes: text("admin_notes"),
         approved_by: integer("approved_by").references(() => users.user_id),
@@ -273,6 +274,7 @@ export const job_postings = pgTable(
         //expires_at: timestamp("expires_at"),
     },
     (t) => [
+        index("idx_jobs_is_active").on(t.is_active),
         index("idx_jobs_company").on(t.company_id),
         index("idx_jobs_category").on(t.category_id),
         index("idx_jobs_status").on(t.status),
@@ -477,7 +479,6 @@ export const system_settings = pgTable("system_settings", {
     setting_key: varchar("setting_key", { length: 100 }).unique().notNull(),
     setting_value: text("setting_value"),
     description: text("description"),
-    updated_at: timestamp("updated_at").defaultNow(),
 });
 
 export const reports = pgTable("reports", {

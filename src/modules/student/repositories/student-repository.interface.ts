@@ -1,6 +1,6 @@
 import { PaginationResponse } from "src/common/types/pagination-response";
 import { CreateResumeDto } from "../dto/update-student.dto";
-import { GetStudentsQuery, StudentAdminListResult, StudentCard, StudentGeneralInfo, StudentResponse, StudentResumeItem } from "../interfaces/student.interface";
+import { GetStudentsQuery, StudentAdminListResult, StudentCard, StudentGeneralInfo, StudentProfile, StudentResponse, StudentResumeItem } from "../interfaces/student.interface";
 
 export interface IStudentRepository {
   // Read
@@ -33,4 +33,8 @@ export interface IStudentRepository {
   findStudentCards(
     query: GetStudentsQuery
   ): Promise<PaginationResponse<StudentCard>>;
+
+  findStudentProfileByUserId(userId: number): Promise<StudentProfile | null>;
+
+  updateStudentFields(userId: number, fields: any);
 }

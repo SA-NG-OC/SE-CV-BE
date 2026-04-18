@@ -16,6 +16,7 @@ import {
     StudentAdminListResult,
     GetStudentsQuery,
     StudentCard,
+    StudentProfile,
 } from '../interfaces/student.interface';
 import { PaginationResponse } from 'src/common/types/pagination-response';
 
@@ -46,7 +47,18 @@ export class StudentRepository implements IStudentRepository {
         return rows.map((r) => r.skillName);
     }
 
-    private async fetchResumes(studentId: number): Promise<StudentResumeItem[]> {
+    private async fetchResumes(
+        studentId: number,
+        isDefault?: boolean
+    ): Promise<StudentResumeItem[]> {
+        const conditions = [
+            eq(schema.student_resumes.student_id, studentId),
+        ];
+
+        if (isDefault) {
+            conditions.push(eq(schema.student_resumes.is_default, true));
+        }
+
         const rows = await this.db
             .select({
                 resumeId: schema.student_resumes.resume_id,
@@ -55,7 +67,7 @@ export class StudentRepository implements IStudentRepository {
                 isDefault: schema.student_resumes.is_default,
             })
             .from(schema.student_resumes)
-            .where(eq(schema.student_resumes.student_id, studentId));
+            .where(and(...conditions));
 
         return rows.map(StudentMapper.toResumeItem);
     }
@@ -173,7 +185,7 @@ export class StudentRepository implements IStudentRepository {
 
         const [skills, resumes, totalApplications] = await Promise.all([
             this.fetchSkills(studentId),
-            this.fetchResumes(studentId),
+            this.fetchResumes(studentId, true),
             this.fetchApplicationCount(studentId),
         ]);
 
@@ -183,6 +195,73 @@ export class StudentRepository implements IStudentRepository {
             resumes,
             totalApplications,
         });
+    }
+
+    async findStudentProfileByUserId(userId: number): Promise<StudentProfile | null> {
+        const skillsSub = this.db
+            .select({
+                student_id: schema.student_skills.student_id,
+                skills: sql<any>`
+                COALESCE(
+                    JSON_AGG(
+                        JSONB_BUILD_OBJECT(
+                            'skill_id', ${schema.skills.skill_id},
+                            'skill_name', ${schema.skills.skill_name}
+                        )
+                    ) FILTER (WHERE ${schema.skills.skill_id} IS NOT NULL),
+                    '[]'
+                )
+            `.as('skills')
+            })
+            .from(schema.student_skills)
+            .leftJoin(
+                schema.skills,
+                eq(schema.student_skills.skill_id, schema.skills.skill_id)
+            )
+            .groupBy(schema.student_skills.student_id)
+            .as('skills_sub');
+
+        const resumesSub = this.db
+            .select({
+                student_id: schema.student_resumes.student_id,
+                resumes: sql<any>`
+                COALESCE(
+                    JSON_AGG(
+                        JSONB_BUILD_OBJECT(
+                            'resume_id', ${schema.student_resumes.resume_id},
+                            'resume_name', ${schema.student_resumes.resume_name},
+                            'cv_url', ${schema.student_resumes.cv_url},
+                            'is_default', ${schema.student_resumes.is_default}
+                        )
+                    ) FILTER (WHERE ${schema.student_resumes.resume_id} IS NOT NULL),
+                    '[]'
+                )
+            `.as('resumes')
+            })
+            .from(schema.student_resumes)
+            .groupBy(schema.student_resumes.student_id)
+            .as('resumes_sub');
+
+        const rows = await this.db
+            .select({
+                student_id: schema.students.student_id,
+                full_name: schema.students.full_name,
+                avatar_url: schema.students.avatar_url,
+                current_year: schema.students.current_year,
+                gpa: schema.students.gpa,
+                is_open_to_work: sql<boolean>`COALESCE(${schema.students.is_open_to_work}, false)`,
+                skills: skillsSub.skills,
+                resumes: resumesSub.resumes
+            })
+            .from(schema.students)
+            .leftJoin(skillsSub, eq(schema.students.student_id, skillsSub.student_id))
+            .leftJoin(resumesSub, eq(schema.students.student_id, resumesSub.student_id))
+            .where(eq(schema.students.user_id, userId))
+            .limit(1);
+
+        if (!rows.length) return null;
+
+        return StudentMapper.toStudentProfile(rows[0]);
     }
 
     async getStudentSkills(studentId: number): Promise<string[]> {
@@ -308,6 +387,16 @@ export class StudentRepository implements IStudentRepository {
                 isDefault: updated.is_default,
             });
         });
+    }
+
+    async updateStudentFields(userId: number, fields: any) {
+        return await this.db
+            .update(schema.students)
+            .set({
+                ...fields,
+                updated_at: new Date(),
+            })
+            .where(eq(schema.students.user_id, userId));
     }
 
     async findStudentCards(

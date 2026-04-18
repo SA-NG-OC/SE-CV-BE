@@ -220,7 +220,7 @@ export class CompanyController {
 
         const uploadRes = await this.cloudinaryService.uploadImage(file);
 
-        const company = await this.companyService.updateCompanyCover(
+        await this.companyService.updateCompanyCover(
             userId,
             uploadRes.secure_url,
         );

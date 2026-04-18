@@ -4,6 +4,7 @@ import { ListJobPostingDto } from '../dto/list-job-posting.dto';
 import { UpdateJobPostingDto } from '../dto/update-job-posting.dto';
 import { AdminJobCard, AdminJobStats, CategoryItem, CompanyJobCard, JobList, JobPostingResponse, JobPostingStats, JobSkillItem, ProfileJobCard, StudentJobCard, UpdateJobResponse } from '../interfaces';
 import { ChangeJobPostingStatusDto } from '../dto/change-job-posting-status.dto';
+import { JobPostingFilterDto } from '../dto/filter-job-card.dto';
 
 export interface IJobPostingRepository {
     checkCompany(companyId: number): Promise<boolean>
@@ -37,7 +38,7 @@ export interface IJobPostingRepository {
 
     findAllForAdmin(dto: ListJobPostingDto): Promise<PaginationResponse<AdminJobCard>>;
 
-    findAllForCompany(companyId: number, dto: ListJobPostingDto): Promise<PaginationResponse<CompanyJobCard>>;
+    findAllForCompany(companyId: number, dto: JobPostingFilterDto): Promise<PaginationResponse<CompanyJobCard>>;
 
     findAllForStudent(dto: ListJobPostingDto): Promise<PaginationResponse<StudentJobCard>>;
 
@@ -48,5 +49,7 @@ export interface IJobPostingRepository {
     getJobStatsByCompanyId(companyId: number): Promise<JobPostingStats>
 
     getAdminJobStats(): Promise<AdminJobStats>
+
+    toggleActiveStatus(jobId: number, companyId: number): Promise<void>
 
 }

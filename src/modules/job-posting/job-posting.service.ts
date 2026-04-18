@@ -16,6 +16,7 @@ import { PaginationResponse } from 'src/common/types/pagination-response';
 import { ListJobPostingDto } from './dto/list-job-posting.dto';
 import { ChangeJobPostingStatusDto } from './dto/change-job-posting-status.dto';
 import { JobPostingDomainError } from './domain/job-posting.domain';
+import { JobPostingFilterDto } from './dto/filter-job-card.dto';
 
 @Injectable()
 export class JobPostingService {
@@ -111,15 +112,22 @@ export class JobPostingService {
       return data;
     }
 
-    if (role === RoleName.COMPANY) {
-      if (!companyId) throw new ForbiddenException('Không xác định được công ty.');
-      const data = await this.jobPostingRepository.findAllForCompany(companyId, dto);
-      return data
-    }
-
     // STUDENT — bỏ qua filter status dù FE có truyền lên
     const data = await this.jobPostingRepository.findAllForStudent(dto);
     return data;
+  }
+
+  async getJobCardCompany(
+    dto: JobPostingFilterDto,
+    companyId?: number,
+  ) {
+    if (!companyId) throw new ForbiddenException('Không xác định được công ty.');
+    const data = await this.jobPostingRepository.findAllForCompany(companyId, dto);
+    return data;
+  }
+
+  async toggleActiveStatus(jobId: number, companyId: number) {
+    await this.jobPostingRepository.toggleActiveStatus(jobId, companyId);
   }
 
   async changeJobStatus(

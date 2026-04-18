@@ -1,7 +1,19 @@
 import { StudentStatus } from '../domain/student.props';
 
 export interface StudentSkillItem {
+    skillId: number;
     skillName: string;
+}
+
+export interface StudentProfile {
+    studentId: number;
+    fullName: string;
+    avatarUrl: string | null;
+    currentYear: number | null;
+    gpa: string | number | null;
+    isOpenToWork: boolean;
+    skills: StudentSkillItem[];
+    resumes: StudentResumeItem[];
 }
 
 export interface StudentResumeItem {

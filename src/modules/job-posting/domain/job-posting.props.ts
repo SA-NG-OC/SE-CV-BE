@@ -20,6 +20,7 @@ export type JobPostingProps = {
 
     city: string | null;
     applicationDeadline: string | null;
+    isActive: boolean;
 
     status: JobPostingStatus;
     adminNote: string | null;

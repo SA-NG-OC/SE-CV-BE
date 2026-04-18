@@ -25,7 +25,8 @@ import ResponseSuccess from 'src/common/types/response-success';
 import { UpdateJobPostingDto } from './dto/update-job-posting.dto';
 import { ListJobPostingDto } from './dto/list-job-posting.dto';
 import { ChangeJobPostingStatusDto } from './dto/change-job-posting-status.dto';
-import { ChangeJobStatusDocs, CreateJobPostingDocs, GetAdminJobStatsDocs, GetJobByIdDocs, GetJobCategoriesDocs, GetJobListDocs, GetJobSkillsDocs, GetJobStatsDocs, GetProfileJobDocs, ListJobPostingsDocs, UpdateJobPostingDocs } from './decorators';
+import { ChangeJobStatusDocs, CreateJobPostingDocs, GetAdminJobStatsDocs, GetJobByIdDocs, GetJobCardCompanyDocs, GetJobCategoriesDocs, GetJobListDocs, GetJobSkillsDocs, GetJobStatsDocs, GetProfileJobDocs, ListJobPostingsDocs, ToggleJobActiveDocs, UpdateJobPostingDocs } from './decorators';
+import { JobPostingFilterDto } from './dto/filter-job-card.dto';
 
 @Controller('job-postings')
 export class JobPostingController {
@@ -91,6 +92,21 @@ export class JobPostingController {
     const companyId = role === RoleName.COMPANY ? req.user.companyId : undefined;
 
     const result = await this.jobPostingService.listJobPostings(role, dto, companyId);
+    return new ResponseSuccess('Lấy thông tin thành công', result);
+  }
+
+  @Get('card/company')
+  @GetJobCardCompanyDocs()
+  @Roles(Role.COMPANY)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @HttpCode(HttpStatus.OK)
+  async getJobCardCompany(
+    @Req() req,
+    @Query() dto: JobPostingFilterDto,
+  ) {
+    const companyId = req.user.companyId;
+
+    const result = await this.jobPostingService.getJobCardCompany(dto, companyId);
     return new ResponseSuccess('Lấy thông tin thành công', result);
   }
 
@@ -179,5 +195,19 @@ export class JobPostingController {
   ) {
     const data = await this.jobPostingService.listProfileJobCard(companyId, page, limit);
     return new ResponseSuccess('Lấy dữ liệu thành công', data);
+  }
+
+  @Patch(':id/toggle-active')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ToggleJobActiveDocs()
+  @Roles(Role.COMPANY)
+  async toggleActive(
+    @Param('id', ParseIntPipe) jobId: number,
+    @Req() req: any
+  ) {
+    const companyId = req.user.companyId;
+
+    await this.jobPostingService.toggleActiveStatus(jobId, companyId);
+    return new ResponseSuccess('Cập nhật trạng thái thành công', {});
   }
 }

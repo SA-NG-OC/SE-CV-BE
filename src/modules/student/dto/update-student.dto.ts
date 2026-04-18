@@ -24,3 +24,28 @@ export const createResumeSchema = z.object({
     //isDefault: z.boolean().default(false),
 });
 export class CreateResumeDto extends createZodDto(createResumeSchema) { }
+
+// 4. Cập nhật ảnh đại diện
+export const updateAvatarSchema = z.object({
+    avatarUrl: z
+        .string({ message: 'Đường dẫn ảnh phải là chuỗi ký tự' })
+        .url({ message: 'Đường dẫn ảnh không đúng định dạng URL' })
+        .max(500, { message: 'Đường dẫn ảnh không quá 500 ký tự' }),
+});
+
+export class UpdateAvatarDto extends createZodDto(updateAvatarSchema) { }
+
+// 5. DTO cho Cập nhật Thông tin cơ bản (Full name & Email)
+export const updateGeneralInfoSchema = z.object({
+    fullName: z
+        .string({ message: 'Họ và tên phải là chuỗi ký tự' })
+        .min(1, { message: 'Họ và tên không được để trống' })
+        .max(255),
+
+    email: z
+        .string({ message: 'Email không đúng định dạng' })
+        .email({ message: 'Email không hợp lệ' })
+        .max(255),
+});
+
+export class UpdateGeneralInfoDto extends createZodDto(updateGeneralInfoSchema) { }

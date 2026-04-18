@@ -1,7 +1,7 @@
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { DATABASE_CONNECTION } from 'src/database/database.module';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { and, count, eq, gte, ilike, inArray, sql, SQL } from 'drizzle-orm';
+import { and, count, eq, gt, gte, ilike, inArray, isNull, lt, ne, or, sql, SQL } from 'drizzle-orm';
 import * as schema from 'src/database/schema';
 
 import { IJobPostingRepository } from './job-posting-repository.interface';
@@ -26,6 +26,7 @@ import {
 import { JobPostingDomain, JobPostingDomainError } from '../domain/job-posting.domain';
 import { JobPostingMapper } from '../domain/job-posting.mapper';
 import { ChangeJobPostingStatusDto } from '../dto/change-job-posting-status.dto';
+import { JobPostingFilterDto } from '../dto/filter-job-card.dto';
 
 
 @Injectable()
@@ -388,15 +389,53 @@ export class JobPostingRepository implements IJobPostingRepository {
 
     async findAllForCompany(
         companyId: number,
-        dto: ListJobPostingDto,
+        dto: JobPostingFilterDto,
     ): Promise<PaginationResponse<CompanyJobCard>> {
-        const { page, limit, search, status, city } = dto;
+        const { page, limit, search, tag, city } = dto;
         const offset = (page - 1) * limit;
 
         const conditions: SQL[] = [eq(schema.job_postings.company_id, companyId)];
-        if (search) conditions.push(ilike(schema.job_postings.job_title, `%${search}%`));
-        if (status) conditions.push(eq(schema.job_postings.status, status));
-        if (city) conditions.push(ilike(schema.job_postings.city, `%${city}%`));
+
+        if (search) {
+            conditions.push(ilike(schema.job_postings.job_title, `%${search}%`));
+        }
+        if (city) {
+            conditions.push(ilike(schema.job_postings.city, `%${city}%`));
+        }
+
+        if (tag) {
+            switch (tag) {
+                case 'Pending':
+                    conditions.push(ne(schema.job_postings.status, 'approved'));
+                    break;
+
+                case 'Hidden':
+                    conditions.push(
+                        eq(schema.job_postings.status, 'approved'),
+                        eq(schema.job_postings.is_active, false)
+                    );
+                    break;
+
+                case 'Closed':
+                    conditions.push(
+                        eq(schema.job_postings.status, 'approved'),
+                        eq(schema.job_postings.is_active, true),
+                        lt(schema.job_postings.application_deadline, sql`now()`)
+                    );
+                    break;
+
+                case 'Active':
+                    conditions.push(
+                        eq(schema.job_postings.status, 'approved'),
+                        eq(schema.job_postings.is_active, true),
+                        or(
+                            gt(schema.job_postings.application_deadline, sql`now()`),
+                            isNull(schema.job_postings.application_deadline)
+                        ) as SQL
+                    );
+                    break;
+            }
+        }
 
         const whereClause = and(...conditions);
 
@@ -424,10 +463,19 @@ export class JobPostingRepository implements IJobPostingRepository {
         ]);
 
         const jobIds = rows.map((r) => r.job.job_id);
-        const [skillMap, countMap] = await Promise.all([
-            this.fetchSkillMap(jobIds),
-            this.fetchApplicantCountMap(jobIds),
-        ]);
+
+
+        let skillMap = new Map<number, JobSkillItem[]>();
+        let countMap = new Map<number, number>();
+
+        if (jobIds.length > 0) {
+            const [sMap, cMap] = await Promise.all([
+                this.fetchSkillMap(jobIds),
+                this.fetchApplicantCountMap(jobIds),
+            ]);
+            skillMap = sMap;
+            countMap = cMap;
+        }
 
         const items = rows.map((r) => {
             const domain = JobPostingDomain.fromPersistence(r.job);
@@ -453,6 +501,7 @@ export class JobPostingRepository implements IJobPostingRepository {
         const offset = (page - 1) * limit;
 
         const conditions = [eq(schema.job_postings.status, 'approved')];
+        conditions.push(eq(schema.job_postings.is_active, true));
         conditions.push(gte(schema.job_postings.application_deadline, sql`CURRENT_DATE`));
         if (search) conditions.push(ilike(schema.job_postings.job_title, `%${search}%`));
         if (city) conditions.push(ilike(schema.job_postings.city, `%${city}%`));
@@ -506,7 +555,6 @@ export class JobPostingRepository implements IJobPostingRepository {
         dto: ChangeJobPostingStatusDto,
         adminId: number,
     ): Promise<number | null> {
-        // 1. Load row hiện tại
         const [existing] = await this.db
             .select()
             .from(schema.job_postings)
@@ -514,20 +562,41 @@ export class JobPostingRepository implements IJobPostingRepository {
             .limit(1);
 
         if (!existing) return null;
-
-        // 2. Khôi phục domain — tự validate transition bên trong
         const domain = JobPostingDomain.fromPersistence(existing);
-
-        // 3. Domain xử lý transition + ghi note, throw nếu không hợp lệ
         domain.changeStatus(dto, adminId);
 
-        // 4. Lưu lại
         await this.db
             .update(schema.job_postings)
             .set(domain.toUpdatePersistence())
             .where(eq(schema.job_postings.job_id, jobId));
 
         return jobId;
+    }
+
+    async toggleActiveStatus(jobId: number, companyId: number): Promise<void> {
+        const [existing] = await this.db
+            .select({ isActive: schema.job_postings.is_active, status: schema.job_postings.status })
+            .from(schema.job_postings)
+            .where(
+                and(
+                    eq(schema.job_postings.job_id, jobId),
+                    eq(schema.job_postings.company_id, companyId),
+                )
+            )
+            .limit(1);
+
+        if (!existing) {
+            throw new NotFoundException('Không tìm thấy bài đăng tuyển dụng hoặc bạn không có quyền chỉnh sửa.');
+        }
+        if (existing.status != 'approved') {
+            throw new BadRequestException('Không thể ẩn/ bỏ ẩn tin tuyển dụng chưa được duyệt hoặc bị hạn chế');
+        }
+        await this.db
+            .update(schema.job_postings)
+            .set({
+                is_active: !existing.isActive,
+            })
+            .where(eq(schema.job_postings.job_id, jobId));
     }
 
     async getJobStatsByCompanyId(companyId: number): Promise<JobPostingStats> {
@@ -543,8 +612,8 @@ export class JobPostingRepository implements IJobPostingRepository {
                         )
                     )`,
 
-                restricted: sql<number>`
-                    count(*) filter (where ${schema.job_postings.status} = 'restricted')
+                hidden: sql<number>`
+                    count(*) filter (where ${schema.job_postings.is_active} = false)
                 `,
 
                 closed: sql<number>`
@@ -559,7 +628,7 @@ export class JobPostingRepository implements IJobPostingRepository {
         return {
             total: Number(result?.total ?? 0),
             active: Number(result?.active ?? 0),
-            restricted: Number(result?.restricted ?? 0),
+            hidden: Number(result?.hidden ?? 0),
             closed: Number(result?.closed ?? 0),
         };
     }

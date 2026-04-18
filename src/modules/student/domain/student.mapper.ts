@@ -6,6 +6,7 @@ import {
     StudentGeneralInfo,
     StudentSkillItem,
     StudentCard,
+    StudentProfile,
 } from '../interfaces/student.interface';
 import { StudentStatus } from '../domain/student.props';
 
@@ -116,5 +117,35 @@ export class StudentMapper {
             isOpenToWork: raw.is_open_to_work,
             skills: raw.skills,
         }
+    }
+
+    static toStudentProfile(raw: {
+        student_id: number;
+        full_name: string;
+        avatar_url: string | null;
+        current_year: number | null;
+        gpa: string | number | null;
+        is_open_to_work: boolean;
+        skills: any[];
+        resumes: any[];
+    }): StudentProfile {
+        return {
+            studentId: raw.student_id,
+            fullName: raw.full_name,
+            avatarUrl: raw.avatar_url,
+            currentYear: raw.current_year,
+            gpa: raw.gpa,
+            isOpenToWork: raw.is_open_to_work,
+            skills: (raw.skills || []).map((s: any) => ({
+                skillId: s.skill_id,
+                skillName: s.skill_name
+            })),
+            resumes: (raw.resumes || []).filter(r => r !== null).map(r => ({
+                resumeId: r.resume_id,
+                resumeName: r.resume_name,
+                cvUrl: r.cv_url,
+                isDefault: r.is_default
+            }))
+        };
     }
 }
