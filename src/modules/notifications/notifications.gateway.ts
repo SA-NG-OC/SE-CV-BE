@@ -18,7 +18,7 @@ interface JwtPayload {
 export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @WebSocketServer()
-  server: Server;
+  server!: Server;
 
   private readonly logger = new Logger(NotificationsGateway.name);
   constructor(private readonly jwtService: JwtService) { }
@@ -52,7 +52,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         `User ${userId} connected | Socket: ${client.id} | Room: ${room}`,
       );
     }
-    catch (err) {
+    catch (err: any) {
       this.logger.warn(
         `Socket connection rejected: ${client.id} | Reason: ${err.message}`,
       );

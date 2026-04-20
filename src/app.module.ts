@@ -17,6 +17,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { JobPostingModule } from './modules/job-posting/job-posting.module';
 import { BullModule } from '@nestjs/bullmq';
 import { ApplicationModule } from './modules/application/application.module';
+import { CommentModule } from './modules/comment/comment.module';
 
 @Module({
   imports: [
@@ -53,7 +54,8 @@ import { ApplicationModule } from './modules/application/application.module';
     StudentModule,
     NotificationsModule,
     JobPostingModule,
-    ApplicationModule
+    ApplicationModule,
+    CommentModule,
   ],
   controllers: [AppController],
   providers: [AppService, EventsGateway, NotificationsGateway],

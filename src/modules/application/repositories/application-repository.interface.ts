@@ -24,4 +24,6 @@ export interface IApplicationRepository {
         filter: GetCompanyApplicationsFilter,
     ): Promise<PaginationResponse<ApplicantCardView>>;
     getStats(companyId: number, jobId?: number): Promise<ApplicationStats>
+
+    checkApply(companyId: number, studentId: number): Promise<boolean>;
 }

@@ -69,6 +69,29 @@ export class ApplicationRepository implements IApplicationRepository {
         return ApplicationDomain.fromPersistence(updated);
     }
 
+    async checkApply(companyId: number, studentId: number): Promise<boolean> {
+        const hasApplied = await this.db
+            .select({ id: schema.applications.application_id })
+            .from(schema.applications)
+            .innerJoin(
+                schema.job_postings,
+                eq(schema.applications.job_id, schema.job_postings.job_id)
+            )
+            .where(
+                and(
+                    eq(schema.applications.student_id, studentId),
+                    eq(schema.job_postings.company_id, companyId),
+                    inArray(schema.applications.status, ['interviewing', 'passed', 'rejected'])
+                )
+            )
+            .limit(1);
+        if (hasApplied.length === 0) {
+            return false;
+        }
+
+        return true;
+    }
+
     // =========================================================================
     // READ — single
     // =========================================================================

@@ -521,6 +521,18 @@ export const daily_statistics = pgTable("daily_statistics", {
 });
 
 // =============================================
+// 10. COMMENT ĐÁNH GIÁ CÔNG TY
+// =============================================
+
+export const comments = pgTable('comments', {
+    id: serial('id').primaryKey(),
+    student_id: integer('student_id').references(() => students.student_id, { onDelete: 'cascade' }).notNull(),
+    company_id: integer('company_id').references(() => companies.company_id, { onDelete: 'cascade' }).notNull(),
+    rating: integer('rating').notNull(), // 1 - 5 sao
+    content: text('content').notNull(),
+    created_at: timestamp('created_at').defaultNow().notNull(),
+});
+// =============================================
 // RELATIONS
 // =============================================
 
@@ -543,6 +555,7 @@ export const companiesRelations = relations(companies, ({ one, many }) => ({
     images: many(company_images),
     job_postings: many(job_postings),
     followers: many(followed_companies),
+    comments: many(comments),
 }));
 
 export const followedCompaniesRelations = relations(followed_companies, ({ one }) => ({
@@ -571,6 +584,7 @@ export const studentsRelations = relations(students, ({ one, many }) => ({
     saved_searches: many(saved_searches),
     followed_companies: many(followed_companies),
     invitations: many(job_invitations),
+    comments: many(comments),
 }));
 
 export const majorsRelations = relations(majors, ({ many }) => ({
@@ -634,5 +648,16 @@ export const applicationStatusHistoryRelations = relations(application_status_hi
     application: one(applications, {
         fields: [application_status_history.application_id],
         references: [applications.application_id],
+    }),
+}));
+
+export const commentsRelations = relations(comments, ({ one }) => ({
+    student: one(students, {
+        fields: [comments.student_id],
+        references: [students.student_id],
+    }),
+    company: one(companies, {
+        fields: [comments.company_id],
+        references: [companies.company_id],
     }),
 }));

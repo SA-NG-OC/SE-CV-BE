@@ -127,6 +127,20 @@
       "when": 1776509282782,
       "tag": "0017_red_red_skull",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1776516670704,
+      "tag": "0018_pretty_zodiak",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1776669127236,
+      "tag": "0019_little_colleen_wing",
+      "breakpoints": true
     }
   ]
 }
