@@ -9,6 +9,8 @@ export class JobPostingMapper {
             jobId: domain.jobId,
             jobTitle: domain.jobTitle,
             city: domain.city,
+            categoryId: domain.categoryId,
+            status: domain.status,
             salaryMin: domain.salaryMin,
             salaryMax: domain.salaryMax,
             salaryType: domain.salaryType,
@@ -152,6 +154,7 @@ export class JobPostingMapper {
             createdAt: domain.createdAt,
             updatedAt: domain.updatedAt,
             requiredSkills: extra.requiredSkills,
+            adminNote: domain.adminNote,
             // Computed từ domain
             //isExpired:              domain.isExpired(),
             // canAcceptApplications:  domain.canAcceptApplications(),

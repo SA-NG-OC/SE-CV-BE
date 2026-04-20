@@ -19,6 +19,8 @@ export interface ProfileJobCard {
     jobId: number,
     jobTitle: string | undefined,
     city: string | null,
+    categoryId: number | null,
+    status: 'pending' | 'approved' | 'rejected' | 'restricted',
     salaryMin: number | null,
     salaryMax: number | null,
     salaryType: string | null,
@@ -59,7 +61,7 @@ export interface JobPostingResponse {
     applicantCount: number;
     createdAt: Date;
     updatedAt: Date;
-
+    adminNote: string | null;
     requiredSkills: JobSkillItem[];
 }
 

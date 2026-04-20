@@ -88,9 +88,9 @@ export class JobPostingService {
     return job;
   }
 
-  async listProfileJobCard(companyId: number, page: number, limit: number): Promise<PaginationResponse<ProfileJobCard>> {
+  async listProfileJobCard(companyId: number, page: number, limit: number, roleName: RoleName): Promise<PaginationResponse<ProfileJobCard>> {
     await this.jobPostingRepository.checkCompany(companyId);
-    return await this.jobPostingRepository.findByCompanyId(companyId, page, limit);
+    return await this.jobPostingRepository.findByCompanyId(companyId, page, limit, roleName);
   }
 
   async listJob(companyId: number, page: number, limit: number) {

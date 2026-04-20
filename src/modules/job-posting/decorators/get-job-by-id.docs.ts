@@ -40,6 +40,7 @@ export const GetJobByIdDocs = () => applyDecorators(
                 applicantCount: 0,
                 createdAt: "2026-04-06T02:05:19.350Z",
                 updatedAt: "2026-04-06T02:06:30.385Z",
+                adminNote: "Tin tuyển dụng chứa nội dung lừa đảo",
                 requiredSkills: [
                     { skillId: 1, skillName: "React" },
                     { skillId: 2, skillName: "Node.js" },

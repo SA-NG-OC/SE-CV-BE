@@ -189,11 +189,13 @@ export class JobPostingController {
   @GetProfileJobDocs()
   @UseGuards(JwtAuthGuard)
   async getProfileJob(
+    @Req() req,
     @Param('companyId', ParseIntPipe) companyId: number,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
   ) {
-    const data = await this.jobPostingService.listProfileJobCard(companyId, page, limit);
+    const roleName: RoleName = req.user.roleName;
+    const data = await this.jobPostingService.listProfileJobCard(companyId, page, limit, roleName);
     return new ResponseSuccess('Lấy dữ liệu thành công', data);
   }
 

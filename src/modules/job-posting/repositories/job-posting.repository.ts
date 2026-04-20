@@ -283,17 +283,26 @@ export class JobPostingRepository implements IJobPostingRepository {
     async findByCompanyId(
         companyId: number,
         page: number,
-        limit: number
+        limit: number,
+        roleName: RoleName
     ): Promise<PaginationResponse<ProfileJobCard>> {
 
         const offset = (page - 1) * limit;
+        const condition: SQL[] = [];
+        condition.push(eq(schema.job_postings.company_id, companyId));
+        if (roleName === RoleName.STUDENT) {
+            condition.push(eq(schema.job_postings.status, 'approved'));
+            condition.push(eq(schema.job_postings.is_active, true));
+        }
+
+        const conditions = and(...condition);
 
         const [raw, totalResult] = await Promise.all([
             // Query data
             this.db
                 .select()
                 .from(schema.job_postings)
-                .where(eq(schema.job_postings.company_id, companyId))
+                .where(conditions)
                 .orderBy(sql`${schema.job_postings.created_at} desc`)
                 .limit(limit)
                 .offset(offset),
@@ -302,7 +311,7 @@ export class JobPostingRepository implements IJobPostingRepository {
             this.db
                 .select({ count: sql<number>`count(*)::int` })
                 .from(schema.job_postings)
-                .where(eq(schema.job_postings.company_id, companyId))
+                .where(conditions)
         ]);
 
         const totalItems = totalResult[0]?.count ?? 0;

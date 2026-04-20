@@ -92,7 +92,7 @@ export class JobPostingDomain {
     // =========================================================================
 
     approve(adminId: number): void {
-        if (this.props.status !== 'pending') {
+        if (this.props.status === 'approved') {
             throw new JobPostingDomainError(
                 `Không thể duyệt bài đăng đang ở trạng thái "${this.props.status}"`,
             );

@@ -4,7 +4,7 @@ import { ApiOperation, ApiOkResponse, ApiParam, ApiQuery } from '@nestjs/swagger
 export const GetProfileJobDocs = () => applyDecorators(
     ApiOperation({
         summary: 'Lấy danh sách tin tuyển dụng của công ty (trang profile)',
-        description: 'Trả về danh sách tin tuyển dụng có phân trang theo companyId. Không yêu cầu xác thực.',
+        description: 'Trả về danh sách tin tuyển dụng có phân trang theo companyId. Nếu là sinh viên sẽ chỉ lấy được những tin tuyển dụng đang hoạt động',
     }),
     ApiParam({ name: 'companyId', type: Number, description: 'ID của công ty', example: 1 }),
     ApiQuery({ name: 'page', type: Number, example: 1 }),
@@ -17,23 +17,25 @@ export const GetProfileJobDocs = () => applyDecorators(
             data: {
                 data: [
                     {
-                        jobId: 7,
-                        jobTitle: "Hahahahahahahahahaha",
-                        city: null,
-                        salaryMin: null,
-                        salaryMax: null,
-                        salaryType: null,
-                        isSalaryNegotiable: true,
-                        approvedAt: null
-                    }
+                        jobId: 9,
+                        jobTitle: "Frontend Developer Intern 2.0",
+                        city: "Hà Tĩnh",
+                        categoryId: 1,
+                        status: "rejected",
+                        salaryMin: 3000000,
+                        salaryMax: 5000000,
+                        salaryType: "RANGE",
+                        isSalaryNegotiable: false,
+                        approvedAt: null,
+                    },
                 ],
                 meta: {
                     currentPage: 1,
                     itemsPerPage: 10,
-                    totalItems: 2,
-                    totalPages: 1
-                }
-            }
+                    totalItems: 1,
+                    totalPages: 1,
+                },
+            },
         },
     }),
 );
