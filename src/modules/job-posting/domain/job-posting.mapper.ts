@@ -149,6 +149,7 @@ export class JobPostingMapper {
             isSalaryNegotiable: domain.isSalaryNegotiable,
             city: domain.city,
             applicationDeadline: domain.applicationDeadline,
+            isActive: domain.isActive,
             status: domain.status as JobPostingResponse['status'],
             applicantCount: extra.applicantCount,
             createdAt: domain.createdAt,

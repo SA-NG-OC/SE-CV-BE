@@ -56,7 +56,7 @@ export interface JobPostingResponse {
 
     city: string | null;
     applicationDeadline: string | null;
-
+    isActive: boolean;
     status: string;
     applicantCount: number;
     createdAt: Date;

@@ -36,6 +36,7 @@ export const GetJobByIdDocs = () => applyDecorators(
                 isSalaryNegotiable: false,
                 city: "HCM",
                 applicationDeadline: "2026-07-01",
+                isActive: true,
                 status: "pending",
                 applicantCount: 0,
                 createdAt: "2026-04-06T02:05:19.350Z",

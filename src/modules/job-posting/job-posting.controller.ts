@@ -48,8 +48,6 @@ export class JobPostingController {
     return new ResponseSuccess('Đăng tin tuyển dụng thành công', { jobId: newJobId });
   }
 
-
-
   @Get('categories')
   @GetJobCategoriesDocs()
   async getJobCategories(): Promise<ResponseSuccess<CategoryItem[]>> {
