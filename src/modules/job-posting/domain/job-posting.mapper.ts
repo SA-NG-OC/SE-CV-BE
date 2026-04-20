@@ -1,5 +1,5 @@
 import { toRelativeTime } from "src/utils/relative-time.util";
-import { AdminJobCard, CompanyJobCard, JobPostingResponse, JobSkillItem, ProfileJobCard, StudentJobCard } from "../interfaces";
+import { AdminJobCard, CompanyJobCard, JobPostingResponse, JobSkillItem, JobTag, ProfileJobCard, StudentJobCard } from "../interfaces";
 import { JobPostingDomain } from "./job-posting.domain";
 
 export class JobPostingMapper {
@@ -121,16 +121,31 @@ export class JobPostingMapper {
         };
     }
 
+
     static toResponse(
         domain: JobPostingDomain,
         extra: {
             applicantCount: number;
             requiredSkills: JobSkillItem[];
-            // Admin/Company xem thì truyền thêm company info nếu cần
             companyName?: string;
             logoUrl: string | null;
         },
     ): JobPostingResponse {
+
+        const now = new Date();
+
+        let tag: JobTag;
+
+        if (domain.status !== 'approved') {
+            tag = JobTag.PENDING;
+        } else if (!domain.isActive) {
+            tag = JobTag.HIDDEN;
+        } else if (domain.applicationDeadline && new Date(domain.applicationDeadline) < now) {
+            tag = JobTag.CLOSED;
+        } else {
+            tag = JobTag.ACTIVE;
+        }
+
         return {
             jobId: domain.jobId,
             companyId: domain.companyId,
@@ -156,10 +171,7 @@ export class JobPostingMapper {
             updatedAt: domain.updatedAt,
             requiredSkills: extra.requiredSkills,
             adminNote: domain.adminNote,
-            // Computed từ domain
-            //isExpired:              domain.isExpired(),
-            // canAcceptApplications:  domain.canAcceptApplications(),
-            // salaryDisplay:          domain.getSalaryDisplay(),
+            tag,
         };
     }
 }

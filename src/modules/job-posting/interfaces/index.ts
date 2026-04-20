@@ -34,6 +34,13 @@ export interface JobSkillItem {
     skillName: string;
 }
 
+export enum JobTag {
+    PENDING = 'Pending',
+    HIDDEN = 'Hidden',
+    CLOSED = 'Closed',
+    ACTIVE = 'Active',
+}
+
 // Response chính của job posting
 export interface JobPostingResponse {
     jobId: number;
@@ -63,6 +70,7 @@ export interface JobPostingResponse {
     updatedAt: Date;
     adminNote: string | null;
     requiredSkills: JobSkillItem[];
+    tag: JobTag;
 }
 
 // Category

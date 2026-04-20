@@ -46,7 +46,8 @@ export const GetJobByIdDocs = () => applyDecorators(
                     { skillId: 1, skillName: "React" },
                     { skillId: 2, skillName: "Node.js" },
                     { skillId: 3, skillName: "TypeScript" }
-                ]
+                ],
+                tag: "Hidden",
             }
         },
     }),
