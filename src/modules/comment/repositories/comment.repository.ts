@@ -7,7 +7,7 @@ import { ICommentsRepository } from './comment-repository.interface';
 import { UpdateCommentDto } from '../dto/update-comment.dto';
 import { CreateCommentDto } from '../dto/create-comment.dto';
 import { CommentMapper } from '../mapper/comment.mapper';
-import { CommentOfMyCompany, CommentResponse, CommentResponseDetail } from '../interface';
+import { CommentOfMyCompany, CommentResponse, CommentResponseDetail, CompanyCommentStatistics, RatingDistribution } from '../interface';
 import { Role, RoleName } from 'src/common/types/role.enum';
 import { PaginationResponse } from 'src/common/types/pagination-response';
 
@@ -126,5 +126,45 @@ export class CommentsRepository implements ICommentsRepository {
         return new PaginationResponse(mappedData, page, limit, Number(total));
     }
 
+    async getCompanyCommentStats(companyId: number): Promise<CompanyCommentStatistics> {
+        // 1. Lấy số lượng comment theo từng mức rating (1-5 sao)
+        const statsRaw = await this.db
+            .select({
+                rating: schema.comments.rating,
+                count: count(),
+            })
+            .from(schema.comments)
+            .where(eq(schema.comments.company_id, companyId))
+            .groupBy(schema.comments.rating);
+
+        // 2. Tính tổng số lượng comment
+        const totalComments = statsRaw.reduce((acc, curr) => acc + Number(curr.count), 0);
+
+        // 3. Tính trung bình đánh giá
+        const sumRatings = statsRaw.reduce((acc, curr) => acc + (curr.rating * Number(curr.count)), 0);
+        const averageRating = totalComments > 0
+            ? Number((sumRatings / totalComments).toFixed(1))
+            : 0;
+
+        // 4. Phân loại và tính phần trăm cho từng mức sao 
+        const distribution: RatingDistribution[] = [1, 2, 3, 4, 5].map((star) => {
+            const found = statsRaw.find((s) => s.rating === star);
+            const countValue = found ? Number(found.count) : 0;
+
+            return {
+                rating: star,
+                count: countValue,
+                percentage: totalComments > 0
+                    ? Number((countValue / totalComments).toFixed(2))
+                    : 0,
+            };
+        });
+
+        return {
+            totalComments,
+            averageRating,
+            distribution,
+        };
+    }
 
 }

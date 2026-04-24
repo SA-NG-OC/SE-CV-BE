@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { createZodDto } from 'nestjs-zod';
 
-export const UpdateJobPostingSchema = z.object({
+// 1. Base schema cho UPDATE (tất cả optional)
+const BaseUpdateJobPostingSchema = z.object({
     jobTitle: z
         .string()
         .min(5, 'Tiêu đề công việc phải có ít nhất 5 ký tự')
@@ -21,7 +22,7 @@ export const UpdateJobPostingSchema = z.object({
 
     applicationDeadline: z
         .string()
-        .datetime()
+        .datetime({ message: 'Ngày không hợp lệ' })
         .refine((d) => new Date(d) > new Date(), {
             message: 'Hạn chót phải là ngày trong tương lai',
         })
@@ -31,18 +32,21 @@ export const UpdateJobPostingSchema = z.object({
         .number()
         .int()
         .nonnegative('Lương tối thiểu phải >= 0')
+        .nullable()
         .optional(),
 
     salaryMax: z.coerce
         .number()
         .int()
         .positive('Lương tối đa phải > 0')
+        .nullable()
         .optional(),
 
     salaryType: z.enum(['FIXED', 'RANGE', 'NEGOTIABLE']).optional(),
 
     isSalaryNegotiable: z.boolean().optional(),
-    isActive: z.boolean().default(true),
+
+    isActive: z.boolean().optional(),
 
     numberOfPositions: z.coerce
         .number()
@@ -70,24 +74,46 @@ export const UpdateJobPostingSchema = z.object({
         .enum(['STAFF', 'TEAM_LEAD', 'SUPERVISOR', 'MANAGER', 'DIRECTOR', 'C_LEVEL'])
         .optional(),
 
-    // Nếu truyền vào thì replace toàn bộ skills cũ
     skillIds: z
         .array(z.coerce.number().int().positive())
         .min(1, 'Phải có ít nhất 1 kỹ năng nếu muốn cập nhật skills')
         .optional(),
 
     isUrgent: z.boolean().optional(),
-}).refine(
-    (data) => {
-        if (data.salaryMin !== undefined && data.salaryMax !== undefined) {
-            return data.salaryMax >= data.salaryMin;
+});
+
+// 2. Apply preprocess + refine giống CREATE
+export const UpdateJobPostingSchema = z
+    .preprocess((input: any) => {
+        if (
+            input &&
+            (input.isSalaryNegotiable === true || input.isSalaryNegotiable === 'true')
+        ) {
+            return {
+                ...input,
+                salaryMin: null,
+                salaryMax: null,
+                salaryType: 'NEGOTIABLE',
+            };
         }
-        return true;
-    },
-    {
-        message: 'Lương tối đa phải lớn hơn hoặc bằng lương tối thiểu',
-        path: ['salaryMax'],
-    },
-);
+        return input;
+    }, BaseUpdateJobPostingSchema)
+    .refine(
+        (data) => {
+            if (
+                data.salaryMin !== null &&
+                data.salaryMin !== undefined &&
+                data.salaryMax !== null &&
+                data.salaryMax !== undefined
+            ) {
+                return data.salaryMax >= data.salaryMin;
+            }
+            return true;
+        },
+        {
+            message: 'Lương tối đa phải lớn hơn hoặc bằng lương tối thiểu',
+            path: ['salaryMax'],
+        },
+    );
 
 export class UpdateJobPostingDto extends createZodDto(UpdateJobPostingSchema) { }

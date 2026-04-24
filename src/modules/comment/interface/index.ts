@@ -31,3 +31,15 @@ export interface CommentOfMyCompany {
     createdAt: Date;
 }
 
+export interface RatingDistribution {
+    rating: number; // 1, 2, 3, 4, 5
+    percentage: number; // Ví dụ: 0.25 (tức 25%)
+    count: number;
+}
+
+export interface CompanyCommentStatistics {
+    totalComments: number;
+    averageRating: number;
+    distribution: RatingDistribution[];
+}
+

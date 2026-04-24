@@ -1,6 +1,6 @@
 import { Inject, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { I_COMMENTS_REPOSITORY, type ICommentsRepository } from "./repositories/comment-repository.interface";
-import { CommentOfMyCompany, CommentResponse, CommentResponseDetail } from "./interface";
+import { CommentOfMyCompany, CommentResponse, CommentResponseDetail, CompanyCommentStatistics } from "./interface";
 import { CreateCommentDto } from "./dto/create-comment.dto";
 import { UpdateCommentDto } from "./dto/update-comment.dto";
 import { I_APPLICATION_REPOSITORY } from "../application/application.token";
@@ -62,5 +62,13 @@ export class CommentsService {
       throw new NotFoundException('Không tìm thấy đánh giá hoặc bạn không có quyền sửa');
     }
     return updated;
+  }
+
+  async getCompanyCommentStats(companyId: number): Promise<CompanyCommentStatistics> {
+    const data = await this.repo.getCompanyCommentStats(companyId);
+    if (!data) {
+      throw new NotFoundException('Không tìm thấy dữ liệu');
+    }
+    return data;
   }
 }

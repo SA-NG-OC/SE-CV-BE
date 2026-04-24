@@ -5,9 +5,9 @@ import { CommentsService } from "./comment.service";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { CreateCommentDto } from "./dto/create-comment.dto";
 import ResponseSuccess from "src/common/types/response-success";
-import { Role } from "src/common/types/role.enum";
+import { Role, RoleName } from "src/common/types/role.enum";
 import { UpdateCommentDto } from "./dto/update-comment.dto";
-import { CreateCommentDocs, DeleteCommentDocs, GetAdminCompanyCommentsDocs, GetMyCompanyCommentsDocs, UpdateCommentDocs } from "./decorators";
+import { CreateCommentDocs, DeleteCommentDocs, GetAdminCompanyCommentsDocs, GetCompanyCommentStatDocs, GetMyCompanyCommentsDocs, UpdateCommentDocs } from "./decorators";
 
 @Controller('comments')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -37,6 +37,21 @@ export class CommentsController {
     const studentId = req.user.studentId;
     const result = await this.commentsService.createComment(studentId, dto);
     return new ResponseSuccess('Đăng đánh giá thành công', result);
+  }
+
+  @Get('stat/:companyId')
+  @GetCompanyCommentStatDocs()
+  @Roles(Role.ADMIN, Role.COMPANY)
+  async getCompanyCommentStat(
+    @Req() req,
+    @Param('companyId', ParseIntPipe) companyId: number,
+  ) {
+    const roleName: RoleName = req.user.roleName;
+    if (roleName === RoleName.COMPANY) {
+      companyId = req.user.companyId;
+    }
+    const data = await this.commentsService.getCompanyCommentStats(companyId);
+    return new ResponseSuccess('Dữ liệu được tải thành công', data);
   }
 
   @Get('admin/:companyId')
@@ -75,4 +90,6 @@ export class CommentsController {
     await this.commentsService.deleteComment(id, studentId);
     return new ResponseSuccess('Xóa đánh giá thành công', {});
   }
+
+
 }

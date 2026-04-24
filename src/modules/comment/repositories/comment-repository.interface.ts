@@ -1,7 +1,7 @@
 import { RoleName } from "src/common/types/role.enum";
 import { CreateCommentDto } from "../dto/create-comment.dto";
 import { UpdateCommentDto } from "../dto/update-comment.dto";
-import { CommentOfMyCompany, CommentResponse, CommentResponseDetail } from "../interface";
+import { CommentOfMyCompany, CommentResponse, CommentResponseDetail, CompanyCommentStatistics } from "../interface";
 import { PaginationResponse } from "src/common/types/pagination-response";
 
 export interface ICommentsRepository {
@@ -18,6 +18,7 @@ export interface ICommentsRepository {
         page: number,
         limit: number
     ): Promise<PaginationResponse<CommentOfMyCompany>>;
+    getCompanyCommentStats(companyId: number): Promise<CompanyCommentStatistics>
 }
 
 export const I_COMMENTS_REPOSITORY = 'I_COMMENTS_REPOSITORY';
