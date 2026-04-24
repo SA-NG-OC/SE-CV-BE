@@ -9,9 +9,9 @@ export const CreateJobCategoryDocs = () => applyDecorators(
     ApiBody({
         schema: {
             type: 'object',
-            required: ['category_name'],
+            required: ['categoryName'],
             properties: {
-                category_name: {
+                categoryName: {
                     type: 'string',
                     example: 'IT',
                     minLength: 2,

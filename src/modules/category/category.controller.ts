@@ -45,9 +45,9 @@ export class JobCategoryController {
   @CreateJobCategoryDocs()
   @Roles(Role.ADMIN)
   async create(@Body() dto: CreateJobCategoryDto) {
-    const id = await this.service.create(dto.category_name);
+    const id = await this.service.create(dto.categoryName);
 
-    return new ResponseSuccess('Tạo danh mục thành công', { id });
+    return new ResponseSuccess('Tạo danh mục thành công', id);
   }
 
   @Patch(':id')
@@ -57,8 +57,8 @@ export class JobCategoryController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateJobCategoryDto
   ) {
-    if (dto.category_name !== undefined) {
-      await this.service.updateName(id, dto.category_name);
+    if (dto.categoryName !== undefined) {
+      await this.service.updateName(id, dto.categoryName);
     }
 
     return new ResponseSuccess('Cập nhật thành công', {});

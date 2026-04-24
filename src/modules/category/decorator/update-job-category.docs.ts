@@ -15,7 +15,7 @@ export const UpdateJobCategoryDocs = () => applyDecorators(
         schema: {
             type: 'object',
             properties: {
-                category_name: {
+                categoryName: {
                     type: 'string',
                     example: 'Marketing',
                 },

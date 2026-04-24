@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { eq, sql } from "drizzle-orm";
 
@@ -87,14 +87,53 @@ export class JobCategoryRepository implements IJobCategoryRepository {
     }
 
     async delete(id: number): Promise<void> {
-        const result = await this.db
-            .delete(schema.job_categories)
-            .where(eq(schema.job_categories.category_id, id))
-            .returning({ id: schema.job_categories.category_id });
+        await this.db.transaction(async (tx) => {
+            // 1. Lấy category hiện tại
+            const [existing] = await tx
+                .select({
+                    category_id: schema.job_categories.category_id,
+                    category_name: schema.job_categories.category_name,
+                })
+                .from(schema.job_categories)
+                .where(eq(schema.job_categories.category_id, id))
+                .limit(1);
 
-        if (result.length === 0) {
-            throw new NotFoundException("Không tìm thấy danh mục");
-        }
+            if (!existing) {
+                throw new NotFoundException("Không tìm thấy danh mục");
+            }
+
+            if (existing.category_name === 'Khác') {
+                throw new BadRequestException('Không thể xóa danh mục "Khác"');
+            }
+
+            const [defaultCategory] = await tx
+                .select({
+                    category_id: schema.job_categories.category_id,
+                })
+                .from(schema.job_categories)
+                .where(eq(schema.job_categories.category_name, 'Khác'))
+                .limit(1);
+
+            if (!defaultCategory) {
+                throw new BadRequestException('Chưa tồn tại danh mục "Khác"');
+            }
+
+            await tx
+                .update(schema.job_postings)
+                .set({
+                    category_id: defaultCategory.category_id,
+                })
+                .where(eq(schema.job_postings.category_id, id));
+
+            const result = await tx
+                .delete(schema.job_categories)
+                .where(eq(schema.job_categories.category_id, id))
+                .returning({ id: schema.job_categories.category_id });
+
+            if (result.length === 0) {
+                throw new NotFoundException("Không tìm thấy danh mục");
+            }
+        });
     }
 
     async toggleActiveStatus(categoryId: number): Promise<void> {
