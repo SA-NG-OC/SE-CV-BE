@@ -1,28 +1,52 @@
-import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { CreateApplicationDto } from './dto/create-application.dto';
-import type { IApplicationRepository } from './repositories/application-repository.interface';
-import { ApplicationDomain, ApplicationDomainError } from './domain/application/application.domain';
-import { ApplicantCardView, ApplicationCardView, ApplicationStats, GetCompanyApplicationsFilter, GetMyApplicationsQuery } from './interfaces/application.interface';
-import { PaginationResponse } from 'src/common/types/pagination-response';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { I_APPLICATION_REPOSITORY, I_JOB_INVITATION } from './application.token';
-import { ChangeApplicationStatusDto } from './dto/change-application-status.dto';
-import { ApplicationStatus } from './domain/application/application.props';
 import { I_JOB_POSTING_REPOSITORY } from '../job-posting/job-posting.tokens';
+
+import type { IApplicationRepository } from './repositories/application-repository.interface';
 import type { IJobPostingRepository } from '../job-posting/repositories/job-posting-repository.interface';
 import type { IJobInvitationRepository } from './repositories/job-invitation-repository.interface';
-import { CreateJobInvitationDto } from './dto/create-job-invitation.dto';
+
+import { ApplicationDomain, ApplicationDomainError } from './domain/application/application.domain';
 import { JobInvitationDomain } from './domain/job-invitation/job-invitation.domain';
-import { EmployerInvitationCardView, InvitationCardView } from './domain/job-invitation/job-invitation.mapper';
+import { ApplicationMapper } from './domain/application/application.mapper';
+
+import { CreateApplicationDto } from './dto/create-application.dto';
+import { ChangeApplicationStatusDto } from './dto/change-application-status.dto';
+import { CreateJobInvitationDto } from './dto/create-job-invitation.dto';
 import { GetInvitationsQueryDto } from './dto/get-invitations-query.dto';
 
+import {
+  ApplicantCardView,
+  ApplicationCardView,
+  ApplicationStats,
+  GetCompanyApplicationsFilter,
+  GetMyApplicationsQuery,
+} from './types/application.interface';
+import { ApplicationStatus } from './domain/application/application.props';
+import { PaginationResponse } from 'src/common/types/pagination-response';
+import { EmployerInvitationCardView, InvitationCardView } from './domain/job-invitation/job-invitation.mapper';
 
 @Injectable()
 export class ApplicationService {
-  constructor(@Inject(I_APPLICATION_REPOSITORY) private readonly applicationRepo: IApplicationRepository,
-    @Inject(I_JOB_POSTING_REPOSITORY) private readonly jobPostingRepo: IJobPostingRepository,
-    @Inject(I_JOB_INVITATION) private readonly jobInvitationRepo: IJobInvitationRepository) {
+  constructor(
+    @Inject(I_APPLICATION_REPOSITORY)
+    private readonly applicationRepo: IApplicationRepository,
+    @Inject(I_JOB_POSTING_REPOSITORY)
+    private readonly jobPostingRepo: IJobPostingRepository,
+    @Inject(I_JOB_INVITATION)
+    private readonly jobInvitationRepo: IJobInvitationRepository,
+  ) { }
 
-  }
+  // =========================================================================
+  // PRIVATE HELPERS
+  // =========================================================================
 
   private rethrow(error: unknown): never {
     if (error instanceof ApplicationDomainError) {
@@ -31,18 +55,39 @@ export class ApplicationService {
     throw error;
   }
 
-  async applyJob(
-    dto: CreateApplicationDto,
-    studentId: number,
-  ): Promise<ApplicationDomain> {
-    // Check trùng đơn
-    const existing = await this.applicationRepo.findByJobAndStudent(
-      dto.jobId,
-      studentId,
-    );
+  private async assertJobBelongsToCompany(companyId: number, jobId: number): Promise<void> {
+    const job = await this.jobPostingRepo.findById(jobId);
+    if (!job || job.companyId !== companyId) {
+      throw new ForbiddenException('Bạn không có quyền thao tác với tin tuyển dụng này');
+    }
+  }
+
+  private assertJobNotExpired(deadline: string | null): void {
+    if (!deadline) return;
+
+    const deadlineDate = new Date(deadline);
+    deadlineDate.setHours(23, 59, 59, 999);
+
+    if (new Date() > deadlineDate) {
+      throw new BadRequestException('Hết hạn ứng tuyển! Bạn không thể nộp hồ sơ cho tin này nữa.');
+    }
+  }
+
+  // =========================================================================
+  // STUDENT — ứng tuyển
+  // =========================================================================
+
+  async applyJob(dto: CreateApplicationDto, studentId: number): Promise<ApplicationDomain> {
+    const existing = await this.applicationRepo.findByJobAndStudent(dto.jobId, studentId);
     if (existing) {
       throw new ConflictException('Bạn đã nộp đơn cho công việc này rồi');
     }
+
+    const job = await this.jobPostingRepo.findById(dto.jobId);
+    if (!job) {
+      throw new NotFoundException('Không tìm thấy tin tuyển dụng này');
+    }
+    this.assertJobNotExpired(job.applicationDeadline);
 
     const application = ApplicationDomain.create(dto, studentId);
     return this.applicationRepo.save(application);
@@ -52,37 +97,46 @@ export class ApplicationService {
     studentId: number,
     query: GetMyApplicationsQuery,
   ): Promise<PaginationResponse<ApplicationCardView>> {
-    return this.applicationRepo.findCardsByStudent(studentId, query);
+    const raw = await this.applicationRepo.findCardsByStudent(studentId, query);
+
+    return {
+      ...raw,
+      data: raw.data.map(ApplicationMapper.toCardView),
+    };
   }
 
   async getMyStats(studentId: number): Promise<ApplicationStats> {
-    return this.applicationRepo.getStatsByStudent(studentId);
+    const raw = await this.applicationRepo.getStatsByStudent(studentId);
+    return ApplicationMapper.toStats(raw);
   }
 
-  private async checkJobCompany(companyId, jobId): Promise<void> {
-    const job = await this.jobPostingRepo.findById(jobId);
-    if (!job || job !== companyId) {
-      throw new ForbiddenException('Bạn không có quyền xem thông tin của tin tuyển dụng này');
-    }
-  }
+  // =========================================================================
+  // COMPANY — quản lý ứng viên
+  // =========================================================================
 
   async getApplicantsByJob(
     companyId: number,
     filter: GetCompanyApplicationsFilter,
   ): Promise<PaginationResponse<ApplicantCardView>> {
-    if (filter.jobId)
-      await this.checkJobCompany(companyId, filter.jobId);
-    return await this.applicationRepo.findApplicantCardsByJob(filter);
+    if (filter.jobId) {
+      await this.assertJobBelongsToCompany(companyId, filter.jobId);
+    }
+
+    const raw = await this.applicationRepo.findApplicantCardsByJob(filter);
+
+    return {
+      ...raw,
+      data: raw.data.map(ApplicationMapper.toApplicantCardView),
+    };
   }
 
-  async getJobStats(
-    companyId: number,
-    jobId?: number,
-  ): Promise<ApplicationStats> {
+  async getJobStats(companyId: number, jobId?: number): Promise<ApplicationStats> {
     if (jobId) {
-      await this.checkJobCompany(companyId, jobId);
+      await this.assertJobBelongsToCompany(companyId, jobId);
     }
-    return this.applicationRepo.getStats(companyId, jobId);
+
+    const raw = await this.applicationRepo.getStats(companyId, jobId);
+    return ApplicationMapper.toStats(raw);
   }
 
   async changeApplicationStatus(
@@ -91,34 +145,37 @@ export class ApplicationService {
     dto: ChangeApplicationStatusDto,
   ): Promise<ApplicationDomain> {
     const application = await this.applicationRepo.findById(applicationId);
-    if (!application) throw new NotFoundException('Không tìm thấy đơn ứng tuyển');
+    if (!application) {
+      throw new NotFoundException('Không tìm thấy đơn ứng tuyển');
+    }
 
-    this.checkJobCompany(companyId, application.jobId);
+    await this.assertJobBelongsToCompany(companyId, application.jobId);
 
     application.changeStatus(dto.status as ApplicationStatus);
+
     return this.applicationRepo.save(application);
   }
 
   // =========================================================================
-  // JOB INVITATION LOGIC (Dành cho Nhà tuyển dụng)
+  // JOB INVITATION — Nhà tuyển dụng
   // =========================================================================
 
   async inviteCandidate(
     companyId: number,
     dto: CreateJobInvitationDto,
   ): Promise<JobInvitationDomain> {
-    await this.checkJobCompany(companyId, dto.jobId);
+    await this.assertJobBelongsToCompany(companyId, dto.jobId);
 
     const existingInvitation = await this.jobInvitationRepo.findByJobId(dto.jobId, dto.studentId);
-    if (existingInvitation && existingInvitation.status === 'pending') {
-      throw new ConflictException('Bạn đã gửi lời mời cho ứng viên này rồi và đang chờ phản hồi');
-    }
-    const existingApp = await this.applicationRepo.findByJobAndStudent(dto.jobId, dto.studentId);
-    if (existingApp) {
-      throw new ConflictException('Ứng viên này đã nộp đơn ứng tuyển vào công việc này');
+    if (existingInvitation?.status === 'pending') {
+      throw new ConflictException('Bạn đã gửi lời mời cho ứng viên này và đang chờ phản hồi');
     }
 
-    // 4. Tạo lời mời
+    const existingApp = await this.applicationRepo.findByJobAndStudent(dto.jobId, dto.studentId);
+    if (existingApp) {
+      throw new ConflictException('Ứng viên này đã nộp đơn vào công việc này');
+    }
+
     const invitation = JobInvitationDomain.create({
       jobId: dto.jobId,
       studentId: dto.studentId,
@@ -132,49 +189,42 @@ export class ApplicationService {
     companyId: number,
     query: GetInvitationsQueryDto,
   ): Promise<EmployerInvitationCardView[]> {
-
-    return this.jobInvitationRepo.findByCompany(
-      companyId,
-      query.status
-    );
+    return this.jobInvitationRepo.findByCompany(companyId, query.status);
   }
 
   // =========================================================================
-  // JOB INVITATION LOGIC (Dành cho Sinh viên)
+  // JOB INVITATION — Sinh viên
   // =========================================================================
 
   async getMyInvitations(
     studentId: number,
     query: GetInvitationsQueryDto,
   ): Promise<InvitationCardView[]> {
-
-    return this.jobInvitationRepo.findByStudent(
-      studentId,
-      query.status
-    );
+    return this.jobInvitationRepo.findByStudent(studentId, query.status);
   }
 
   async respondToInvitation(
     studentId: number,
     invitationId: number,
     action: 'accept' | 'reject',
-    cvUrl?: string
+    cvUrl?: string,
   ): Promise<void> {
     const invitation = await this.jobInvitationRepo.findById(invitationId);
-
     if (!invitation) throw new NotFoundException('Không tìm thấy lời mời');
-    if (invitation.studentId !== studentId) throw new ForbiddenException('Bạn không có quyền thực hiện thao tác này');
+    if (invitation.studentId !== studentId) {
+      throw new ForbiddenException('Bạn không có quyền thực hiện thao tác này');
+    }
 
     try {
       if (action === 'accept') {
         invitation.accept();
 
-        // --- LOGIC QUAN TRỌNG: TỰ ĐỘNG TẠO ĐƠN ỨNG TUYỂN ---
         const application = ApplicationDomain.create({
           jobId: invitation.jobId,
           cvUrl: cvUrl || 'URL_CV_MAC_DINH_CUA_SINH_VIEN',
           coverLetter: `Chấp nhận lời mời ứng tuyển: ${invitation.message || ''}`,
         }, studentId);
+
         application.scheduleInterview();
 
         await this.applicationRepo.save(application);

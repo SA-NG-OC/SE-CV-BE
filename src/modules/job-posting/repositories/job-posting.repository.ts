@@ -271,13 +271,16 @@ export class JobPostingRepository implements IJobPostingRepository {
         });
     }
 
-    async findById(jobId: number): Promise<number | null> {
+    async findById(jobId: number): Promise<{ companyId: number | null; applicationDeadline: string | null } | null> {
         const [data] = await this.db
-            .select({ id: schema.job_postings.company_id })
+            .select({
+                companyId: schema.job_postings.company_id,
+                applicationDeadline: schema.job_postings.application_deadline
+            })
             .from(schema.job_postings)
             .where(eq(schema.job_postings.job_id, jobId));
 
-        return data ? data.id : null;
+        return data ?? null;
     }
 
     async findByCompanyId(

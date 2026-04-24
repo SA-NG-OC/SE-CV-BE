@@ -4,7 +4,7 @@ import { CreateApplicationDto } from './dto/create-application.dto';
 import { ApplicationDomain } from './domain/application/application.domain';
 import { ApplicationStatus } from './domain/application/application.props';
 import { PaginationResponse } from 'src/common/types/pagination-response';
-import { ApplicantCardView, ApplicationStats } from './interfaces/application.interface';
+import { ApplicantCardView, ApplicationStats } from './types/application.interface';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';

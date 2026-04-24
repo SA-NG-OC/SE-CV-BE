@@ -1,25 +1,43 @@
-import { Inject, Injectable } from "@nestjs/common";
-import type { IJobCategoryRepository } from "./repositories/job-category-repository.interface";
-import { JobCategoryResponse, JobCategoryStats } from "./interface";
+import { Inject, Injectable, NotFoundException } from "@nestjs/common";
+
 import { PaginationResponse } from "src/common/types/pagination-response";
+import { I_JOB_CATEGORY_REPOSITORY, type IJobCategoryRepository } from "./repositories/job-category-repository.interface";
+import { JobCategoryResponse, JobCategoryStats } from "./types";
+import { JobCategoryMapper } from "./mapper/job-category.mapper";
 
 
 @Injectable()
 export class JobCategoryService {
   constructor(
-    @Inject('I_JOB_CATEGORY_REPOSITORY')
+    @Inject(I_JOB_CATEGORY_REPOSITORY)
     private readonly repo: IJobCategoryRepository,
   ) { }
 
   async findAll(
-    page: number = 1,
-    limit: number = 10
+    page: number,
+    limit: number,
   ): Promise<PaginationResponse<JobCategoryResponse>> {
-    return this.repo.findAll(page, limit);
+    const raw = await this.repo.findAll(page, limit);
+
+    return {
+      ...raw,
+      data: JobCategoryMapper.toResponseArray(raw.data),
+    };
   }
 
-  async create(categoryName: string): Promise<number> {
-    return this.repo.create(categoryName);
+  async findById(id: number): Promise<JobCategoryResponse> {
+    const raw = await this.repo.findById(id);
+
+    if (!raw) {
+      throw new NotFoundException("Không tìm thấy danh mục");
+    }
+
+    return JobCategoryMapper.toResponse({ ...raw, job_count: 0 });
+  }
+
+  async create(categoryName: string): Promise<{ id: number }> {
+    const id = await this.repo.create(categoryName);
+    return { id };
   }
 
   async updateName(id: number, categoryName: string): Promise<void> {
@@ -36,6 +54,6 @@ export class JobCategoryService {
 
   async getStats(): Promise<JobCategoryStats> {
     const raw = await this.repo.getStats();
-    return raw;
+    return JobCategoryMapper.toStatsResponse(raw);
   }
 }

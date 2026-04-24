@@ -1,17 +1,10 @@
 import { JobSkillItem } from 'src/modules/job-posting/interfaces';
-import { ApplicantCardView, ApplicationCardView } from '../../interfaces/application.interface';
 import { ApplicationStatus } from './application.props';
+import { ApplicantCardRaw, ApplicationCardRaw, ApplicationStatsRaw } from '../../types/application.raw';
+import { ApplicantCardView, ApplicationCardView, ApplicationStats } from '../../types/application.interface';
 
 export class ApplicationMapper {
-    static toCardView(raw: {
-        application_id: number;
-        status: string;
-        created_at: Date;
-        job_id: number;
-        job_title: string;
-        company_name: string;
-        logo_url: string | null;
-    }): ApplicationCardView {
+    static toCardView(raw: ApplicationCardRaw): ApplicationCardView {
         return {
             applicationId: raw.application_id,
             status: raw.status as ApplicationStatus,
@@ -27,25 +20,10 @@ export class ApplicationMapper {
         };
     }
 
-    static toApplicantCardView(
-        raw: {
-            application_id: number;
-            status: string;
-            cv_url: string;
-            created_at: Date;
-            student_id: number;
-            full_name: string;
-            email_student: string | null;
-            avatar_url: string | null;
-            current_year: number | null;
-            major_name: string | null;
-            gpa: string | null;
-            phone: string | null;
-            job_id: number;
-            job_title: string;
-        },
-        skills: JobSkillItem[],
-    ): ApplicantCardView {
+    static toApplicantCardView(raw: ApplicantCardRaw): ApplicantCardView {
+        const skills: JobSkillItem[] =
+            typeof raw.skills === 'string' ? JSON.parse(raw.skills) : raw.skills;
+
         return {
             applicationId: raw.application_id,
             status: raw.status as ApplicationStatus,
@@ -67,5 +45,23 @@ export class ApplicationMapper {
                 jobTitle: raw.job_title,
             },
         };
+    }
+
+    static toStats(rows: ApplicationStatsRaw): ApplicationStats {
+        const byStatus: Record<ApplicationStatus, number> = {
+            submitted: 0,
+            interviewing: 0,
+            passed: 0,
+            rejected: 0,
+        };
+
+        let total = 0;
+        for (const row of rows) {
+            const s = row.status as ApplicationStatus;
+            byStatus[s] = Number(row.count);
+            total += Number(row.count);
+        }
+
+        return { total, byStatus };
     }
 }

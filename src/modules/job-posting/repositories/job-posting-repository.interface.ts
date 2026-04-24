@@ -33,7 +33,7 @@ export interface IJobPostingRepository {
         companyId?: number,
     ): Promise<JobPostingResponse | null>;
 
-    findById(jobId: number): Promise<number | null>;
+    findById(jobId: number): Promise<{ companyId: number | null; applicationDeadline: string | null } | null>;
 
     findAllJobList(companyId: number, page: number, limit: number): Promise<PaginationResponse<JobList>>;
 

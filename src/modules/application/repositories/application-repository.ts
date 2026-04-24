@@ -3,56 +3,31 @@ import { applications, job_postings, companies } from 'src/database/schema';
 import * as schema from '../../../database/schema';
 import { and, count, eq, desc, sql, gte, SQL, inArray } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
+import { DATABASE_CONNECTION } from 'src/database/database.module';
+
 import { ApplicationDomain } from '../domain/application/application.domain';
-import {
-    ApplicantCardView,
-    ApplicationCardView,
-    ApplicationStats,
-    GetCompanyApplicationsFilter,
-    GetMyApplicationsQuery,
-} from '../interfaces/application.interface';
-import { ApplicationStatus } from '../domain/application/application.props';
 import { IApplicationRepository } from './application-repository.interface';
 import { PaginationResponse } from 'src/common/types/pagination-response';
-import { ApplicationMapper } from '../domain/application/application.mapper';
-import { DATABASE_CONNECTION } from 'src/database/database.module';
-import { JobSkillItem } from 'src/modules/job-posting/interfaces';
-import { JobPostingDomainError } from 'src/modules/job-posting/domain/job-posting.domain';
+import { GetCompanyApplicationsFilter, GetMyApplicationsQuery } from '../types/application.interface';
+import {
+    ApplicationCardRaw,
+    ApplicantCardRaw,
+    ApplicationStatsRaw,
+} from '../types/application.raw';
 
 @Injectable()
 export class ApplicationRepository implements IApplicationRepository {
-    constructor(@Inject(DATABASE_CONNECTION) private readonly db: NodePgDatabase<typeof schema>) { }
+    constructor(
+        @Inject(DATABASE_CONNECTION)
+        private readonly db: NodePgDatabase<typeof schema>,
+    ) { }
 
     // =========================================================================
-    // WRITE
+    // WRITE 
     // =========================================================================
 
     async save(application: ApplicationDomain): Promise<ApplicationDomain> {
         if (application.applicationId === 0) {
-            const jobId = application.jobId;
-            const [job] = await this.db
-                .select({
-                    deadline: schema.job_postings.application_deadline
-                })
-                .from(schema.job_postings)
-                .where(eq(schema.job_postings.job_id, jobId))
-                .limit(1);
-
-            if (!job) {
-                throw new JobPostingDomainError("Không tìm thấy tin tuyển dụng này.");
-            }
-
-            if (job.deadline) {
-                const now = new Date();
-                const deadlineDate = new Date(job.deadline);
-                deadlineDate.setHours(23, 59, 59, 999);
-
-                if (now > deadlineDate) {
-                    throw new JobPostingDomainError("Hết hạn ứng tuyển! Bạn không thể nộp hồ sơ cho tin này nữa.");
-                }
-            }
-
-            // 3. Nếu còn hạn thì mới tiến hành insert
             const [inserted] = await this.db
                 .insert(schema.applications)
                 .values(application.toPersistence())
@@ -66,34 +41,12 @@ export class ApplicationRepository implements IApplicationRepository {
             .set(application.toUpdatePersistence())
             .where(eq(schema.applications.application_id, application.applicationId))
             .returning();
+
         return ApplicationDomain.fromPersistence(updated);
     }
 
-    async checkApply(companyId: number, studentId: number): Promise<boolean> {
-        const hasApplied = await this.db
-            .select({ id: schema.applications.application_id })
-            .from(schema.applications)
-            .innerJoin(
-                schema.job_postings,
-                eq(schema.applications.job_id, schema.job_postings.job_id)
-            )
-            .where(
-                and(
-                    eq(schema.applications.student_id, studentId),
-                    eq(schema.job_postings.company_id, companyId),
-                    inArray(schema.applications.status, ['interviewing', 'passed', 'rejected'])
-                )
-            )
-            .limit(1);
-        if (hasApplied.length === 0) {
-            return false;
-        }
-
-        return true;
-    }
-
     // =========================================================================
-    // READ — single
+    // READ 
     // =========================================================================
 
     async findById(applicationId: number): Promise<ApplicationDomain | null> {
@@ -102,6 +55,7 @@ export class ApplicationRepository implements IApplicationRepository {
             .from(applications)
             .where(eq(applications.application_id, applicationId))
             .limit(1);
+
         return row ? ApplicationDomain.fromPersistence(row) : null;
     }
 
@@ -119,17 +73,38 @@ export class ApplicationRepository implements IApplicationRepository {
                 ),
             )
             .limit(1);
+
         return row ? ApplicationDomain.fromPersistence(row) : null;
     }
 
+    async checkApply(companyId: number, studentId: number): Promise<boolean> {
+        const result = await this.db
+            .select({ id: schema.applications.application_id })
+            .from(schema.applications)
+            .innerJoin(
+                schema.job_postings,
+                eq(schema.applications.job_id, schema.job_postings.job_id),
+            )
+            .where(
+                and(
+                    eq(schema.applications.student_id, studentId),
+                    eq(schema.job_postings.company_id, companyId),
+                    inArray(schema.applications.status, ['interviewing', 'passed', 'rejected']),
+                ),
+            )
+            .limit(1);
+
+        return result.length > 0;
+    }
+
     // =========================================================================
-    // READ — card list
+    // READ
     // =========================================================================
 
     async findCardsByStudent(
         studentId: number,
         query: GetMyApplicationsQuery,
-    ): Promise<PaginationResponse<ApplicationCardView>> {
+    ): Promise<PaginationResponse<ApplicationCardRaw>> {
         const { page, limit, status } = query;
         const offset = (page - 1) * limit;
 
@@ -160,61 +135,21 @@ export class ApplicationRepository implements IApplicationRepository {
             .limit(limit)
             .offset(offset);
 
-        return new PaginationResponse(
-            rows.map(ApplicationMapper.toCardView),
-            page,
-            limit,
-            Number(total),
-        );
-    }
-
-    // =========================================================================
-    // READ — stats
-    // =========================================================================
-
-    async getStatsByStudent(studentId: number): Promise<ApplicationStats> {
-        const rows = await this.db
-            .select({
-                status: applications.status,
-                count: count(),
-            })
-            .from(applications)
-            .where(eq(applications.student_id, studentId))
-            .groupBy(applications.status);
-
-        const byStatus = {
-            submitted: 0,
-            interviewing: 0,
-            passed: 0,
-            rejected: 0,
-        } as Record<ApplicationStatus, number>;
-
-        let total = 0;
-        for (const row of rows) {
-            const s = row.status as ApplicationStatus;
-            byStatus[s] = Number(row.count);
-            total += Number(row.count);
-        }
-
-        return { total, byStatus };
+        return new PaginationResponse(rows, page, limit, Number(total));
     }
 
     async findApplicantCardsByJob(
         filter: GetCompanyApplicationsFilter,
-    ): Promise<PaginationResponse<ApplicantCardView>> {
+    ): Promise<PaginationResponse<ApplicantCardRaw>> {
         const { jobId, status, dateRange, page, limit } = filter;
         const offset = (page - 1) * limit;
 
         const conditions: SQL[] = [];
-        if (typeof jobId === 'number') {
-            conditions.push(eq(schema.applications.job_id, jobId));
-        }
+        if (typeof jobId === 'number') conditions.push(eq(schema.applications.job_id, jobId));
         if (status) {
-            if (Array.isArray(status)) {
-                conditions.push(inArray(schema.applications.status, status));
-            } else {
-                conditions.push(eq(schema.applications.status, status));
-            }
+            Array.isArray(status)
+                ? conditions.push(inArray(schema.applications.status, status))
+                : conditions.push(eq(schema.applications.status, status));
         }
         if (dateRange) {
             const from = new Date();
@@ -245,38 +180,23 @@ export class ApplicationRepository implements IApplicationRepository {
                 job_id: schema.job_postings.job_id,
                 job_title: schema.job_postings.job_title,
                 skills: sql<string>`
-                coalesce(
-                    json_agg(
-                        json_build_object(
-                            'skillId', ${schema.skills.skill_id},
-                            'skillName', ${schema.skills.skill_name}
-                        )
-                    ) FILTER (WHERE ${schema.skills.skill_id} IS NOT NULL),
-                    '[]'
-                )
-            `,
+                    coalesce(
+                        json_agg(
+                            json_build_object(
+                                'skillId', ${schema.skills.skill_id},
+                                'skillName', ${schema.skills.skill_name}
+                            )
+                        ) FILTER (WHERE ${schema.skills.skill_id} IS NOT NULL),
+                        '[]'
+                    )
+                `,
             })
             .from(schema.applications)
-            .innerJoin(
-                schema.students,
-                eq(schema.applications.student_id, schema.students.student_id),
-            )
-            .leftJoin(
-                schema.majors,
-                eq(schema.students.major_id, schema.majors.major_id),
-            )
-            .leftJoin(
-                schema.student_skills,
-                eq(schema.students.student_id, schema.student_skills.student_id),
-            )
-            .leftJoin(
-                schema.skills,
-                eq(schema.student_skills.skill_id, schema.skills.skill_id),
-            )
-            .innerJoin(
-                schema.job_postings,
-                eq(schema.applications.job_id, schema.job_postings.job_id),
-            )
+            .innerJoin(schema.students, eq(schema.applications.student_id, schema.students.student_id))
+            .leftJoin(schema.majors, eq(schema.students.major_id, schema.majors.major_id))
+            .leftJoin(schema.student_skills, eq(schema.students.student_id, schema.student_skills.student_id))
+            .leftJoin(schema.skills, eq(schema.student_skills.skill_id, schema.skills.skill_id))
+            .innerJoin(schema.job_postings, eq(schema.applications.job_id, schema.job_postings.job_id))
             .where(where)
             .groupBy(
                 schema.applications.application_id,
@@ -288,27 +208,29 @@ export class ApplicationRepository implements IApplicationRepository {
             .limit(limit)
             .offset(offset);
 
-        const cards = rows.map((row) => {
-            const skills: JobSkillItem[] =
-                typeof row.skills === 'string'
-                    ? JSON.parse(row.skills)
-                    : row.skills;
-
-            return ApplicationMapper.toApplicantCardView(row, skills);
-        });
-
-        return new PaginationResponse(cards, page, limit, Number(total));
+        return new PaginationResponse(rows, page, limit, Number(total));
     }
 
-    async getStats(companyId: number, jobId?: number): Promise<ApplicationStats> {
+    async getStatsByStudent(studentId: number): Promise<ApplicationStatsRaw> {
+        return this.db
+            .select({
+                status: applications.status,
+                count: count(),
+            })
+            .from(applications)
+            .where(eq(applications.student_id, studentId))
+            .groupBy(applications.status);
+    }
+
+    async getStats(companyId: number, jobId?: number): Promise<ApplicationStatsRaw> {
         const condition = jobId
             ? and(
                 eq(schema.job_postings.company_id, companyId),
-                eq(schema.applications.job_id, jobId)
+                eq(schema.applications.job_id, jobId),
             )
             : eq(schema.job_postings.company_id, companyId);
 
-        const rows = await this.db
+        return this.db
             .select({
                 status: schema.applications.status,
                 count: count(),
@@ -316,25 +238,9 @@ export class ApplicationRepository implements IApplicationRepository {
             .from(schema.applications)
             .innerJoin(
                 schema.job_postings,
-                eq(schema.applications.job_id, schema.job_postings.job_id)
+                eq(schema.applications.job_id, schema.job_postings.job_id),
             )
             .where(condition)
             .groupBy(schema.applications.status);
-
-        const byStatus: Record<ApplicationStatus, number> = {
-            submitted: 0,
-            interviewing: 0,
-            passed: 0,
-            rejected: 0,
-        };
-
-        let total = 0;
-        for (const row of rows) {
-            const s = row.status as ApplicationStatus;
-            byStatus[s] = Number(row.count);
-            total += Number(row.count);
-        }
-
-        return { total, byStatus };
     }
 }

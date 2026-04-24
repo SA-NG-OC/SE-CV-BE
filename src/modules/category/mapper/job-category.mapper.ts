@@ -1,4 +1,4 @@
-import { JobCategoryResponse, JobCategoryStats } from "../interface";
+import { JobCategoryResponse, JobCategoryStats } from "../types";
 
 export class JobCategoryMapper {
     static toResponse(raw: {
@@ -18,7 +18,7 @@ export class JobCategoryMapper {
 
     }
 
-    static toReponseArray(raw: {
+    static toResponseArray(raw: {
         category_id: number,
         category_name: string,
         is_active: boolean,

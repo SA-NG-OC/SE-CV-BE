@@ -18,6 +18,7 @@ import { JobPostingModule } from './modules/job-posting/job-posting.module';
 import { BullModule } from '@nestjs/bullmq';
 import { ApplicationModule } from './modules/application/application.module';
 import { CommentModule } from './modules/comment/comment.module';
+import { CategoryModule } from './modules/category/category.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { CommentModule } from './modules/comment/comment.module';
     JobPostingModule,
     ApplicationModule,
     CommentModule,
+    CategoryModule
   ],
   controllers: [AppController],
   providers: [AppService, EventsGateway, NotificationsGateway],
