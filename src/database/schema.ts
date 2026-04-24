@@ -237,6 +237,7 @@ export const jobStatusEnum = pgEnum("job_status", [
 export const job_categories = pgTable("job_categories", {
     category_id: serial("category_id").primaryKey(),
     category_name: varchar("category_name", { length: 100 }).unique().notNull(),
+    is_active: boolean("is_active").default(true).notNull(),
     created_at: timestamp("created_at").defaultNow(),
 });
 
