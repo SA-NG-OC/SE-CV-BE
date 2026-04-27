@@ -148,6 +148,13 @@
       "when": 1777012051347,
       "tag": "0020_amused_hemingway",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1777036606673,
+      "tag": "0021_far_the_stranger",
+      "breakpoints": true
     }
   ]
 }

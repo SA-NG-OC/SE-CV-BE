@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Inject,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { I_JOB_POSTING_REPOSITORY } from './job-posting.tokens';
@@ -17,6 +18,7 @@ import { ListJobPostingDto } from './dto/list-job-posting.dto';
 import { ChangeJobPostingStatusDto } from './dto/change-job-posting-status.dto';
 import { JobPostingDomainError } from './domain/job-posting.domain';
 import { JobPostingFilterDto } from './dto/filter-job-card.dto';
+import { EmbeddingQueueService } from '../recommendations/embedding/embedding-queue.service';
 
 @Injectable()
 export class JobPostingService {
@@ -24,6 +26,7 @@ export class JobPostingService {
     @Inject(I_JOB_POSTING_REPOSITORY)
     private readonly jobPostingRepository: IJobPostingRepository,
     private readonly eventEmitter: EventEmitter2,
+    private readonly embeddingQueue: EmbeddingQueueService,
   ) { }
 
   async createJobPosting(
@@ -37,6 +40,10 @@ export class JobPostingService {
       );
     }
     const data = await this.jobPostingRepository.createJobPosting(companyId, dto);
+    if (!data) {
+      throw new InternalServerErrorException('Thao tác thất bại');
+    }
+    await this.embeddingQueue.addJobEmbeddingTask(data);
     this.eventEmitter.emit('job.created', {
     })
 
@@ -59,6 +66,8 @@ export class JobPostingService {
         'Không tìm thấy tin tuyển dụng, hoặc bạn không có quyền chỉnh sửa tin này.',
       );
     }
+
+    this.embeddingQueue.addJobEmbeddingTask(updated.jobId);
     this.eventEmitter.emit('job.updated', {
       jobTitle: updated.jobTitle,
     });

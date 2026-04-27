@@ -1,11 +1,12 @@
 services:
   postgres_db:
-    image: postgres:16-alpine
+    image: timescale/timescaledb-ha:pg16
     container_name: se_cv_postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 123456
       POSTGRES_DB: se_cv_db
+      GOOGLE_API_KEY: ${GEMINI_API_KEY}
     ports:
       - "5433:5432"
     volumes:

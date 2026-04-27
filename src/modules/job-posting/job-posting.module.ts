@@ -4,9 +4,11 @@ import { JobPostingController } from './job-posting.controller';
 import { I_JOB_POSTING_REPOSITORY } from './job-posting.tokens';
 import { AuthModule } from 'src/modules/auth/auth.module';
 import { JobPostingRepository } from './repositories/job-posting.repository';
+import { CommonModule } from 'src/common/common.module';
+import { RecommendationsModule } from '../recommendations/recommendations.module';
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, CommonModule, RecommendationsModule],
   controllers: [JobPostingController],
   providers: [
     JobPostingService,

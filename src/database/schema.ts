@@ -12,9 +12,44 @@ import {
     uniqueIndex,
     index,
     pgEnum,
-    primaryKey
+    primaryKey,
+    customType
 } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
+
+export const vector = customType<{ data: number[]; driverData: string }>({
+    dataType() {
+        return "vector(1536)";
+    },
+    toDriver(value: number[]): string {
+        return `[${value.join(",")}]`;
+    },
+    fromDriver(value: string): number[] {
+        return value.slice(1, -1).split(",").map(Number);
+    },
+});
+
+export const job_embeddings = pgTable("job_embeddings", {
+    embedding_id: serial("embedding_id").primaryKey(),
+    job_id: integer("job_id")
+        .unique()
+        .references(() => job_postings.job_id, { onDelete: "cascade" }),
+    embedding: vector("embedding").notNull(),
+    content_hash: text("content_hash").notNull(),
+    created_at: timestamp("created_at").defaultNow(),
+    updated_at: timestamp("updated_at").defaultNow(),
+});
+
+export const student_embeddings = pgTable("student_embeddings", {
+    embedding_id: serial("embedding_id").primaryKey(),
+    student_id: integer("student_id")
+        .unique()
+        .references(() => students.student_id, { onDelete: "cascade" }),
+    embedding: vector("embedding").notNull(),
+    content_hash: text("content_hash").notNull(),
+    created_at: timestamp("created_at").defaultNow(),
+    updated_at: timestamp("updated_at").defaultNow(),
+});
 
 // =============================================
 // 1. BẢNG NGƯỜI DÙNG VÀ PHÂN QUYỀN
@@ -272,7 +307,6 @@ export const job_postings = pgTable(
         approved_at: timestamp("approved_at"),
         created_at: timestamp("created_at").defaultNow(),
         updated_at: timestamp("updated_at").defaultNow(),
-        //expires_at: timestamp("expires_at"),
     },
     (t) => [
         index("idx_jobs_is_active").on(t.is_active),
@@ -284,7 +318,7 @@ export const job_postings = pgTable(
         index("idx_jobs_created_at").on(t.created_at),
         index("idx_jobs_fulltext").using(
             "gin",
-            sql`to_tsvector('english', ${t.job_title} || ' ' || ${t.job_description})`
+            sql`to_tsvector('simple', coalesce(${t.job_title}, '') || ' ' || coalesce(${t.job_description}, '') || ' ' || coalesce(${t.requirements}, ''))`
         ),
     ]
 );

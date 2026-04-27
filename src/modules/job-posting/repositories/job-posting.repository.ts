@@ -116,7 +116,6 @@ export class JobPostingRepository implements IJobPostingRepository {
             .from(schema.companies)
             .where(eq(schema.companies.company_id, companyId))
             .limit(1);
-
         return result?.status === 'APPROVED';
     }
 
