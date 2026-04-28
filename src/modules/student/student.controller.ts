@@ -168,7 +168,7 @@ export class StudentController {
     @Param('id', ParseIntPipe) studentId: number,
     @Req() req: any
   ) {
-    const role = req.user?.role || 'student';
+    const role = req.user?.roleName || 'student';
 
     const result = await this.studentsService.getStudentDetail(studentId, role);
     return new ResponseSuccess('Lấy thông tin thành công', result);

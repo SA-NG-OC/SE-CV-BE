@@ -54,6 +54,7 @@ export class StudentService {
     if (!student) throw new NotFoundException(`Không tìm thấy sinh viên với ID ${studentId}`);
 
     // applicationCount đã có trong response nhưng chỉ expose cho admin
+    console.log(`ROLE NÈ: ${role}`);
     if (role !== 'admin') {
       const { totalApplications, ...rest } = student;
       return rest;
