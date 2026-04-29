@@ -25,7 +25,7 @@ export interface ProfileJobCard {
     salaryMax: number | null,
     salaryType: string | null,
     isSalaryNegotiable: boolean,
-    approvedAt: Date | null
+    applicationDeadline: string | null
 }
 
 // Item trả về cho FE (đã join thêm skillName)

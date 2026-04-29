@@ -15,7 +15,7 @@ export class JobPostingMapper {
             salaryMax: domain.salaryMax,
             salaryType: domain.salaryType,
             isSalaryNegotiable: domain.isSalaryNegotiable,
-            approvedAt: domain.approvedAt
+            applicationDeadline: domain.applicationDeadline
         }
     }
 

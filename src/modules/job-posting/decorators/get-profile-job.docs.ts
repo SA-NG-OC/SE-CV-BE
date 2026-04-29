@@ -26,7 +26,7 @@ export const GetProfileJobDocs = () => applyDecorators(
                         salaryMax: 5000000,
                         salaryType: "RANGE",
                         isSalaryNegotiable: false,
-                        approvedAt: null,
+                        applicationDeadline: "2026-08-01",
                     },
                 ],
                 meta: {
