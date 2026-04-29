@@ -23,6 +23,7 @@ export const GetApplicantsDocs = () => applyDecorators(
                         status: "submitted",
                         cvUrl: "https://example.com/cv.pdf",
                         createdAt: "2026-04-09T01:45:25.096Z",
+                        updatedAt: "2026-04-27T01:56:12.858Z",
                         student: {
                             studentId: 100,
                             fullName: "Nguyễn Văn A",

@@ -29,6 +29,7 @@ export class ApplicationMapper {
             status: raw.status as ApplicationStatus,
             cvUrl: raw.cv_url,
             createdAt: raw.created_at,
+            updatedAt: raw.updated_at,
             student: {
                 studentId: raw.student_id,
                 fullName: raw.full_name,

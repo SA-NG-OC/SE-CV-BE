@@ -175,6 +175,7 @@ export class ApplicationRepository implements IApplicationRepository {
                 status: schema.applications.status,
                 cv_url: schema.applications.cv_url,
                 created_at: schema.applications.created_at,
+                updated_at: schema.applications.updated_at,
                 student_id: schema.students.student_id,
                 full_name: schema.students.full_name,
                 email_student: schema.students.email_student,

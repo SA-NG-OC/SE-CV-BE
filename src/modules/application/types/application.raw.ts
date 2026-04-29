@@ -18,6 +18,7 @@ export type ApplicantCardRaw = {
     status: string;
     cv_url: string;
     created_at: Date;
+    updated_at: Date | null;
     student_id: number;
     full_name: string;
     email_student: string | null;

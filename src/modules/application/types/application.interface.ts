@@ -31,6 +31,7 @@ export interface ApplicantCardView {
     status: ApplicationStatus;
     cvUrl: string;
     createdAt: Date;
+    updatedAt: Date | null;
     student: {
         studentId: number;
         fullName: string;
