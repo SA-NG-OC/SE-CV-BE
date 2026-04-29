@@ -72,11 +72,6 @@ export class ApplicationDomain {
     }
 
     reject(): void {
-        if (this.props.status !== 'interviewing') {
-            throw new ApplicationDomainError(
-                `Chỉ có thể đánh dấu rớt sau khi phỏng vấn, trạng thái hiện tại: "${this.props.status}"`,
-            );
-        }
         this.props.status = 'rejected';
         this.props.updatedAt = new Date();
     }
