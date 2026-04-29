@@ -140,11 +140,13 @@ export class ApplicationRepository implements IApplicationRepository {
 
     async findApplicantCardsByJob(
         filter: GetCompanyApplicationsFilter,
+        companyId: number,
     ): Promise<PaginationResponse<ApplicantCardRaw>> {
         const { jobId, status, dateRange, page, limit } = filter;
         const offset = (page - 1) * limit;
 
         const conditions: SQL[] = [];
+        conditions.push(eq(schema.job_postings.company_id, companyId));
         if (typeof jobId === 'number') conditions.push(eq(schema.applications.job_id, jobId));
         if (status) {
             Array.isArray(status)
@@ -161,6 +163,10 @@ export class ApplicationRepository implements IApplicationRepository {
         const [{ total }] = await this.db
             .select({ total: count() })
             .from(schema.applications)
+            .innerJoin(
+                schema.job_postings,
+                eq(schema.applications.job_id, schema.job_postings.job_id),
+            )
             .where(where);
 
         const rows = await this.db

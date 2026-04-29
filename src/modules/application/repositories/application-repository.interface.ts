@@ -18,6 +18,7 @@ export interface IApplicationRepository {
     ): Promise<PaginationResponse<ApplicationCardRaw>>;
     findApplicantCardsByJob(
         filter: GetCompanyApplicationsFilter,
+        companyId: number,
     ): Promise<PaginationResponse<ApplicantCardRaw>>;
     getStatsByStudent(studentId: number): Promise<ApplicationStatsRaw>;
     getStats(companyId: number, jobId?: number): Promise<ApplicationStatsRaw>;

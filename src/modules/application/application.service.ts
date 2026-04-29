@@ -122,7 +122,7 @@ export class ApplicationService {
       await this.assertJobBelongsToCompany(companyId, filter.jobId);
     }
 
-    const raw = await this.applicationRepo.findApplicantCardsByJob(filter);
+    const raw = await this.applicationRepo.findApplicantCardsByJob(filter, companyId);
 
     return {
       ...raw,
