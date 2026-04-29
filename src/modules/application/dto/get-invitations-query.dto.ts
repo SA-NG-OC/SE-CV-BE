@@ -7,6 +7,21 @@ export const GetInvitationsQuerySchema = z.object({
             message: 'Trạng thái không hợp lệ',
         })
         .optional(),
+
+    // Số trang hiện tại - Mặc định là 1
+    page: z.coerce
+        .number()
+        .int()
+        .positive('Số trang phải lớn hơn 0')
+        .default(1),
+
+    // Số bản ghi mỗi trang - Mặc định là 10
+    limit: z.coerce
+        .number()
+        .int()
+        .positive('Số lượng bản ghi phải lớn hơn 0')
+        .max(100, 'Không thể lấy quá 100 bản ghi một lần')
+        .default(10),
 });
 
 export class GetInvitationsQueryDto extends createZodDto(GetInvitationsQuerySchema) { }

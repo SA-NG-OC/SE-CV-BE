@@ -15,7 +15,7 @@ import { ChangeApplicationStatusDto } from './dto/change-application-status.dto'
 import { RespondInvitationDto } from './dto/respond-invitation.dto';
 import { CreateJobInvitationDto } from './dto/create-job-invitation.dto';
 import { GetInvitationsQueryDto } from './dto/get-invitations-query.dto';
-import { ApplyJobDocs, ChangeApplicationStatusDocs, GetApplicantsDocs, GetCompanyInvitationsDocs, GetJobStatsDocs, GetMyApplicationsDocs, GetMyInvitationsDocs, GetMyStatsDocs, InviteCandidateDocs, RespondInvitationDocs } from './decorators';
+import { ApplyJobDocs, ChangeApplicationStatusDocs, GetApplicantsDocs, GetCompanyInvitationsDocs, GetInvitationStatsDocs, GetJobStatsDocs, GetMyApplicationsDocs, GetMyInvitationsDocs, GetMyStatsDocs, InviteCandidateDocs, RespondInvitationDocs } from './decorators';
 
 @Controller('application')
 export class ApplicationController {
@@ -129,6 +129,18 @@ export class ApplicationController {
     const companyId = req.user.companyId;
     const data = await this.applicationService.inviteCandidate(companyId, dto);
     return new ResponseSuccess('Gửi lời mời ứng tuyển thành công', data);
+  }
+
+  @Get('company/invitation/stats')
+  @GetInvitationStatsDocs()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.COMPANY)
+  async getInvitationStats(
+    @Req() req,
+  ) {
+    const companyId = req.user.companyId;
+    const data = await this.applicationService.getInvitationStats(companyId);
+    return new ResponseSuccess('Lấy thông tin thành công', data);
   }
 
   @Get('company/invitations')

@@ -11,3 +11,4 @@ export { GetJobStatsDocs } from './get-job-stats.docs';
 export { ChangeApplicationStatusDocs } from './change-application-status.docs';
 export { InviteCandidateDocs } from './invite-candidate.docs';
 export { GetCompanyInvitationsDocs } from './get-company-invitations.docs';
+export { GetInvitationStatsDocs } from './get-invitation-stats.docs';

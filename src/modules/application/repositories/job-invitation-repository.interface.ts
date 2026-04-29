@@ -1,6 +1,7 @@
 import { JobInvitationDomain } from "../domain/job-invitation/job-invitation.domain";
 import { InvitationStatus } from "../domain/job-invitation/job-invitation.props";
 import { InvitationCardView, EmployerInvitationCardView } from "../domain/job-invitation/job-invitation.mapper";
+import { PaginationResponse } from "src/common/types/pagination-response";
 
 export interface IJobInvitationRepository {
     // WRITE
@@ -14,12 +15,17 @@ export interface IJobInvitationRepository {
     // READ — Student view
     findByStudent(
         studentId: number,
-        status?: InvitationStatus
-    ): Promise<InvitationCardView[]>;
+        query: { page: number; limit: number; status?: InvitationStatus }
+    ): Promise<PaginationResponse<InvitationCardView>>;
 
     // READ — Employer view
     findByCompany(
         companyId: number,
-        status?: InvitationStatus
-    ): Promise<EmployerInvitationCardView[]>;
+        query: { page: number; limit: number; status?: InvitationStatus }
+    ): Promise<PaginationResponse<EmployerInvitationCardView>>;
+
+    countStatsByCompany(companyId: number): Promise<{
+        total: number;
+        byStatus: Record<string, number>;
+    }>
 }

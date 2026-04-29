@@ -8,42 +8,50 @@ export const GetCompanyInvitationsDocs = () => applyDecorators(
         description: 'Xem các lời mời mà công ty đã gửi cho các ứng viên. Yêu cầu role COMPANY.',
     }),
     ApiQuery({ name: 'status', required: false, enum: ['pending', 'accepted', 'rejected', 'expired'] }),
+
+    ApiQuery({
+        name: 'page',
+        required: false,
+        type: Number,
+        example: 1,
+        description: 'Số trang hiện tại (mặc định: 1)',
+    }),
+    ApiQuery({
+        name: 'limit',
+        required: false,
+        type: Number,
+        example: 10,
+        description: 'Số bản ghi mỗi trang (mặc định: 10, tối đa: 100)',
+    }),
     ApiResponse({
         status: 200, description: 'Lấy danh sách thành công', example: {
             success: true,
             message: "Lấy danh sách lời mời đã gửi thành công",
-            data: [
-                {
-                    invitationId: 3,
-                    status: "pending",
-                    message: "Chúng tôi thấy bạn phù hợp với vị trí Backend Intern",
-                    createdAt: "2026-04-09T01:58:06.812Z",
-                    student: {
-                        studentId: 100,
-                        fullName: "Nguyễn Văn A",
-                        avatarUrl: null,
-                        email: "nguyenvana@student.edu.vn"
+            data: {
+                data: [
+                    {
+                        invitationId: 1,
+                        status: "pending",
+                        message: "Chúng tôi thấy bạn phù hợp với vị trí Backend Intern",
+                        createdAt: "2026-04-29T01:11:40.673Z",
+                        student: {
+                            studentId: 100,
+                            fullName: "Nguyễn Văn A",
+                            avatarUrl: null,
+                            email: "nguyenvana@student.edu.vn",
+                        },
+                        job: {
+                            jobTitle: "Devops",
+                        },
                     },
-                    job: {
-                        jobTitle: "Frontend Developer Intern 3.0"
-                    }
+                ],
+                meta: {
+                    currentPage: 1,
+                    itemsPerPage: 10,
+                    totalItems: 1,
+                    totalPages: 1,
                 },
-                {
-                    invitationId: 2,
-                    status: "rejected",
-                    message: "Chúng tôi thấy bạn phù hợp với vị trí Backend Intern",
-                    createdAt: "2026-04-08T12:41:27.515Z",
-                    student: {
-                        studentId: 100,
-                        fullName: "Nguyễn Văn A",
-                        avatarUrl: null,
-                        email: "nguyenvana@student.edu.vn"
-                    },
-                    job: {
-                        jobTitle: "Hahahahahahahahahaha"
-                    }
-                }
-            ]
+            },
         }
     }),
 );

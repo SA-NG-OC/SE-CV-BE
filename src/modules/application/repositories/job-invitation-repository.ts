@@ -3,11 +3,12 @@ import { DATABASE_CONNECTION } from "src/database/database.module";
 import * as schema from '../../../database/schema';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { JobInvitationDomain } from "../domain/job-invitation/job-invitation.domain";
-import { and, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq } from "drizzle-orm";
 import { InvitationStatus } from "../domain/job-invitation/job-invitation.props";
 import { EmployerInvitationCardView, InvitationCardView, JobInvitationMapper } from "../domain/job-invitation/job-invitation.mapper";
 import { IJobInvitationRepository } from "./job-invitation-repository.interface";
 import { GetInvitationsQueryDto } from "../dto/get-invitations-query.dto";
+import { PaginationResponse } from "src/common/types/pagination-response";
 @Injectable()
 export class JobInvitationRepository implements IJobInvitationRepository {
     constructor(
@@ -74,32 +75,52 @@ export class JobInvitationRepository implements IJobInvitationRepository {
 
     async findByStudent(
         studentId: number,
-        status?: InvitationStatus
-    ): Promise<InvitationCardView[]> {
+        query: { page: number; limit: number; status?: InvitationStatus }
+    ): Promise<PaginationResponse<InvitationCardView>> {
+        const { page, limit, status } = query;
+        const offset = (page - 1) * limit;
         const conditions = [eq(schema.job_invitations.student_id, studentId)];
-
         if (status) {
             conditions.push(eq(schema.job_invitations.status, status));
         }
+        const whereClause = and(...conditions);
 
-        const rows = await this.db
-            .select({
-                invitation_id: schema.job_invitations.invitation_id,
-                status: schema.job_invitations.status,
-                message: schema.job_invitations.message,
-                created_at: schema.job_invitations.created_at,
-                job_id: schema.job_postings.job_id,
-                job_title: schema.job_postings.job_title,
-                company_name: schema.companies.company_name,
-                logo_url: schema.companies.logo_url,
-            })
-            .from(schema.job_invitations)
-            .innerJoin(schema.job_postings, eq(schema.job_invitations.job_id, schema.job_postings.job_id))
-            .innerJoin(schema.companies, eq(schema.job_postings.company_id, schema.companies.company_id))
-            .where(and(...conditions))
-            .orderBy(desc(schema.job_invitations.created_at));
+        const [totalResult, rows] = await Promise.all([
+            this.db
+                .select({ total: count() })
+                .from(schema.job_invitations)
+                .where(whereClause),
 
-        return rows.map(row => JobInvitationMapper.toStudentInvitationView(row));
+            this.db
+                .select({
+                    invitation_id: schema.job_invitations.invitation_id,
+                    status: schema.job_invitations.status,
+                    message: schema.job_invitations.message,
+                    created_at: schema.job_invitations.created_at,
+                    job_id: schema.job_postings.job_id,
+                    job_title: schema.job_postings.job_title,
+                    company_name: schema.companies.company_name,
+                    logo_url: schema.companies.logo_url,
+                })
+                .from(schema.job_invitations)
+                .innerJoin(
+                    schema.job_postings,
+                    eq(schema.job_invitations.job_id, schema.job_postings.job_id)
+                )
+                .innerJoin(
+                    schema.companies,
+                    eq(schema.job_postings.company_id, schema.companies.company_id)
+                )
+                .where(whereClause)
+                .orderBy(desc(schema.job_invitations.created_at))
+                .limit(limit)
+                .offset(offset),
+        ]);
+
+        const totalItems = Number(totalResult[0]?.total || 0);
+        const data = rows.map(row => JobInvitationMapper.toStudentInvitationView(row));
+
+        return new PaginationResponse(data, page, limit, totalItems);
     }
 
     // =========================================================================
@@ -108,32 +129,93 @@ export class JobInvitationRepository implements IJobInvitationRepository {
 
     async findByCompany(
         companyId: number,
-        status?: InvitationStatus
-    ): Promise<EmployerInvitationCardView[]> {
+        query: { page: number; limit: number; status?: InvitationStatus }
+    ): Promise<PaginationResponse<EmployerInvitationCardView>> {
+        const { page, limit, status } = query;
+        const offset = (page - 1) * limit;
         const conditions = [eq(schema.job_postings.company_id, companyId)];
-
         if (status) {
             conditions.push(eq(schema.job_invitations.status, status));
         }
+        const whereClause = and(...conditions);
 
-        const rows = await this.db
+
+        const [totalResult, rows] = await Promise.all([
+            this.db
+                .select({ total: count() })
+                .from(schema.job_invitations)
+                .innerJoin(
+                    schema.job_postings,
+                    eq(schema.job_invitations.job_id, schema.job_postings.job_id)
+                )
+                .where(whereClause),
+
+            this.db
+                .select({
+                    invitation_id: schema.job_invitations.invitation_id,
+                    status: schema.job_invitations.status,
+                    message: schema.job_invitations.message,
+                    created_at: schema.job_invitations.created_at,
+                    student_id: schema.students.student_id,
+                    full_name: schema.students.full_name,
+                    email: schema.students.email_student,
+                    avatar_url: schema.students.avatar_url,
+                    job_title: schema.job_postings.job_title,
+                })
+                .from(schema.job_invitations)
+                .innerJoin(
+                    schema.job_postings,
+                    eq(schema.job_invitations.job_id, schema.job_postings.job_id)
+                )
+                .innerJoin(
+                    schema.students,
+                    eq(schema.job_invitations.student_id, schema.students.student_id)
+                )
+                .where(whereClause)
+                .orderBy(desc(schema.job_invitations.created_at))
+                .limit(limit)
+                .offset(offset),
+        ]);
+
+        const totalItems = Number(totalResult[0]?.total || 0);
+        const data = rows.map(row => JobInvitationMapper.toEmployerInvitationView(row));
+
+        return new PaginationResponse(data, page, limit, totalItems);
+    }
+
+    async countStatsByCompany(companyId: number): Promise<{
+        total: number;
+        byStatus: Record<string, number>;
+    }> {
+        const results = await this.db
             .select({
-                invitation_id: schema.job_invitations.invitation_id,
                 status: schema.job_invitations.status,
-                message: schema.job_invitations.message,
-                created_at: schema.job_invitations.created_at,
-                student_id: schema.students.student_id,
-                full_name: schema.students.full_name,
-                email: schema.students.email_student, // Sử dụng cột email_student từ schema bạn cung cấp
-                avatar_url: schema.students.avatar_url,
-                job_title: schema.job_postings.job_title,
+                count: count(),
             })
             .from(schema.job_invitations)
-            .innerJoin(schema.job_postings, eq(schema.job_invitations.job_id, schema.job_postings.job_id))
-            .innerJoin(schema.students, eq(schema.job_invitations.student_id, schema.students.student_id))
-            .where(and(...conditions))
-            .orderBy(desc(schema.job_invitations.created_at));
+            .innerJoin(
+                schema.job_postings,
+                eq(schema.job_invitations.job_id, schema.job_postings.job_id)
+            )
+            .where(eq(schema.job_postings.company_id, companyId))
+            .groupBy(schema.job_invitations.status);
 
-        return rows.map(row => JobInvitationMapper.toEmployerInvitationView(row));
+        const stats = {
+            total: 0,
+            byStatus: {
+                pending: 0,
+                accepted: 0,
+                rejected: 0,
+                expired: 0,
+            },
+        };
+
+        results.forEach((row) => {
+            const rowCount = Number(row.count);
+            stats.byStatus[row.status] = rowCount;
+            stats.total += rowCount;
+        });
+
+        return stats;
     }
 }

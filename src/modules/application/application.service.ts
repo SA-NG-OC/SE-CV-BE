@@ -188,8 +188,8 @@ export class ApplicationService {
   async getCompanyInvitations(
     companyId: number,
     query: GetInvitationsQueryDto,
-  ): Promise<EmployerInvitationCardView[]> {
-    return this.jobInvitationRepo.findByCompany(companyId, query.status);
+  ): Promise<PaginationResponse<EmployerInvitationCardView>> {
+    return this.jobInvitationRepo.findByCompany(companyId, query);
   }
 
   // =========================================================================
@@ -199,8 +199,8 @@ export class ApplicationService {
   async getMyInvitations(
     studentId: number,
     query: GetInvitationsQueryDto,
-  ): Promise<InvitationCardView[]> {
-    return this.jobInvitationRepo.findByStudent(studentId, query.status);
+  ): Promise<PaginationResponse<InvitationCardView>> {
+    return this.jobInvitationRepo.findByStudent(studentId, query);
   }
 
   async respondToInvitation(
@@ -236,5 +236,9 @@ export class ApplicationService {
     } catch (error) {
       this.rethrow(error);
     }
+  }
+
+  async getInvitationStats(companyId: number) {
+    return this.jobInvitationRepo.countStatsByCompany(companyId);
   }
 }
