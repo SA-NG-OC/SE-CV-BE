@@ -6,6 +6,7 @@ import { GeneralInformationDto } from './dto/general-information.dto';
 import { CreateResumeDto, UpdateAvatarDto, UpdateGeneralInfoDto, UpdateJobStatusDto, UpdateSkillsDto } from './dto/update-student.dto';
 import { GetStudentsQueryDto } from './dto/get-students-query.dto';
 import { CloudinaryService } from 'src/shared/cloudinary/cloudinary.service';
+import { MajorResponse } from './interfaces/student.interface';
 
 @Injectable()
 export class StudentService {
@@ -26,6 +27,19 @@ export class StudentService {
   // =========================================================================
   // READ
   // =========================================================================
+
+  async getAllMajors(): Promise<MajorResponse[]> {
+    try {
+      const majors = await this.repo.getMajors();
+
+      return majors.map(major => ({
+        majorId: major.major_id,
+        majorName: major.major_name
+      }));
+    } catch (error) {
+      this.rethrow(error);
+    }
+  }
 
   async getGeneralInformation(): Promise<GeneralInformationDto> {
     return this.repo.getGeneralInformation();

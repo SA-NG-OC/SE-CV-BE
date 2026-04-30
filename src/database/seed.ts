@@ -47,10 +47,10 @@ async function main() {
     // 3. Thêm MAJORS (Độc lập) — bắt đầu từ 100
     console.log('📦 Thêm Majors...');
     await db.insert(schema.majors).values([
-        { major_id: 100, major_code: 'IT01', major_name: 'Công nghệ thông tin', description: 'Ngành học vua của mọi nghề' },
-        { major_id: 101, major_code: 'SE01', major_name: 'Kỹ thuật phần mềm', description: 'Thiết kế và phát triển phần mềm chuyên nghiệp' },
-        { major_id: 102, major_code: 'IS01', major_name: 'Hệ thống thông tin', description: 'Quản lý và phân tích hệ thống thông tin' },
-        { major_id: 103, major_code: 'CS01', major_name: 'Khoa học máy tính', description: 'Nghiên cứu lý thuyết và ứng dụng máy tính' },
+        { major_id: 100, major_name: 'Công nghệ thông tin' },
+        { major_id: 101, major_name: 'Kỹ thuật phần mềm' },
+        { major_id: 102, major_name: 'Hệ thống thông tin' },
+        { major_id: 103, major_name: 'Khoa học máy tính' },
     ]);
 
     // 4. Thêm SKILLS (Độc lập) — bắt đầu từ 100

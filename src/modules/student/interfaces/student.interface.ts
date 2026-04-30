@@ -91,3 +91,8 @@ export interface GetStudentsQuery {
     skillIds?: number[];
     isOpenToWork?: boolean;
 }
+
+export interface MajorResponse {
+    id: number;
+    name: string;
+}

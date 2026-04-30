@@ -18,6 +18,7 @@ import { CloudinaryService } from 'src/shared/cloudinary/cloudinary.service';
 import { SetDefaultResumeDocs, UpdateJobStatusDocs, UpdateSkillsDocs, UploadResumeDocs } from './decorators/student-profile.decorator';
 import { GetStudentsQueryDto } from './dto/get-students-query.dto';
 import { GetStudentsCardDocs } from './decorators/get-student-card.decorator';
+import GetMajorsDocs from './decorators/get-majors.decorator';
 
 @Controller('student')
 export class StudentController {
@@ -32,6 +33,14 @@ export class StudentController {
   async getGeneralInformation() {
     const result = await this.studentsService.getGeneralInformation();
     return new ResponseSuccess('Lấy thông tin thành công', result);
+  }
+
+  @Get('majors')
+  @GetMajorsDocs()
+  @UseGuards(JwtAuthGuard)
+  async getMajors() {
+    const data = await this.studentsService.getAllMajors();
+    return new ResponseSuccess('Lấy danh sách chuyên ngành thành công', data);
   }
 
   @Get()

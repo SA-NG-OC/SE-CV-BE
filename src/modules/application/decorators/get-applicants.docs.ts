@@ -12,6 +12,8 @@ export const GetApplicantsDocs = () => applyDecorators(
     ApiQuery({ name: 'dateRange', required: false, enum: ['7days', '30days'] }),
     ApiQuery({ name: 'page', required: false, type: Number, default: 1 }),
     ApiQuery({ name: 'limit', required: false, type: Number, default: 10 }),
+    ApiQuery({ name: 'search', required: false, type: String, description: 'Tìm kiếm theo tên hoặc email hoặc tìm theo jobTitle' }),
+    ApiQuery({ name: 'categoryId', required: false, type: Number, description: 'Lọc theo ID danh mục' }),
     ApiResponse({
         status: 200, description: 'Lấy thông tin thành công', example: {
             success: true,

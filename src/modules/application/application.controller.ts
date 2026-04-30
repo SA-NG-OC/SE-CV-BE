@@ -78,6 +78,8 @@ export class ApplicationController {
       jobId: query.jobId,
       status: query.status as ApplicationStatus | undefined,
       dateRange: query.dateRange,
+      categoryId: query.categoryId,
+      search: query.search,
       page: query.page,
       limit: query.limit,
     });

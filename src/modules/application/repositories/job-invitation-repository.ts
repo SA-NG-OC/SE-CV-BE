@@ -3,7 +3,7 @@ import { DATABASE_CONNECTION } from "src/database/database.module";
 import * as schema from '../../../database/schema';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { JobInvitationDomain } from "../domain/job-invitation/job-invitation.domain";
-import { and, count, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, gte, ilike, or, SQL } from "drizzle-orm";
 import { InvitationStatus } from "../domain/job-invitation/job-invitation.props";
 import { EmployerInvitationCardView, InvitationCardView, JobInvitationMapper } from "../domain/job-invitation/job-invitation.mapper";
 import { IJobInvitationRepository } from "./job-invitation-repository.interface";
@@ -129,56 +129,98 @@ export class JobInvitationRepository implements IJobInvitationRepository {
 
     async findByCompany(
         companyId: number,
-        query: { page: number; limit: number; status?: InvitationStatus }
+        query: {
+            page: number;
+            limit: number;
+            status?: InvitationStatus;
+            search?: string;
+            categoryId?: number;
+            dateRange?: '7days' | '30days';
+        }
     ): Promise<PaginationResponse<EmployerInvitationCardView>> {
-        const { page, limit, status } = query;
+        const { page, limit, status, search, categoryId, dateRange } = query;
         const offset = (page - 1) * limit;
-        const conditions = [eq(schema.job_postings.company_id, companyId)];
+
+        const conditions: SQL[] = [];
+
+        // bắt buộc
+        conditions.push(eq(schema.job_postings.company_id, companyId));
+
         if (status) {
             conditions.push(eq(schema.job_invitations.status, status));
         }
-        const whereClause = and(...conditions);
 
+        if (typeof categoryId === 'number') {
+            conditions.push(eq(schema.job_postings.category_id, categoryId));
+        }
 
-        const [totalResult, rows] = await Promise.all([
-            this.db
-                .select({ total: count() })
-                .from(schema.job_invitations)
-                .innerJoin(
-                    schema.job_postings,
-                    eq(schema.job_invitations.job_id, schema.job_postings.job_id)
-                )
-                .where(whereClause),
+        if (search) {
+            const keyword = `%${search}%`;
 
-            this.db
-                .select({
-                    invitation_id: schema.job_invitations.invitation_id,
-                    status: schema.job_invitations.status,
-                    message: schema.job_invitations.message,
-                    created_at: schema.job_invitations.created_at,
-                    student_id: schema.students.student_id,
-                    full_name: schema.students.full_name,
-                    email: schema.students.email_student,
-                    avatar_url: schema.students.avatar_url,
-                    job_title: schema.job_postings.job_title,
-                })
-                .from(schema.job_invitations)
-                .innerJoin(
-                    schema.job_postings,
-                    eq(schema.job_invitations.job_id, schema.job_postings.job_id)
-                )
-                .innerJoin(
-                    schema.students,
-                    eq(schema.job_invitations.student_id, schema.students.student_id)
-                )
-                .where(whereClause)
-                .orderBy(desc(schema.job_invitations.created_at))
-                .limit(limit)
-                .offset(offset),
-        ]);
+            conditions.push(
+                or(
+                    ilike(schema.students.full_name, keyword),
+                    ilike(schema.students.email_student, keyword),
+                    ilike(schema.job_postings.job_title, keyword)
+                )!
+            );
+        }
+
+        if (dateRange) {
+            const from = new Date();
+            from.setDate(from.getDate() - (dateRange === '7days' ? 7 : 30));
+
+            conditions.push(gte(schema.job_invitations.created_at, from));
+        }
+
+        const whereClause = conditions.length ? and(...conditions) : undefined;
+
+        // ================= COUNT =================
+        const totalResult = await this.db
+            .select({ total: count() })
+            .from(schema.job_invitations)
+            .innerJoin(
+                schema.job_postings,
+                eq(schema.job_invitations.job_id, schema.job_postings.job_id)
+            )
+            .innerJoin(
+                schema.students,
+                eq(schema.job_invitations.student_id, schema.students.student_id)
+            )
+            .where(whereClause);
+
+        // ================= DATA =================
+        const rows = await this.db
+            .select({
+                invitation_id: schema.job_invitations.invitation_id,
+                status: schema.job_invitations.status,
+                message: schema.job_invitations.message,
+                created_at: schema.job_invitations.created_at,
+                student_id: schema.students.student_id,
+                full_name: schema.students.full_name,
+                email: schema.students.email_student,
+                avatar_url: schema.students.avatar_url,
+                job_title: schema.job_postings.job_title,
+            })
+            .from(schema.job_invitations)
+            .innerJoin(
+                schema.job_postings,
+                eq(schema.job_invitations.job_id, schema.job_postings.job_id)
+            )
+            .innerJoin(
+                schema.students,
+                eq(schema.job_invitations.student_id, schema.students.student_id)
+            )
+            .where(whereClause)
+            .orderBy(desc(schema.job_invitations.created_at))
+            .limit(limit)
+            .offset(offset);
 
         const totalItems = Number(totalResult[0]?.total || 0);
-        const data = rows.map(row => JobInvitationMapper.toEmployerInvitationView(row));
+
+        const data = rows.map(row =>
+            JobInvitationMapper.toEmployerInvitationView(row)
+        );
 
         return new PaginationResponse(data, page, limit, totalItems);
     }

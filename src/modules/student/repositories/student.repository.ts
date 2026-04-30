@@ -83,6 +83,15 @@ export class StudentRepository implements IStudentRepository {
         return result?.total ?? 0;
     }
 
+    async getMajors() {
+        return await this.db
+            .select({
+                major_id: schema.majors.major_id,
+                major_name: schema.majors.major_name,
+            })
+            .from(schema.majors);
+    }
+
     async getGeneralInformation(): Promise<StudentGeneralInfo> {
         const [result] = await this.db
             .select({

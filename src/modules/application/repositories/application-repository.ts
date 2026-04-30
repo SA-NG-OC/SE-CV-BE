@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { applications, job_postings, companies } from 'src/database/schema';
 import * as schema from '../../../database/schema';
-import { and, count, eq, desc, sql, gte, SQL, inArray } from 'drizzle-orm';
+import { and, count, eq, desc, sql, gte, SQL, inArray, or, ilike } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DATABASE_CONNECTION } from 'src/database/database.module';
 
@@ -142,11 +142,27 @@ export class ApplicationRepository implements IApplicationRepository {
         filter: GetCompanyApplicationsFilter,
         companyId: number,
     ): Promise<PaginationResponse<ApplicantCardRaw>> {
-        const { jobId, status, dateRange, page, limit } = filter;
+        const { jobId, status, dateRange, categoryId, search, page, limit } = filter;
         const offset = (page - 1) * limit;
 
         const conditions: SQL[] = [];
         conditions.push(eq(schema.job_postings.company_id, companyId));
+        if (typeof categoryId === 'number') {
+            conditions.push(eq(schema.job_postings.category_id, categoryId));
+        }
+        if (search) {
+            const keyword = `%${search}%`;
+
+            const searchCondition = or(
+                ilike(schema.students.full_name, keyword),
+                ilike(schema.students.email_student, keyword),
+                ilike(schema.job_postings.job_title, keyword),
+            );
+            if (searchCondition) {
+                conditions.push(searchCondition);
+            }
+        }
+
         if (typeof jobId === 'number') conditions.push(eq(schema.applications.job_id, jobId));
         if (status) {
             Array.isArray(status)
@@ -166,6 +182,10 @@ export class ApplicationRepository implements IApplicationRepository {
             .innerJoin(
                 schema.job_postings,
                 eq(schema.applications.job_id, schema.job_postings.job_id),
+            )
+            .innerJoin(
+                schema.students,
+                eq(schema.applications.student_id, schema.students.student_id),
             )
             .where(where);
 

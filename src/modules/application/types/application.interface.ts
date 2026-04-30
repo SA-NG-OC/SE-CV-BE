@@ -59,6 +59,8 @@ export interface GetCompanyApplicationsFilter {
     jobId?: number;
     status?: ApplicationStatus | ApplicationStatus[];
     dateRange?: '7days' | '30days';
+    categoryId?: number;
+    search?: string;
     page: number;
     limit: number;
 }

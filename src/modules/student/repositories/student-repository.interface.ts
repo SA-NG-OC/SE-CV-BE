@@ -3,6 +3,7 @@ import { CreateResumeDto } from "../dto/update-student.dto";
 import { GetStudentsQuery, StudentAdminListResult, StudentCard, StudentGeneralInfo, StudentProfile, StudentResponse, StudentResumeItem } from "../interfaces/student.interface";
 
 export interface IStudentRepository {
+  getMajors();
   // Read
   getGeneralInformation(): Promise<StudentGeneralInfo>;
 

@@ -177,10 +177,7 @@ export const studentStatusEnum = pgEnum("student_status", [
 
 export const majors = pgTable("majors", {
     major_id: serial("major_id").primaryKey(),
-    major_code: varchar("major_code", { length: 20 }).unique().notNull(),
     major_name: varchar("major_name", { length: 255 }).notNull(),
-    description: text("description"),
-    created_at: timestamp("created_at").defaultNow(),
 });
 
 export const students = pgTable(

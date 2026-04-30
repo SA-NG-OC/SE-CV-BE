@@ -8,6 +8,12 @@ export const GetInvitationsQuerySchema = z.object({
         })
         .optional(),
 
+    search: z.string().trim().optional(),
+
+    categoryId: z.coerce.number().int().optional(),
+
+    dateRange: z.enum(['7days', '30days']).optional(),
+
     // Số trang hiện tại - Mặc định là 1
     page: z.coerce
         .number()

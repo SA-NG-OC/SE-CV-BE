@@ -9,6 +9,10 @@ export const GetCompanyApplicationsSchema = z.object({
 
     dateRange: z.enum(['7days', '30days']).optional(),
 
+    categoryId: z.coerce.number().int().positive().optional(),
+
+    search: z.string().trim().min(1).max(255).optional(),
+
     page: z.coerce.number().int().min(1).default(1),
 
     limit: z.coerce.number().int().min(1).max(50).default(10),
