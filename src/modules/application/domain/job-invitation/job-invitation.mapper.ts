@@ -1,3 +1,4 @@
+import { StudentStatus } from 'src/common/types/student-status';
 import { InvitationStatus } from './job-invitation.props';
 
 export interface InvitationCardView {
@@ -29,6 +30,7 @@ export interface EmployerInvitationCardView {
         currentYear: number | null;
         gpa: string | number | null;
         isOpenToWork: boolean;
+        studentStatus: StudentStatus;
     };
 
     job: {
@@ -84,6 +86,7 @@ export class JobInvitationMapper {
         current_year: number | null;
         gpa: string | number | null;
         is_open_to_work: boolean | null;
+        student_status: StudentStatus;
     }): EmployerInvitationCardView {
         return {
             invitationId: raw.invitation_id,
@@ -99,6 +102,7 @@ export class JobInvitationMapper {
                 currentYear: raw.current_year,
                 gpa: raw.gpa,
                 isOpenToWork: raw.is_open_to_work || false,
+                studentStatus: raw.student_status,
             },
 
             job: {

@@ -565,6 +565,91 @@ export const comments = pgTable('comments', {
     content: text('content').notNull(),
     created_at: timestamp('created_at').defaultNow().notNull(),
 });
+
+// =============================================
+// 11. CHAT
+// =============================================
+export const conversationStatusEnum = pgEnum("conversation_status", [
+    "active",
+    "archived",
+    "deleted"
+]);
+
+export const conversations = pgTable(
+    "conversations",
+    {
+        conversation_id: serial("conversation_id").primaryKey(),
+        company_id: integer("company_id")
+            .notNull()
+            .references(() => companies.company_id, { onDelete: "cascade" }),
+        student_id: integer("student_id")
+            .notNull()
+            .references(() => students.student_id, { onDelete: "cascade" }),
+        last_message_at: timestamp("last_message_at").defaultNow(),
+        created_at: timestamp("created_at").defaultNow(),
+    },
+    (t) => [
+        uniqueIndex("uq_conversation_company_student").on(t.company_id, t.student_id),
+        index("idx_conversations_company").on(t.company_id),
+        index("idx_conversations_student").on(t.student_id),
+    ]
+);
+
+export const participantStatusEnum = pgEnum("participant_status", [
+    "active",
+    "hidden",
+    "blocked"
+]);
+
+export const conversation_participants = pgTable(
+    "conversation_participants",
+    {
+        participant_id: serial("participant_id").primaryKey(),
+        conversation_id: integer("conversation_id")
+            .notNull()
+            .references(() => conversations.conversation_id, { onDelete: "cascade" }),
+        user_id: integer("user_id")
+            .notNull()
+            .references(() => users.user_id, { onDelete: "cascade" }),
+        status: participantStatusEnum("status").default("active").notNull(),
+        last_read_message_id: integer("last_read_message_id"),
+        created_at: timestamp("created_at").defaultNow(),
+        updated_at: timestamp("updated_at").defaultNow(),
+    },
+    (t) => [
+        uniqueIndex("uq_participant_conversation_user").on(t.conversation_id, t.user_id),
+        index("idx_participants_conversation").on(t.conversation_id),
+        index("idx_participants_user").on(t.user_id),
+    ]
+);
+
+export const messageStatusEnum = pgEnum("message_status", [
+    "sent",
+    "deleted"
+]);
+
+export const messages = pgTable(
+    "messages",
+    {
+        message_id: serial("message_id").primaryKey(),
+        conversation_id: integer("conversation_id")
+            .notNull()
+            .references(() => conversations.conversation_id, { onDelete: "cascade" }),
+        sender_id: integer("sender_id")
+            .notNull()
+            .references(() => users.user_id, { onDelete: "cascade" }),
+        content: text("content").notNull(),
+        status: messageStatusEnum("status").default("sent").notNull(),
+        created_at: timestamp("created_at").defaultNow().notNull(),
+        updated_at: timestamp("updated_at").defaultNow(),
+    },
+    (t) => [
+        index("idx_messages_conversation").on(t.conversation_id),
+        index("idx_messages_sender").on(t.sender_id),
+        index("idx_messages_created_at").on(t.created_at),
+    ]
+);
+
 // =============================================
 // RELATIONS
 // =============================================
@@ -578,6 +663,8 @@ export const usersRelations = relations(users, ({ one, many }) => ({
     company: one(companies),
     student: one(students),
     notifications: many(notifications),
+    sent_messages: many(messages),
+    conversation_participants: many(conversation_participants),
 }));
 
 export const companiesRelations = relations(companies, ({ one, many }) => ({
@@ -692,5 +779,40 @@ export const commentsRelations = relations(comments, ({ one }) => ({
     company: one(companies, {
         fields: [comments.company_id],
         references: [companies.company_id],
+    }),
+}));
+
+export const conversationsRelations = relations(conversations, ({ one, many }) => ({
+    company: one(companies, {
+        fields: [conversations.company_id],
+        references: [companies.company_id],
+    }),
+    student: one(students, {
+        fields: [conversations.student_id],
+        references: [students.student_id],
+    }),
+    participants: many(conversation_participants),
+    messages: many(messages),
+}));
+
+export const conversationParticipantsRelations = relations(conversation_participants, ({ one }) => ({
+    conversation: one(conversations, {
+        fields: [conversation_participants.conversation_id],
+        references: [conversations.conversation_id],
+    }),
+    user: one(users, {
+        fields: [conversation_participants.user_id],
+        references: [users.user_id],
+    }),
+}));
+
+export const messagesRelations = relations(messages, ({ one }) => ({
+    conversation: one(conversations, {
+        fields: [messages.conversation_id],
+        references: [conversations.conversation_id],
+    }),
+    sender: one(users, {
+        fields: [messages.sender_id],
+        references: [users.user_id],
     }),
 }));

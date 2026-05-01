@@ -79,7 +79,8 @@ export const GetCompanyInvitationsDocs = () => applyDecorators(
                             email: "nguyenvana@student.edu.vn",
                             currentYear: 4,
                             gpa: "3.45",
-                            isOpenToWork: true
+                            isOpenToWork: true,
+                            studentStatus: 'GRADUATED',
                         },
                         job: {
                             jobId: 3,
