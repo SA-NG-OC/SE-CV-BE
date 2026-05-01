@@ -35,6 +35,7 @@ export class JobInvitationRepository implements IJobInvitationRepository {
             .update(schema.job_invitations)
             .set({
                 status: invitation.status,
+                message: invitation.message,
                 updated_at: new Date(),
             })
             .where(eq(schema.job_invitations.invitation_id, invitation.invitationId))

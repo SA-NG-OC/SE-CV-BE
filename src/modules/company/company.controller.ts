@@ -290,8 +290,16 @@ export class CompanyController {
     async getCompanyCardsForUser(
         @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
         @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+        @Query('search') search?: string,
+        @Query('location') location?: string,
+        @Query('scale') scale?: string,
     ) {
-        const data = await this.companyService.getCompanyCardForUser(page, limit);
+        const data = await this.companyService.getCompanyCardForUser(
+            page,
+            limit,
+            { search, location, scale }
+        );
+
         return new ResponseSuccess("Lấy danh sách công ty thành công", data);
     }
 

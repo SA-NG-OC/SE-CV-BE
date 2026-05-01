@@ -62,7 +62,7 @@ export class ApplicationRepository implements IApplicationRepository {
     async findByJobAndStudent(
         jobId: number,
         studentId: number,
-    ): Promise<ApplicationDomain | null> {
+    ) {
         const [row] = await this.db
             .select()
             .from(applications)

@@ -167,8 +167,32 @@ export class ApplicationService {
     await this.assertJobBelongsToCompany(companyId, dto.jobId);
 
     const existingApp = await this.applicationRepo.findByJobAndStudent(dto.jobId, dto.studentId);
+    const job = await this.jobPostingRepo.findById(dto.jobId);
+
+    if (job?.applicationDeadline) {
+      const now = new Date();
+      const deadline = new Date(job.applicationDeadline);
+
+      if (deadline < now) {
+        throw new BadRequestException('Job đã hết hạn nhận ứng viên');
+      }
+    }
+
     if (existingApp) {
       throw new ConflictException('Ứng viên này đã nộp đơn vào công việc này');
+    }
+
+    const existingInvitation =
+      await this.jobInvitationRepo.findByJobId(
+        dto.jobId,
+        dto.studentId
+      );
+
+    if (existingInvitation) {
+      existingInvitation.updateMessage(dto.message);
+      existingInvitation.pending();
+
+      return this.jobInvitationRepo.save(existingInvitation);
     }
 
     const invitation = JobInvitationDomain.create({
@@ -208,6 +232,18 @@ export class ApplicationService {
     if (!invitation) throw new NotFoundException('Không tìm thấy lời mời');
     if (invitation.studentId !== studentId) {
       throw new ForbiddenException('Bạn không có quyền thực hiện thao tác này');
+    }
+
+    const jobId = invitation.jobId;
+    const job = await this.jobPostingRepo.findById(jobId);
+
+    if (job?.applicationDeadline) {
+      const now = new Date();
+      const deadline = new Date(job.applicationDeadline);
+
+      if (deadline < now) {
+        throw new BadRequestException('Job đã hết hạn nhận ứng viên');
+      }
     }
 
     try {

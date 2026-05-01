@@ -9,6 +9,31 @@ export const GetCompanyCardsForUserDocs = () => applyDecorators(
     }),
     ApiQuery({ name: 'page', required: false, type: Number, example: 1 }),
     ApiQuery({ name: 'limit', required: false, type: Number, example: 10 }),
+    // search theo tên công ty
+    ApiQuery({
+        name: 'search',
+        required: false,
+        type: String,
+        example: 'TechNova',
+        description: 'Tìm kiếm theo tên công ty (ilike)',
+    }),
+
+    // location (address)
+    ApiQuery({
+        name: 'location',
+        required: false,
+        type: String,
+        example: 'Hà Nội',
+        description: 'Lọc theo địa điểm (match trong address)',
+    }),
+
+    // scale
+    ApiQuery({
+        name: 'scale',
+        required: false,
+        example: '50-100',
+        description: 'Lọc theo quy mô công ty (match exact với DB)',
+    }),
     ApiOkResponse({
         description: 'Lấy danh sách công ty thành công',
         example: {

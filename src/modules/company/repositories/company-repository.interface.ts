@@ -56,5 +56,10 @@ export interface ICompanyRepository {
     getCompanyListForUser(
         page: number,
         limit: number,
-    ): Promise<CompanyUserListResult>;
+        filters?: {
+            search?: string;
+            location?: string;
+            scale?: string;
+        }
+    ): Promise<CompanyUserListResult>
 }

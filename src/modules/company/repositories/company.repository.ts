@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DATABASE_CONNECTION } from 'src/database/database.module';
 import * as schema from '../../../database/schema';
-import { eq, and, sql, desc, count } from 'drizzle-orm';
+import { eq, and, sql, desc, count, SQL, ilike } from 'drizzle-orm';
 
 import { ICompanyRepository } from './company-repository.interface';
 import { CompanyDomain } from '../domain/company.domain';
@@ -345,8 +345,41 @@ export class CompanyRepository implements ICompanyRepository {
     async getCompanyListForUser(
         page: number,
         limit: number,
+        filters?: {
+            search?: string;
+            location?: string;
+            scale?: string;
+        }
     ): Promise<CompanyUserListResult> {
         const offset = (page - 1) * limit;
+
+        const conditions: SQL[] = [];
+
+        // luôn filter APPROVED
+        conditions.push(eq(schema.companies.status, 'APPROVED'));
+
+        // ================= SEARCH =================
+        if (filters?.search) {
+            conditions.push(
+                ilike(schema.companies.company_name, `%${filters.search}%`)
+            );
+        }
+
+        // ================= LOCATION =================
+        if (filters?.location) {
+            conditions.push(
+                ilike(schema.companies.address, `%${filters.location}%`)
+            );
+        }
+
+        // ================= SCALE =================
+        if (filters?.scale) {
+            conditions.push(
+                eq(schema.companies.company_size, filters.scale)
+            );
+        }
+
+        const whereClause = conditions.length ? and(...conditions) : undefined;
 
         const [companies, [{ totalItems }]] = await Promise.all([
             this.db
@@ -356,14 +389,14 @@ export class CompanyRepository implements ICompanyRepository {
                     logo_url: schema.companies.logo_url,
                     industry: schema.companies.industry,
                     active_jobs: sql<number>`(
-                        SELECT COUNT(job_id)
-                        FROM ${schema.job_postings}
-                        WHERE company_id = ${schema.companies.company_id}
-                        AND status = 'approved'
-                    )`.mapWith(Number),
+          SELECT COUNT(job_id)
+          FROM ${schema.job_postings}
+          WHERE company_id = ${schema.companies.company_id}
+          AND status = 'approved'
+        )`.mapWith(Number),
                 })
                 .from(schema.companies)
-                .where(eq(schema.companies.status, 'APPROVED'))
+                .where(whereClause)
                 .orderBy(desc(schema.companies.created_at))
                 .limit(limit)
                 .offset(offset),
@@ -371,7 +404,7 @@ export class CompanyRepository implements ICompanyRepository {
             this.db
                 .select({ totalItems: count() })
                 .from(schema.companies)
-                .where(eq(schema.companies.status, 'APPROVED')),
+                .where(whereClause),
         ]);
 
         return {

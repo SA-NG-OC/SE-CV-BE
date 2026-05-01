@@ -162,9 +162,17 @@ export class CompanyService {
         };
     }
 
-    async getCompanyCardForUser(page: number, limit: number) {
+    async getCompanyCardForUser(
+        page: number,
+        limit: number,
+        filters: {
+            search?: string;
+            location?: string;
+            scale?: string;
+        }
+    ) {
         const { companies, totalItems } =
-            await this.companyRepo.getCompanyListForUser(page, limit);
+            await this.companyRepo.getCompanyListForUser(page, limit, filters);
 
         return new PaginationResponse(companies, page, limit, totalItems);
     }

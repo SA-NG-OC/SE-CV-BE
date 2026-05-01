@@ -75,6 +75,15 @@ export class JobInvitationDomain {
         this.props.updatedAt = new Date();
     }
 
+    pending(): void {
+        this.props.status = 'pending';
+        this.props.updatedAt = new Date();
+    }
+
+    updateMessage(message: string | null) {
+        this.props.message = message;
+    }
+
     // =========================================================================
     // PERSISTENCE
     // =========================================================================
