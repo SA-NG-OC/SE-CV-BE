@@ -507,6 +507,7 @@ export class StudentRepository implements IStudentRepository {
                 avatar_url: schema.students.avatar_url,
                 current_year: schema.students.current_year,
                 gpa: schema.students.gpa,
+                student_status: schema.students.student_status,
                 is_open_to_work: sql<boolean>`
         COALESCE(${schema.students.is_open_to_work}, false)
       `,

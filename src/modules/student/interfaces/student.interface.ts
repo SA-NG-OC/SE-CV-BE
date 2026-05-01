@@ -77,6 +77,7 @@ export interface StudentCard {
     avatarUrl: string | null;
     currentYear: number | null;
     gpa: string | number | null;
+    studentStatus: StudentStatus;
     isOpenToWork: boolean;
     skills: string[];
 }

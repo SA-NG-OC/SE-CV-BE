@@ -75,6 +75,7 @@ export const GetStudentsCardDocs = () => applyDecorators(
                             avatarUrl: null,
                             currentYear: 4,
                             gpa: "3.45",
+                            studentStatus: 'GRADUATED',
                             isOpenToWork: true,
                             skills: ["React", "Node.js", "TypeScript"]
                         }

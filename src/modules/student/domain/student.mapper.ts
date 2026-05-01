@@ -105,6 +105,7 @@ export class StudentMapper {
         avatar_url: string | null;
         current_year: number | null;
         gpa: string | number | null;
+        student_status: StudentStatus;
         is_open_to_work: boolean;
         skills: string[];
     }): StudentCard {
@@ -114,9 +115,10 @@ export class StudentMapper {
             avatarUrl: raw.avatar_url,
             currentYear: raw.current_year,
             gpa: raw.gpa,
+            studentStatus: raw.student_status,
             isOpenToWork: raw.is_open_to_work,
             skills: raw.skills,
-        }
+        };
     }
 
     static toStudentProfile(raw: {
