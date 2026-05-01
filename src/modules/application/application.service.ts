@@ -166,11 +166,6 @@ export class ApplicationService {
   ): Promise<JobInvitationDomain> {
     await this.assertJobBelongsToCompany(companyId, dto.jobId);
 
-    const existingInvitation = await this.jobInvitationRepo.findByJobId(dto.jobId, dto.studentId);
-    if (existingInvitation?.status === 'pending') {
-      throw new ConflictException('Bạn đã gửi lời mời cho ứng viên này và đang chờ phản hồi');
-    }
-
     const existingApp = await this.applicationRepo.findByJobAndStudent(dto.jobId, dto.studentId);
     if (existingApp) {
       throw new ConflictException('Ứng viên này đã nộp đơn vào công việc này');

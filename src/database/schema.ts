@@ -418,7 +418,6 @@ export const job_invitations = pgTable(
     },
     (t) => [
         index("idx_invitations_student").on(t.student_id),
-        uniqueIndex("uq_job_student_invitation").on(t.job_id, t.student_id),
     ]
 );
 

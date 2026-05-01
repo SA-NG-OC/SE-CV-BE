@@ -77,8 +77,12 @@ export const GetCompanyInvitationsDocs = () => applyDecorators(
                             fullName: "Nguyễn Văn A",
                             avatarUrl: null,
                             email: "nguyenvana@student.edu.vn",
+                            currentYear: 4,
+                            gpa: "3.45",
+                            isOpenToWork: true
                         },
                         job: {
+                            jobId: 3,
                             jobTitle: "Devops",
                         },
                     },

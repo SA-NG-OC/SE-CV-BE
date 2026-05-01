@@ -1,0 +1,1 @@
+DROP INDEX "uq_job_student_invitation";

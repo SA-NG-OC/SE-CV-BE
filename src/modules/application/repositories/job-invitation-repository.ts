@@ -200,7 +200,11 @@ export class JobInvitationRepository implements IJobInvitationRepository {
                 full_name: schema.students.full_name,
                 email: schema.students.email_student,
                 avatar_url: schema.students.avatar_url,
+                current_year: schema.students.current_year,
+                is_open_to_work: schema.students.is_open_to_work,
+                gpa: schema.students.gpa,
                 job_title: schema.job_postings.job_title,
+                job_id: schema.job_postings.job_id,
             })
             .from(schema.job_invitations)
             .innerJoin(

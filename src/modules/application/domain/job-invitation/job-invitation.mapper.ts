@@ -26,9 +26,13 @@ export interface EmployerInvitationCardView {
         fullName: string;
         avatarUrl: string | null;
         email: string | null;
+        currentYear: number | null;
+        gpa: string | number | null;
+        isOpenToWork: boolean;
     };
 
     job: {
+        jobId: number;
         jobTitle: string;
     };
 }
@@ -76,6 +80,10 @@ export class JobInvitationMapper {
         email: string | null;
         avatar_url: string | null;
         job_title: string;
+        job_id: number;
+        current_year: number | null;
+        gpa: string | number | null;
+        is_open_to_work: boolean | null;
     }): EmployerInvitationCardView {
         return {
             invitationId: raw.invitation_id,
@@ -87,10 +95,14 @@ export class JobInvitationMapper {
                 studentId: raw.student_id,
                 fullName: raw.full_name,
                 avatarUrl: raw.avatar_url,
-                email: raw.email
+                email: raw.email,
+                currentYear: raw.current_year,
+                gpa: raw.gpa,
+                isOpenToWork: raw.is_open_to_work || false,
             },
 
             job: {
+                jobId: raw.job_id,
                 jobTitle: raw.job_title,
             },
         };
