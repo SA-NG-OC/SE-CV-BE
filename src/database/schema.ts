@@ -569,11 +569,6 @@ export const comments = pgTable('comments', {
 // =============================================
 // 11. CHAT
 // =============================================
-export const conversationStatusEnum = pgEnum("conversation_status", [
-    "active",
-    "archived",
-    "deleted"
-]);
 
 export const conversations = pgTable(
     "conversations",
@@ -595,12 +590,6 @@ export const conversations = pgTable(
     ]
 );
 
-export const participantStatusEnum = pgEnum("participant_status", [
-    "active",
-    "hidden",
-    "blocked"
-]);
-
 export const conversation_participants = pgTable(
     "conversation_participants",
     {
@@ -611,7 +600,8 @@ export const conversation_participants = pgTable(
         user_id: integer("user_id")
             .notNull()
             .references(() => users.user_id, { onDelete: "cascade" }),
-        status: participantStatusEnum("status").default("active").notNull(),
+        is_hidden: boolean("is_hidden").default(false).notNull(),
+        is_blocked: boolean("is_blocked").default(false).notNull(),
         last_read_message_id: integer("last_read_message_id"),
         created_at: timestamp("created_at").defaultNow(),
         updated_at: timestamp("updated_at").defaultNow(),
@@ -622,11 +612,6 @@ export const conversation_participants = pgTable(
         index("idx_participants_user").on(t.user_id),
     ]
 );
-
-export const messageStatusEnum = pgEnum("message_status", [
-    "sent",
-    "deleted"
-]);
 
 export const messages = pgTable(
     "messages",
@@ -639,7 +624,6 @@ export const messages = pgTable(
             .notNull()
             .references(() => users.user_id, { onDelete: "cascade" }),
         content: text("content").notNull(),
-        status: messageStatusEnum("status").default("sent").notNull(),
         created_at: timestamp("created_at").defaultNow().notNull(),
         updated_at: timestamp("updated_at").defaultNow(),
     },
