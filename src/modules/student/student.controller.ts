@@ -72,6 +72,7 @@ export class StudentController {
   }
 
   @Get('me')
+  @GetStudentProfileDocs()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.STUDENT)
   async getMe(@Req() req: any) {

@@ -100,6 +100,11 @@ export class JobInvitationRepository implements IJobInvitationRepository {
                     created_at: schema.job_invitations.created_at,
                     job_id: schema.job_postings.job_id,
                     job_title: schema.job_postings.job_title,
+                    city: schema.job_postings.city,
+                    salary_min: schema.job_postings.salary_min,
+                    salary_max: schema.job_postings.salary_max,
+                    salary_type: schema.job_postings.salary_type,
+                    is_salary_negotiable: schema.job_postings.is_salary_negotiable,
                     company_name: schema.companies.company_name,
                     logo_url: schema.companies.logo_url,
                 })
