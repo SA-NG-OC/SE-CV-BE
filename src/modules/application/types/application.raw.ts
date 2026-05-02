@@ -7,6 +7,7 @@ export type ApplicationCardRaw = {
     application_id: number;
     status: string;
     created_at: Date;
+    company_id: number | null;
     job_id: number;
     job_title: string;
     company_name: string;

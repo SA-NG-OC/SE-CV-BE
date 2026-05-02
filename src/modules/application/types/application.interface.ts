@@ -10,6 +10,7 @@ export interface ApplicationCardView {
         jobTitle: string;
     };
     company: {
+        companyId: number | null;
         companyName: string;
         logoUrl: string | null;
     };

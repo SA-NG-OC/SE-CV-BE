@@ -25,6 +25,7 @@ export const GetMyApplicationsDocs = () => applyDecorators(
                             jobTitle: "Hahahahahahahahahaha"
                         },
                         company: {
+                            companyId: 3,
                             companyName: "TechNova Solutions",
                             logoUrl: "https://res.cloudinary.com/deagejli9/image/upload/v1775297599/nest_uploads/lfhhh3dlsvqatwmyibt5.png"
                         }

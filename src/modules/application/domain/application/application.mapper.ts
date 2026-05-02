@@ -14,6 +14,7 @@ export class ApplicationMapper {
                 jobTitle: raw.job_title,
             },
             company: {
+                companyId: raw.company_id,
                 companyName: raw.company_name,
                 logoUrl: raw.logo_url,
             },
