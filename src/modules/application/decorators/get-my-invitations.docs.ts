@@ -36,6 +36,10 @@ export const GetMyInvitationsDocs = () => applyDecorators(
                         job: {
                             jobId: 3,
                             jobTitle: "Devops",
+                            salaryMin: 14000000,
+                            salaryMax: 22000000,
+                            salaryType: "monthly",
+                            isSalaryNegotiable: false,
                         },
                         company: {
                             companyName: "Tech Solutions Vietnam",
