@@ -217,7 +217,8 @@ export class ApplicationController {
     @Req() req,
   ) {
     const studentId = req.user.studentId;
-    const data = await this.applicationService.getInvitationStats(studentId);
+    console.log(`[Application Controller]: ${studentId}`);
+    const data = await this.applicationService.getStudentInvitationStats(studentId);
     return new ResponseSuccess('Lấy thông tin thành công', data);
   }
 
