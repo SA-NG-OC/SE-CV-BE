@@ -272,4 +272,8 @@ export class ApplicationService {
   async getInvitationStats(companyId: number) {
     return this.jobInvitationRepo.countStatsByCompany(companyId);
   }
+
+  async getStudentInvitationStats(studentId: number) {
+    return this.jobInvitationRepo.countStatsByStudent(studentId);
+  }
 }

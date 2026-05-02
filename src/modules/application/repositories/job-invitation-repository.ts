@@ -231,6 +231,38 @@ export class JobInvitationRepository implements IJobInvitationRepository {
         return new PaginationResponse(data, page, limit, totalItems);
     }
 
+    async countStatsByStudent(studentId: number): Promise<{
+        total: number;
+        byStatus: Record<string, number>;
+    }> {
+        const results = await this.db
+            .select({
+                status: schema.job_invitations.status,
+                count: count(),
+            })
+            .from(schema.job_invitations)
+            .where(eq(schema.job_invitations.student_id, studentId))
+            .groupBy(schema.job_invitations.status);
+
+        const stats = {
+            total: 0,
+            byStatus: {
+                pending: 0,
+                accepted: 0,
+                rejected: 0,
+                expired: 0,
+            },
+        };
+
+        results.forEach((row) => {
+            const rowCount = Number(row.count);
+            stats.byStatus[row.status] = rowCount;
+            stats.total += rowCount;
+        });
+
+        return stats;
+    }
+
     async countStatsByCompany(companyId: number): Promise<{
         total: number;
         byStatus: Record<string, number>;
