@@ -19,6 +19,7 @@ import { SetDefaultResumeDocs, UpdateJobStatusDocs, UpdateSkillsDocs, UploadResu
 import { GetStudentsQueryDto } from './dto/get-students-query.dto';
 import { GetStudentsCardDocs } from './decorators/get-student-card.decorator';
 import GetMajorsDocs from './decorators/get-majors.decorator';
+import GetMyProfileDocs from './decorators/get-my-profile.decorator';
 
 @Controller('student')
 export class StudentController {
@@ -171,7 +172,7 @@ export class StudentController {
   }
 
   @Get(':id')
-  @GetStudentProfileDocs()
+  @GetMyProfileDocs()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.COMPANY)
   async getStudentProfile(
