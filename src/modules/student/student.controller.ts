@@ -20,6 +20,7 @@ import { GetStudentsQueryDto } from './dto/get-students-query.dto';
 import { GetStudentsCardDocs } from './decorators/get-student-card.decorator';
 import GetMajorsDocs from './decorators/get-majors.decorator';
 import GetMyProfileDocs from './decorators/get-my-profile.decorator';
+import UpdateAvatarDocs from './decorators/update-avatar.decorator';
 
 @Controller('student')
 export class StudentController {
@@ -73,7 +74,7 @@ export class StudentController {
   }
 
   @Get('me')
-  @GetStudentProfileDocs()
+  @GetMyProfileDocs()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.STUDENT)
   async getMe(@Req() req: any) {
@@ -151,6 +152,7 @@ export class StudentController {
   }
 
   @Patch('me/avatar')
+  @UpdateAvatarDocs()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.STUDENT)
   @UseInterceptors(FileInterceptor("avatar"))
@@ -172,7 +174,7 @@ export class StudentController {
   }
 
   @Get(':id')
-  @GetMyProfileDocs()
+  @GetStudentProfileDocs()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.COMPANY)
   async getStudentProfile(
