@@ -105,6 +105,10 @@ export class StudentService {
     return { message: 'Thêm CV mới thành công', data: newResume };
   }
 
+  async deleteResume(studentId: number, resumeId: number): Promise<void> {
+    await this.repo.deleteResume(studentId, resumeId);
+  }
+
   async setDefaultResume(studentId: number, resumeId: number) {
     const result = await this.repo.setResumeAsDefault(studentId, resumeId);
     if (!result) throw new NotFoundException('Không tìm thấy CV này hoặc CV không thuộc về bạn');

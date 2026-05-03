@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DATABASE_CONNECTION } from 'src/database/database.module';
 import * as schema from '../../../database/schema';
@@ -367,6 +367,35 @@ export class StudentRepository implements IStudentRepository {
             cvUrl: newResume.cv_url,
             isDefault: newResume.is_default,
         });
+    }
+
+    async deleteResume(studentId: number, resumeId: number): Promise<void> {
+        const [resume] = await this.db
+            .select({
+                resume_id: schema.student_resumes.resume_id,
+                is_default: schema.student_resumes.is_default,
+            })
+            .from(schema.student_resumes)
+            .where(
+                and(
+                    eq(schema.student_resumes.resume_id, resumeId),
+                    eq(schema.student_resumes.student_id, studentId),
+                )
+            );
+
+        if (!resume) {
+            throw new NotFoundException('CV không tồn tại');
+        }
+
+        if (resume.is_default) {
+            throw new BadRequestException('Không thể xóa CV mặc định');
+        }
+
+        await this.db
+            .delete(schema.student_resumes)
+            .where(
+                eq(schema.student_resumes.resume_id, resumeId)
+            );
     }
 
     async setResumeAsDefault(studentId: number, resumeId: number): Promise<StudentResumeItem | null> {

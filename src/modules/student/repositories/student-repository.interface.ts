@@ -29,6 +29,8 @@ export interface IStudentRepository {
 
   addResume(studentId: number, data: CreateResumeDto): Promise<StudentResumeItem>;
 
+  deleteResume(studentId: number, resumeId: number): Promise<void>;
+
   setResumeAsDefault(studentId: number, resumeId: number): Promise<StudentResumeItem | null>;
 
   findStudentCards(

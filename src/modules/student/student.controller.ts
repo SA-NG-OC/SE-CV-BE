@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Put, UseGuards, Query, UseInterceptors, UploadedFile, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Put, UseGuards, Query, UseInterceptors, UploadedFile, NotFoundException, Delete, HttpCode } from '@nestjs/common';
 import { StudentService } from './student.service';
 import ResponseSuccess from 'src/common/types/response-success';
 import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
@@ -21,6 +21,7 @@ import { GetStudentsCardDocs } from './decorators/get-student-card.decorator';
 import GetMajorsDocs from './decorators/get-majors.decorator';
 import GetMyProfileDocs from './decorators/get-my-profile.decorator';
 import UpdateAvatarDocs from './decorators/update-avatar.decorator';
+import DeleteResumeDocs from './decorators/delete-resume.decorator';
 
 @Controller('student')
 export class StudentController {
@@ -136,6 +137,19 @@ export class StudentController {
     console.log('Cloudinary URL:', uploadRes.secure_url);
     console.log('Resource type:', uploadRes.resource_type);
     return new ResponseSuccess('Thêm mới CV thành công', data);
+  }
+
+  @Delete('me/resumes/:resumeId')
+  @DeleteResumeDocs()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.STUDENT)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteResume(
+    @Req() req: any,
+    @Param('resumeId', ParseIntPipe) resumeId: number,
+  ): Promise<void> {
+    const studentId = req.user.studentId;
+    await this.studentsService.deleteResume(studentId, resumeId);
   }
 
   @Patch('me/resumes/:resumeId/default')
