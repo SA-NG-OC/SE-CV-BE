@@ -5,6 +5,7 @@ import * as schema from '../../../database/schema';
 import { DATABASE_CONNECTION } from 'src/database/database.module';
 import { ConversationEntity, ConversationParticipantEntity, MessageEntity } from '../domain/chat.entity';
 import { IChatRepository, IConversationListRaw, IGetMessagesOptions } from './chat-repository.interface';
+import { ISendContext } from '../types';
 
 @Injectable()
 export class ChatRepository implements IChatRepository {
@@ -12,6 +13,24 @@ export class ChatRepository implements IChatRepository {
         @Inject(DATABASE_CONNECTION)
         private readonly db: NodePgDatabase<typeof schema>,
     ) { };
+
+    async validateSendContext(conversationId: number, senderId: number): Promise<ISendContext> {
+        const rows = await this.db
+            .select({
+                user_id: schema.conversation_participants.user_id,
+                is_blocked: schema.conversation_participants.is_blocked,
+            })
+            .from(schema.conversation_participants)
+            .where(eq(schema.conversation_participants.conversation_id, conversationId));
+
+        const isMember = rows.some((r) => r.user_id === senderId);
+        const isBlocked = rows.some((r) => r.is_blocked);
+        const recipientIds = rows
+            .map((r) => r.user_id)
+            .filter((id) => id !== senderId);
+
+        return { isMember, isBlocked, recipientIds };
+    }
 
     //CONVERSATION
     async findConversationByCompanyAndStudent(companyId: number, studentId: number): Promise<ConversationEntity | null> {
@@ -141,12 +160,22 @@ export class ChatRepository implements IChatRepository {
     }
 
     //MESSAGE
-    async createMessage(data: Omit<MessageEntity, 'message_id'>): Promise<MessageEntity> {
-        const [row] = await this.db
-            .insert(schema.messages)
-            .values(data)
-            .returning();
-        return row;
+    async createMessageAndUpdateConversation(
+        data: Omit<MessageEntity, 'message_id'>,
+    ): Promise<MessageEntity> {
+        return this.db.transaction(async (tx) => {
+            const [saved] = await tx
+                .insert(schema.messages)
+                .values(data)
+                .returning();
+
+            await tx
+                .update(schema.conversations)
+                .set({ last_message_at: saved.created_at })
+                .where(eq(schema.conversations.conversation_id, data.conversation_id));
+
+            return saved;
+        });
     }
 
     async getMessages(opts: IGetMessagesOptions): Promise<MessageEntity[]> {

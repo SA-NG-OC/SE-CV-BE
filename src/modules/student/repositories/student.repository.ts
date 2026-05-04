@@ -83,6 +83,14 @@ export class StudentRepository implements IStudentRepository {
         return result?.total ?? 0;
     }
 
+    async findRawById(actorId: number): Promise<number | null> {
+        const [data] = await this.db
+            .select({ userId: schema.students.user_id })
+            .from(schema.students)
+            .where(eq(schema.students.student_id, actorId))
+        return data.userId
+    }
+
     async getMajors() {
         return await this.db
             .select({
@@ -171,7 +179,6 @@ export class StudentRepository implements IStudentRepository {
             },
         };
 
-        // 3. Save cache TTL 60s
         await this.redisClient.set(cacheKey, JSON.stringify(result), 'EX', 60);
 
         return result;
@@ -287,7 +294,6 @@ export class StudentRepository implements IStudentRepository {
 
     // =========================================================================
     // UPDATE
-    // Pattern: load row → fromPersistence → domain method → save
     // =========================================================================
 
     async updateJobStatus(studentId: number, isOpenToWork: boolean): Promise<StudentResponse | null> {
@@ -300,14 +306,13 @@ export class StudentRepository implements IStudentRepository {
         if (!row) return null;
 
         const domain = StudentDomain.fromPersistence(row);
-        domain.setOpenToWork(isOpenToWork);   // domain mutate
+        domain.setOpenToWork(isOpenToWork);
 
         await this.db
             .update(schema.students)
             .set(domain.toUpdatePersistence())
             .where(eq(schema.students.student_id, studentId));
 
-        // Trả về full response sau khi update
         const [skills, resumes, totalApplications] = await Promise.all([
             this.fetchSkills(studentId),
             this.fetchResumes(studentId),
@@ -315,7 +320,7 @@ export class StudentRepository implements IStudentRepository {
         ]);
 
         return StudentMapper.toResponse(domain, {
-            majorName: null,  // không cần join major cho update này
+            majorName: null,
             skills,
             resumes,
             totalApplications,
@@ -534,9 +539,6 @@ export class StudentRepository implements IStudentRepository {
             .limit(limit)
             .offset(offset);
 
-        // =========================
-        // RESPONSE
-        // =========================
         return {
             data: rows.map(row =>
                 StudentMapper.toStudentCard({

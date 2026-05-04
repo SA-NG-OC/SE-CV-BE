@@ -1,15 +1,23 @@
 import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { CHAT_REPOSITORY, type IChatRepository } from './repositories/chat-repository.interface';
+import { I_CHAT_REPOSITORY, type IChatRepository } from './repositories/chat-repository.interface';
 import { ChatMapper } from './domain/chat.mapper';
 import { GetMessagesDto, MarkReadDto, SetBlockedDto, SetHiddenDto } from './dto/chat.dto';
 import { Role } from 'src/common/types/role.enum';
 import { ConversationListItemView, MessageView, ParticipantStatusView } from './types';
+import { I_COMPANY_REPOSITORY } from '../company/company.tokens';
+import type { ICompanyRepository } from '../company/repositories/company-repository.interface';
+import { I_STUDENT_REPOSITORY } from '../student/student.token';
+import type { IStudentRepository } from '../student/repositories/student-repository.interface';
 
 @Injectable()
 export class ChatService {
   constructor(
-    @Inject(CHAT_REPOSITORY)
+    @Inject(I_CHAT_REPOSITORY)
     private readonly chatRepo: IChatRepository,
+    @Inject(I_COMPANY_REPOSITORY)
+    private readonly companyRepo: ICompanyRepository,
+    @Inject(I_STUDENT_REPOSITORY)
+    private readonly studentRepo: IStudentRepository,
   ) { }
 
   // =========================================================================
@@ -19,8 +27,6 @@ export class ChatService {
   async getOrCreateConversation(
     companyId: number,
     studentId: number,
-    companyUserId: number,
-    studentUserId: number,
   ): Promise<{ conversationId: number; isNew: boolean }> {
     let conversation = await this.chatRepo.findConversationByCompanyAndStudent(companyId, studentId);
     let isNew = false;
@@ -36,13 +42,29 @@ export class ChatService {
     }
 
     const conversationId = conversation.conversation_id;
-    await this.ensureParticipant(conversationId, companyUserId);
-    await this.ensureParticipant(conversationId, studentUserId);
+    await this.ensureParticipant(conversationId, companyId, Role.COMPANY);
+    await this.ensureParticipant(conversationId, studentId, Role.STUDENT);
 
     return { conversationId, isNew };
   }
 
-  private async ensureParticipant(conversationId: number, userId: number): Promise<void> {
+  private async ensureParticipant(
+    conversationId: number,
+    actorId: number,
+    role: Role,
+  ): Promise<void> {
+    let userId: number;
+
+    if (role === Role.STUDENT) {
+      const student = await this.studentRepo.findRawById(actorId);
+      if (!student) throw new NotFoundException('Không tìm thấy sinh viên');
+      userId = student;
+    } else {
+      const company = await this.companyRepo.findRawById(actorId);
+      if (!company) throw new NotFoundException('Không tìm thấy công ty');
+      userId = company;
+    }
+
     const existing = await this.chatRepo.findParticipant(conversationId, userId);
     if (!existing) {
       await this.chatRepo.createParticipant({
@@ -65,21 +87,20 @@ export class ChatService {
     conversationId: number,
     senderId: number,
     content: string,
-  ): Promise<{ message: MessageView, recipientUserIds: number[] }> {
-    const senderParticipant = await this.chatRepo.findParticipant(conversationId, senderId);
-    if (!senderParticipant) {
-      throw new ForbiddenException('Bạn không thuộc cuộc trò chuyện này');
-    }
-
-    const blocked = await this.chatRepo.hasAnyBlocked(conversationId);
-    if (blocked) {
-      throw new ForbiddenException('Không thể gửi tin nhắn vì cuộc trò chuyện đã bị chặn');
-    }
-
+  ): Promise<{ message: MessageView; recipientUserIds: number[] }> {
     const trimmed = content.trim();
     if (!trimmed) throw new ForbiddenException('Nội dung tin nhắn không được để trống');
 
-    const saved = await this.chatRepo.createMessage({
+    const { isMember, isBlocked, recipientIds } = await this.chatRepo.validateSendContext(
+      conversationId,
+      senderId,
+    );
+
+    if (!isMember) throw new ForbiddenException('Bạn không thuộc cuộc trò chuyện này');
+    if (isBlocked) throw new ForbiddenException('Không thể gửi tin nhắn vì cuộc trò chuyện đã bị chặn');
+
+
+    const saved = await this.chatRepo.createMessageAndUpdateConversation({
       conversation_id: conversationId,
       sender_id: senderId,
       content: trimmed,
@@ -87,14 +108,9 @@ export class ChatService {
       updated_at: new Date(),
     });
 
-    await this.chatRepo.updateLastMessageAt(conversationId);
-
-    const allUserIds = await this.chatRepo.getParticipantUserIds(conversationId);
-    const recipientUserIds = allUserIds.filter((id) => id !== senderId);
-
     return {
       message: ChatMapper.toMessageView(saved, senderId),
-      recipientUserIds: recipientUserIds
+      recipientUserIds: recipientIds,
     };
   }
 

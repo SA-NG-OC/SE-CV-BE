@@ -12,7 +12,7 @@ import { Server, Socket } from 'socket.io';
 import { JwtService } from "@nestjs/jwt";
 import { ChatService } from "./chat.service";
 
-/*interface JwtPayload {
+interface JwtPayload {
     sub: number;
     email: string;
     roleId: number;
@@ -51,7 +51,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
             if (!token) {
                 return null;
             }
-            return this.jwtService.verify(token);
+            return this.jwtService.verify<JwtPayload>(token);
         }
         catch {
             return null;
@@ -223,4 +223,4 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
     }
 
-}*/
+}

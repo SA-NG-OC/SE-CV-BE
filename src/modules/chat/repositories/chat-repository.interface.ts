@@ -1,4 +1,5 @@
 import { ConversationEntity, MessageEntity, ConversationParticipantEntity } from '../domain/chat.entity';
+import { ISendContext } from '../types';
 
 export interface IGetMessagesOptions {
     conversationId: number;
@@ -22,6 +23,7 @@ export interface IConversationListRaw {
 }
 
 export interface IChatRepository {
+    validateSendContext(conversationId: number, senderId: number): Promise<ISendContext>
     // Conversations
     findConversationByCompanyAndStudent(companyId: number, studentId: number): Promise<ConversationEntity | null>;
     createConversation(data: Omit<ConversationEntity, 'conversation_id'>): Promise<ConversationEntity>;
@@ -43,7 +45,9 @@ export interface IChatRepository {
     setBlocked(conversationId: number, userId: number, blocked: boolean): Promise<ConversationParticipantEntity>;
 
     // Messages
-    createMessage(data: Omit<MessageEntity, 'message_id'>): Promise<MessageEntity>;
+    createMessageAndUpdateConversation(
+        data: Omit<MessageEntity, 'message_id'>,
+    ): Promise<MessageEntity>
     getMessages(opts: IGetMessagesOptions): Promise<MessageEntity[]>;
     findMessageById(messageId: number): Promise<MessageEntity | null>;
 
@@ -51,4 +55,4 @@ export interface IChatRepository {
     getConversationListForUser(userId: number, role: 'student' | 'company'): Promise<IConversationListRaw[]>;
 }
 
-export const CHAT_REPOSITORY = 'CHAT_REPOSITORY';
+export const I_CHAT_REPOSITORY = 'CHAT_REPOSITORY';

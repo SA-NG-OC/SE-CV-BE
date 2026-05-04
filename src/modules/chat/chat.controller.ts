@@ -41,16 +41,12 @@ export class ChatController {
     @Roles(Role.COMPANY, Role.STUDENT)
     @HttpCode(HttpStatus.OK)
     async getOrCreateConversation(
-        @Req() req,
         @Body() dto: GetOrCreateConversationDto,
     ) {
-        const user = req.user;
 
         const result = await this.chatService.getOrCreateConversation(
             dto.companyId,
             dto.studentId,
-            user.userId,
-            user.userId, // ⚠️ bạn cần tách companyUserId / studentUserId nếu khác
         );
 
         return new ResponseSuccess('Thành công', result);

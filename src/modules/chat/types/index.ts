@@ -32,3 +32,9 @@ export interface ParticipantStatusView {
     lastReadMessageId: number | null;
 }
 
+export interface ISendContext {
+    isMember: boolean;
+    isBlocked: boolean;
+    recipientIds: number[];
+}
+

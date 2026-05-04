@@ -77,6 +77,14 @@ export class CompanyRepository implements ICompanyRepository {
         return rows[0]?.email;
     }
 
+    async findRawById(actorId: number): Promise<number | null> {
+        const [data] = await this.db
+            .select({ userId: schema.companies.user_id })
+            .from(schema.companies)
+            .where(eq(schema.companies.company_id, actorId))
+        return data.userId
+    }
+
     async createCompanyWithImages(
         userId: number,
         dto: CreateCompanyDto,

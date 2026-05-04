@@ -13,5 +13,6 @@ import { CloudinaryService } from 'src/shared/cloudinary/cloudinary.service';
     provide: I_STUDENT_REPOSITORY,
     useClass: StudentRepository
   }],
+  exports: [I_STUDENT_REPOSITORY],
 })
 export class StudentModule { }
