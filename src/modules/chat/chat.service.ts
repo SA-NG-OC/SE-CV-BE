@@ -8,6 +8,8 @@ import { I_COMPANY_REPOSITORY } from '../company/company.tokens';
 import type { ICompanyRepository } from '../company/repositories/company-repository.interface';
 import { I_STUDENT_REPOSITORY } from '../student/student.token';
 import type { IStudentRepository } from '../student/repositories/student-repository.interface';
+import { GetConversationsQueryDto } from './dto/get-conversations-query.dto';
+import { PaginationResponse } from 'src/common/types/pagination-response';
 
 @Injectable()
 export class ChatService {
@@ -144,10 +146,25 @@ export class ChatService {
   // CONVERSATION LIST
   // =========================================================================
 
-  async getConversations(userId: number, roleId: number): Promise<ConversationListItemView[]> {
+  async getConversations(
+    userId: number,
+    roleId: number,
+    query: GetConversationsQueryDto,
+  ): Promise<PaginationResponse<ConversationListItemView>> {
     const role = roleId === Role.STUDENT ? 'student' : 'company';
-    const rows = await this.chatRepo.getConversationListForUser(userId, role);
-    return rows.map(ChatMapper.toConversationListItemView);
+
+    const data = await this.chatRepo.getConversationListForUser(
+      userId,
+      role,
+      query,
+    );
+
+    return new PaginationResponse(
+      data.rows.map(ChatMapper.toConversationListItemView),
+      query.page,
+      query.limit,
+      data.total,
+    );
   }
 
   // =========================================================================

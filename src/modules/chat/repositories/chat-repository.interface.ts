@@ -52,7 +52,11 @@ export interface IChatRepository {
     findMessageById(messageId: number): Promise<MessageEntity | null>;
 
     // Conversation list
-    getConversationListForUser(userId: number, role: 'student' | 'company'): Promise<IConversationListRaw[]>;
+    getConversationListForUser(
+        userId: number,
+        role: 'student' | 'company',
+        query: { page: number; limit: number; search?: string },
+    ): Promise<{ rows: IConversationListRaw[]; total: number }>;
 }
 
 export const I_CHAT_REPOSITORY = 'CHAT_REPOSITORY';

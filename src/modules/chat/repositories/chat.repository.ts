@@ -1,39 +1,88 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { eq, and, lt, desc, sql } from 'drizzle-orm';
+import { eq, and, lt, desc, sql, ilike, count } from 'drizzle-orm';
 import * as schema from '../../../database/schema';
 import { DATABASE_CONNECTION } from 'src/database/database.module';
 import { ConversationEntity, ConversationParticipantEntity, MessageEntity } from '../domain/chat.entity';
 import { IChatRepository, IConversationListRaw, IGetMessagesOptions } from './chat-repository.interface';
 import { ISendContext } from '../types';
+import { Redis } from 'ioredis';
+
+const TTL = {
+    SEND_CONTEXT: 300,
+    PARTICIPANT: 600,
+    UNREAD: 60,
+} as const;
+
+const KEY = {
+    sendContext: (cid: number) => `send_ctx:${cid}`,
+    participant: (cid: number, uid: number) => `participant:${cid}:${uid}`,
+    unread: (cid: number, uid: number) => `unread:${cid}:${uid}`,
+};
 
 @Injectable()
 export class ChatRepository implements IChatRepository {
     constructor(
         @Inject(DATABASE_CONNECTION)
         private readonly db: NodePgDatabase<typeof schema>,
-    ) { };
+        @Inject('REDIS_CLIENT')
+        private readonly redis: Redis,
+    ) { }
 
-    async validateSendContext(conversationId: number, senderId: number): Promise<ISendContext> {
-        const rows = await this.db
-            .select({
-                user_id: schema.conversation_participants.user_id,
-                is_blocked: schema.conversation_participants.is_blocked,
-            })
-            .from(schema.conversation_participants)
-            .where(eq(schema.conversation_participants.conversation_id, conversationId));
+    // =========================================================================
+    // REDIS HELPERS
+    // =========================================================================
 
-        const isMember = rows.some((r) => r.user_id === senderId);
-        const isBlocked = rows.some((r) => r.is_blocked);
-        const recipientIds = rows
-            .map((r) => r.user_id)
-            .filter((id) => id !== senderId);
-
-        return { isMember, isBlocked, recipientIds };
+    private async cacheGet<T>(key: string): Promise<T | null> {
+        const raw = await this.redis.get(key);
+        return raw ? (JSON.parse(raw) as T) : null;
     }
 
-    //CONVERSATION
-    async findConversationByCompanyAndStudent(companyId: number, studentId: number): Promise<ConversationEntity | null> {
+    private async cacheSet(key: string, ttl: number, value: unknown): Promise<void> {
+        await this.redis.setex(key, ttl, JSON.stringify(value));
+    }
+
+    private async cacheDel(...keys: string[]): Promise<void> {
+        if (keys.length) await this.redis.del(...keys);
+    }
+
+    // =========================================================================
+    // VALIDATE SEND CONTEXT  
+    // =========================================================================
+
+    async validateSendContext(conversationId: number, senderId: number): Promise<ISendContext> {
+        type Row = { user_id: number; is_blocked: boolean };
+        const cacheKey = KEY.sendContext(conversationId);
+
+        let rows = await this.cacheGet<Row[]>(cacheKey);
+
+        if (!rows) {
+            rows = await this.db
+                .select({
+                    user_id: schema.conversation_participants.user_id,
+                    is_blocked: schema.conversation_participants.is_blocked,
+                })
+                .from(schema.conversation_participants)
+                .where(eq(schema.conversation_participants.conversation_id, conversationId));
+
+            await this.cacheSet(cacheKey, TTL.SEND_CONTEXT, rows);
+        }
+
+        return {
+            isMember: rows.some((r) => r.user_id === senderId),
+            isBlocked: rows.some((r) => r.is_blocked),
+            recipientIds: rows.map((r) => r.user_id).filter((id) => id !== senderId),
+        };
+    }
+
+    // =========================================================================
+    // CONVERSATION
+    // =========================================================================
+
+    async findConversationByCompanyAndStudent(
+        companyId: number,
+        studentId: number,
+    ): Promise<ConversationEntity | null> {
         const [row] = await this.db
             .select()
             .from(schema.conversations)
@@ -47,7 +96,9 @@ export class ChatRepository implements IChatRepository {
         return row ?? null;
     }
 
-    async createConversation(data: Omit<ConversationEntity, 'conversation_id'>): Promise<ConversationEntity> {
+    async createConversation(
+        data: Omit<ConversationEntity, 'conversation_id'>,
+    ): Promise<ConversationEntity> {
         const [row] = await this.db
             .insert(schema.conversations)
             .values(data)
@@ -62,7 +113,35 @@ export class ChatRepository implements IChatRepository {
             .where(eq(schema.conversations.conversation_id, conversationId));
     }
 
-    // PARTICIPANTS
+    // =========================================================================
+    // PARTICIPANTS  
+    // =========================================================================
+
+    async findParticipant(
+        conversationId: number,
+        userId: number,
+    ): Promise<ConversationParticipantEntity | null> {
+        const cacheKey = KEY.participant(conversationId, userId);
+
+        const cached = await this.cacheGet<ConversationParticipantEntity>(cacheKey);
+        if (cached) return cached;
+
+        const [row] = await this.db
+            .select()
+            .from(schema.conversation_participants)
+            .where(
+                and(
+                    eq(schema.conversation_participants.conversation_id, conversationId),
+                    eq(schema.conversation_participants.user_id, userId),
+                ),
+            )
+            .limit(1);
+
+        const result = row ?? null;
+        if (result) await this.cacheSet(cacheKey, TTL.PARTICIPANT, result);
+        return result;
+    }
+
     async createParticipant(
         data: Omit<ConversationParticipantEntity, 'participant_id'>,
     ): Promise<ConversationParticipantEntity> {
@@ -70,6 +149,10 @@ export class ChatRepository implements IChatRepository {
             .insert(schema.conversation_participants)
             .values(data)
             .returning();
+
+        // Invalidate send_ctx vì danh sách participants thay đổi
+        await this.cacheDel(KEY.sendContext(data.conversation_id));
+
         return row;
     }
 
@@ -87,6 +170,56 @@ export class ChatRepository implements IChatRepository {
                     eq(schema.conversation_participants.user_id, userId),
                 ),
             );
+
+        await this.cacheDel(
+            KEY.participant(conversationId, userId),
+            KEY.unread(conversationId, userId),
+        );
+    }
+
+    async setHidden(
+        conversationId: number,
+        userId: number,
+        hidden: boolean,
+    ): Promise<ConversationParticipantEntity> {
+        const [row] = await this.db
+            .update(schema.conversation_participants)
+            .set({ is_hidden: hidden, updated_at: new Date() })
+            .where(
+                and(
+                    eq(schema.conversation_participants.conversation_id, conversationId),
+                    eq(schema.conversation_participants.user_id, userId),
+                ),
+            )
+            .returning();
+
+        await this.cacheDel(KEY.participant(conversationId, userId));
+        return row;
+    }
+
+    async setBlocked(
+        conversationId: number,
+        userId: number,
+        blocked: boolean,
+    ): Promise<ConversationParticipantEntity> {
+        const [row] = await this.db
+            .update(schema.conversation_participants)
+            .set({ is_blocked: blocked, updated_at: new Date() })
+            .where(
+                and(
+                    eq(schema.conversation_participants.conversation_id, conversationId),
+                    eq(schema.conversation_participants.user_id, userId),
+                ),
+            )
+            .returning();
+
+        // Invalidate cả hai: entity lẫn send_ctx (is_blocked đã đổi)
+        await this.cacheDel(
+            KEY.participant(conversationId, userId),
+            KEY.sendContext(conversationId),
+        );
+
+        return row;
     }
 
     async getParticipantUserIds(conversationId: number): Promise<number[]> {
@@ -111,55 +244,15 @@ export class ChatRepository implements IChatRepository {
         return row !== undefined;
     }
 
-    async findParticipant(
-        conversationId: number,
-        userId: number,
-    ): Promise<ConversationParticipantEntity | null> {
-        const [row] = await this.db
-            .select()
-            .from(schema.conversation_participants)
-            .where(
-                and(
-                    eq(schema.conversation_participants.conversation_id, conversationId),
-                    eq(schema.conversation_participants.user_id, userId),
-                ),
-            )
-            .limit(1);
-        return row ?? null;
-    }
-
     async isParticipant(conversationId: number, userId: number): Promise<boolean> {
         const row = await this.findParticipant(conversationId, userId);
         return row !== null;
     }
 
-    async setHidden(conversationId: number, userId: number, hidden: boolean): Promise<ConversationParticipantEntity> {
-        const [conversation] = await this.db
-            .update(schema.conversation_participants)
-            .set({ is_hidden: hidden, updated_at: new Date() })
-            .where(
-                and(
-                    eq(schema.conversation_participants.conversation_id, conversationId),
-                    eq(schema.conversation_participants.user_id, userId),
-                ),
-            ).returning();
-        return conversation;
-    }
+    // =========================================================================
+    // MESSAGES
+    // =========================================================================
 
-    async setBlocked(conversationId: number, userId: number, blocked: boolean): Promise<ConversationParticipantEntity> {
-        const [conversation] = await this.db
-            .update(schema.conversation_participants)
-            .set({ is_blocked: blocked, updated_at: new Date() })
-            .where(
-                and(
-                    eq(schema.conversation_participants.conversation_id, conversationId),
-                    eq(schema.conversation_participants.user_id, userId),
-                ),
-            ).returning();
-        return conversation;
-    }
-
-    //MESSAGE
     async createMessageAndUpdateConversation(
         data: Omit<MessageEntity, 'message_id'>,
     ): Promise<MessageEntity> {
@@ -202,71 +295,105 @@ export class ChatRepository implements IChatRepository {
         return row ?? null;
     }
 
+    // =========================================================================
+    // UNREAD COUNT  
+    // =========================================================================
+
+    async getUnreadCount(conversationId: number, userId: number): Promise<number> {
+        const cacheKey = KEY.unread(conversationId, userId);
+
+        const cached = await this.cacheGet<number>(cacheKey);
+        if (cached !== null) return cached;
+
+        const participant = await this.findParticipant(conversationId, userId);
+        const lastReadId = participant?.last_read_message_id ?? null;
+
+        const conditions = [
+            eq(schema.messages.conversation_id, conversationId),
+            sql`${schema.messages.sender_id} <> ${userId}`,
+            ...(lastReadId
+                ? [sql`${schema.messages.message_id} > ${lastReadId}`]
+                : []),
+        ];
+
+        const [{ cnt }] = await this.db
+            .select({ cnt: sql<number>`COUNT(*)::int` })
+            .from(schema.messages)
+            .where(and(...conditions));
+
+        await this.cacheSet(cacheKey, TTL.UNREAD, cnt);
+        return cnt;
+    }
+
+    // =========================================================================
+    // CONVERSATION LIST
+    // =========================================================================
+
     async getConversationListForUser(
         userId: number,
         role: 'student' | 'company',
-    ): Promise<IConversationListRaw[]> {
+        query: { page: number; limit: number; search?: string },
+    ): Promise<{ rows: IConversationListRaw[]; total: number }> {
+        const { page, limit, search } = query;
+        const offset = (page - 1) * limit;
 
-        const lastMessageContent = sql<string>`
-        (
-            SELECT m.content
-            FROM ${schema.messages} m
-            WHERE m.conversation_id = ${schema.conversations.conversation_id}
-            ORDER BY m.message_id DESC
-            LIMIT 1
-        )
+        const last_message_content = sql<string>`
+      (SELECT m.content FROM ${schema.messages} m
+       WHERE m.conversation_id = ${schema.conversations.conversation_id}
+       ORDER BY m.message_id DESC LIMIT 1)
     `.as('last_message_content');
 
-        const lastMessageSenderId = sql<number>`
-        (
-            SELECT m.sender_id
-            FROM ${schema.messages} m
-            WHERE m.conversation_id = ${schema.conversations.conversation_id}
-            ORDER BY m.message_id DESC
-            LIMIT 1
-        )
+        const last_message_sender_id = sql<number>`
+      (SELECT m.sender_id FROM ${schema.messages} m
+       WHERE m.conversation_id = ${schema.conversations.conversation_id}
+       ORDER BY m.message_id DESC LIMIT 1)
     `.as('last_message_sender_id');
 
-        const lastMessageCreatedAt = sql<Date>`
-        (
-            SELECT m.created_at
-            FROM ${schema.messages} m
-            WHERE m.conversation_id = ${schema.conversations.conversation_id}
-            ORDER BY m.message_id DESC
-            LIMIT 1
-        )
+        const last_message_created_at = sql<Date>`
+      (SELECT m.created_at FROM ${schema.messages} m
+       WHERE m.conversation_id = ${schema.conversations.conversation_id}
+       ORDER BY m.message_id DESC LIMIT 1)
     `.as('last_message_created_at');
 
-        const unreadCount = sql<number>`
-        (
-            SELECT COUNT(*)::int
-            FROM ${schema.messages} m2
-            WHERE m2.conversation_id = ${schema.conversations.conversation_id}
-              AND m2.sender_id <> ${userId}
-              AND (
-                    ${schema.conversation_participants.last_read_message_id} IS NULL
-                    OR m2.message_id > ${schema.conversation_participants.last_read_message_id}
-              )
-        )
+        const unread_count = sql<number>`
+      (SELECT COUNT(*)::int FROM ${schema.messages} m2
+       WHERE m2.conversation_id = ${schema.conversations.conversation_id}
+         AND m2.sender_id <> ${userId}
+         AND (
+           ${schema.conversation_participants.last_read_message_id} IS NULL
+           OR m2.message_id > ${schema.conversation_participants.last_read_message_id}
+         ))
     `.as('unread_count');
 
-        // join theo role
+        const baseConditions = [eq(schema.conversation_participants.user_id, userId)];
+
+        // ── STUDENT VIEW ──────────────────────────────────────────────────────
         if (role === 'student') {
-            const results = await this.db
+            const conditions = [...baseConditions];
+            if (search) conditions.push(ilike(schema.companies.company_name, `%${search}%`));
+            const where = and(...conditions);
+
+            const [{ total }] = await this.db
+                .select({ total: count() })
+                .from(schema.conversations)
+                .innerJoin(
+                    schema.conversation_participants,
+                    eq(schema.conversation_participants.conversation_id, schema.conversations.conversation_id),
+                )
+                .innerJoin(schema.companies, eq(schema.companies.company_id, schema.conversations.company_id))
+                .where(where);
+
+            const rows = await this.db
                 .select({
                     conversation_id: schema.conversations.conversation_id,
                     last_message_at: schema.conversations.last_message_at,
                     created_at: schema.conversations.created_at,
-
                     is_hidden: schema.conversation_participants.is_hidden,
                     is_blocked: schema.conversation_participants.is_blocked,
-
-                    last_message_content: lastMessageContent,
-                    last_message_sender_id: lastMessageSenderId,
-                    last_message_created_at: lastMessageCreatedAt,
-
-                    unread_count: unreadCount,
-
+                    last_message_content,
+                    last_message_sender_id,
+                    last_message_created_at,
+                    unread_count,
                     partner_id: schema.companies.company_id,
                     partner_name: schema.companies.company_name,
                     partner_avatar: schema.companies.logo_url,
@@ -274,34 +401,43 @@ export class ChatRepository implements IChatRepository {
                 .from(schema.conversations)
                 .innerJoin(
                     schema.conversation_participants,
-                    and(
-                        eq(schema.conversation_participants.conversation_id, schema.conversations.conversation_id),
-                        eq(schema.conversation_participants.user_id, userId)
-                    )
+                    eq(schema.conversation_participants.conversation_id, schema.conversations.conversation_id),
                 )
-                .innerJoin(
-                    schema.companies,
-                    eq(schema.companies.company_id, schema.conversations.company_id)
-                )
-                .orderBy(desc(schema.conversations.last_message_at));
+                .innerJoin(schema.companies, eq(schema.companies.company_id, schema.conversations.company_id))
+                .where(where)
+                .orderBy(desc(schema.conversations.last_message_at))
+                .limit(limit)
+                .offset(offset);
 
-            return results;
+            return { rows, total: Number(total) };
         }
-        const results = await this.db
+
+        // ── COMPANY VIEW ──────────────────────────────────────────────────────
+        const conditions = [...baseConditions];
+        if (search) conditions.push(ilike(schema.students.full_name, `%${search}%`));
+        const where = and(...conditions);
+
+        const [{ total }] = await this.db
+            .select({ total: count() })
+            .from(schema.conversations)
+            .innerJoin(
+                schema.conversation_participants,
+                eq(schema.conversation_participants.conversation_id, schema.conversations.conversation_id),
+            )
+            .innerJoin(schema.students, eq(schema.students.student_id, schema.conversations.student_id))
+            .where(where);
+
+        const rows = await this.db
             .select({
                 conversation_id: schema.conversations.conversation_id,
                 last_message_at: schema.conversations.last_message_at,
                 created_at: schema.conversations.created_at,
-
                 is_hidden: schema.conversation_participants.is_hidden,
                 is_blocked: schema.conversation_participants.is_blocked,
-
-                last_message_content: lastMessageContent,
-                last_message_sender_id: lastMessageSenderId,
-                last_message_created_at: lastMessageCreatedAt,
-
-                unread_count: unreadCount,
-
+                last_message_content,
+                last_message_sender_id,
+                last_message_created_at,
+                unread_count,
                 partner_id: schema.students.student_id,
                 partner_name: schema.students.full_name,
                 partner_avatar: schema.students.avatar_url,
@@ -309,22 +445,14 @@ export class ChatRepository implements IChatRepository {
             .from(schema.conversations)
             .innerJoin(
                 schema.conversation_participants,
-                and(
-                    eq(schema.conversation_participants.conversation_id, schema.conversations.conversation_id),
-                    eq(schema.conversation_participants.user_id, userId)
-                )
+                eq(schema.conversation_participants.conversation_id, schema.conversations.conversation_id),
             )
-            .innerJoin(
-                schema.students,
-                eq(schema.students.student_id, schema.conversations.student_id)
-            )
-            .innerJoin(
-                schema.users,
-                eq(schema.users.user_id, schema.students.user_id)
-            )
-            .orderBy(desc(schema.conversations.last_message_at));
+            .innerJoin(schema.students, eq(schema.students.student_id, schema.conversations.student_id))
+            .where(where)
+            .orderBy(desc(schema.conversations.last_message_at))
+            .limit(limit)
+            .offset(offset);
 
-        return results;
+        return { rows, total: Number(total) };
     }
-
 }

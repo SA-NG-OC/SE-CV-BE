@@ -28,6 +28,7 @@ import {
 } from './dto/chat.dto';
 
 import ResponseSuccess from 'src/common/types/response-success';
+import { GetConversationsQueryDto } from './dto/get-conversations-query.dto';
 
 @Controller('chat')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -98,13 +99,17 @@ export class ChatController {
     // =========================================================================
     @Get('conversations')
     @Roles(Role.COMPANY, Role.STUDENT)
-    async getConversations(@Req() req) {
+    async getConversations(
+        @Req() req,
+        @Query() query: GetConversationsQueryDto,
+    ) {
         const userId = req.user.userId;
         const roleId = req.user.roleId;
 
         const result = await this.chatService.getConversations(
             userId,
             roleId,
+            query,
         );
 
         return new ResponseSuccess('Lấy danh sách hội thoại thành công', result);
