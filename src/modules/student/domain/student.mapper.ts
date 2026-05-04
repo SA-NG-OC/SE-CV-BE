@@ -1,42 +1,62 @@
 import { StudentDomain } from '../domain/student.domain';
 import {
-    StudentResponse,
+    MajorResponse,
     StudentAdminCard,
-    StudentResumeItem,
-    StudentGeneralInfo,
-    StudentSkillItem,
     StudentCard,
+    StudentGeneralInfo,
     StudentProfile,
+    StudentResponse,
+    StudentResumeItem,
+    StudentSkillItem,
 } from '../types/student.interface';
 import { StudentStatus } from '../domain/student.props';
-
-export interface RawStudentAdminCard {
-    studentId: number;
-    fullName: string;
-    studentCode: string;
-    email: string | null;
-    currentYear: number | null;
-    enrollmentYear: number | null;
-    studentStatus: string | null;
-    totalApplications: number;
-}
-
-export interface RawResumeRow {
-    resumeId: number;
-    resumeName: string;
-    cvUrl: string;
-    isDefault: boolean | null;
-}
-
-export interface RawGeneralInfo {
-    totalStudents: number;
-    studying: number;
-    graduated: number;
-}
+import {
+    MajorRaw,
+    StudentAdminCardRaw,
+    StudentCardRaw,
+    StudentGeneralInfoRaw,
+    StudentProfileRaw,
+    StudentResumeRaw,
+} from '../types/student.raw';
 
 export class StudentMapper {
+    static toMajorResponse(raw: MajorRaw): MajorResponse {
+        return {
+            majorId: raw.major_id,
+            majorName: raw.major_name,
+        };
+    }
 
-    // ── Domain → StudentResponse (full detail) ────────────────────────────
+    static toGeneralInfo(raw: StudentGeneralInfoRaw): StudentGeneralInfo {
+        return {
+            totalStudents: raw.total_students,
+            studying: raw.studying,
+            graduated: raw.graduated,
+        };
+    }
+
+    static toAdminCard(raw: StudentAdminCardRaw): StudentAdminCard {
+        return {
+            studentId: raw.student_id,
+            fullName: raw.full_name,
+            studentCode: raw.student_code,
+            email: raw.email_student,
+            currentYear: raw.current_year,
+            enrollmentYear: raw.enrollment_year,
+            studentStatus: (raw.student_status ?? 'STUDYING') as StudentStatus,
+            totalApplications: raw.total_applications,
+        };
+    }
+
+    static toResumeItem(raw: StudentResumeRaw): StudentResumeItem {
+        return {
+            resumeId: raw.resume_id,
+            resumeName: raw.resume_name,
+            cvUrl: raw.cv_url,
+            isDefault: raw.is_default,
+        };
+    }
+
     static toResponse(
         domain: StudentDomain,
         extra: {
@@ -66,71 +86,34 @@ export class StudentMapper {
         };
     }
 
-    // ── Raw DB row → StudentAdminCard ─────────────────────────────────────
-    static toAdminCard(row: RawStudentAdminCard): StudentAdminCard {
-        return {
-            studentId: row.studentId,
-            fullName: row.fullName,
-            studentCode: row.studentCode,
-            email: row.email,
-            currentYear: row.currentYear,
-            enrollmentYear: row.enrollmentYear,
-            studentStatus: (row.studentStatus ?? 'STUDYING') as StudentStatus,
-            totalApplications: row.totalApplications,
-        };
-    }
-
-    // ── Raw resume row → StudentResumeItem ────────────────────────────────
-    static toResumeItem(row: RawResumeRow): StudentResumeItem {
-        return {
-            resumeId: row.resumeId,
-            resumeName: row.resumeName,
-            cvUrl: row.cvUrl,
-            isDefault: row.isDefault,
-        };
-    }
-
-    // ── Raw general info → StudentGeneralInfo ─────────────────────────────
-    static toGeneralInfo(raw: RawGeneralInfo): StudentGeneralInfo {
-        return {
-            totalStudents: raw.totalStudents,
-            studying: raw.studying,
-            graduated: raw.graduated,
-        };
-    }
-
-    static toStudentCard(raw: {
-        student_id: number;
-        full_name: string;
-        avatar_url: string | null;
-        current_year: number | null;
-        gpa: string | number | null;
-        student_status: StudentStatus;
-        is_open_to_work: boolean;
-        skills: string[];
-    }): StudentCard {
+    static toStudentCard(raw: StudentCardRaw): StudentCard {
         return {
             studentId: raw.student_id,
             fullName: raw.full_name,
             avatarUrl: raw.avatar_url,
             currentYear: raw.current_year,
             gpa: raw.gpa,
-            studentStatus: raw.student_status,
+            studentStatus: raw.student_status as StudentStatus,
             isOpenToWork: raw.is_open_to_work,
             skills: raw.skills,
         };
     }
 
-    static toStudentProfile(raw: {
-        student_id: number;
-        full_name: string;
-        avatar_url: string | null;
-        current_year: number | null;
-        gpa: string | number | null;
-        is_open_to_work: boolean;
-        skills: any[];
-        resumes: any[];
-    }): StudentProfile {
+    static toStudentProfile(raw: StudentProfileRaw): StudentProfile {
+        const skills: StudentSkillItem[] = (raw.skills ?? []).map((s: any) => ({
+            skillId: s.skill_id,
+            skillName: s.skill_name,
+        }));
+
+        const resumes: StudentResumeItem[] = (raw.resumes ?? [])
+            .filter(Boolean)
+            .map((r: any) => ({
+                resumeId: r.resume_id,
+                resumeName: r.resume_name,
+                cvUrl: r.cv_url,
+                isDefault: r.is_default,
+            }));
+
         return {
             studentId: raw.student_id,
             fullName: raw.full_name,
@@ -138,16 +121,8 @@ export class StudentMapper {
             currentYear: raw.current_year,
             gpa: raw.gpa,
             isOpenToWork: raw.is_open_to_work,
-            skills: (raw.skills || []).map((s: any) => ({
-                skillId: s.skill_id,
-                skillName: s.skill_name
-            })),
-            resumes: (raw.resumes || []).filter(r => r !== null).map(r => ({
-                resumeId: r.resume_id,
-                resumeName: r.resume_name,
-                cvUrl: r.cv_url,
-                isDefault: r.is_default
-            }))
+            skills,
+            resumes,
         };
     }
 }

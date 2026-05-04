@@ -94,6 +94,6 @@ export interface GetStudentsQuery {
 }
 
 export interface MajorResponse {
-    id: number;
-    name: string;
+    majorId: number;
+    majorName: string;
 }

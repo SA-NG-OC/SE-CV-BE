@@ -10,7 +10,7 @@ import { ParseIntPipe } from '@nestjs/common';
 import GetGeneralInformationDocs from './decorators/get-general-information.decorator';
 import GetStudentsDocs from './decorators/get-students.decorator';
 import GetStudentProfileDocs from './decorators/get-student-profile.decorator';
-import { CreateResumeDto, UpdateAvatarDto, UpdateGeneralInfoDto, UpdateJobStatusDto, UpdateSkillsDto } from './dto/update-student.dto';
+import { CreateResumeDto, UpdateAvatarDto, UpdateGeneralInfoDto, UpdateJobPreferenceDto, UpdateJobStatusDto, UpdateSkillsDto } from './dto/update-student.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ParseFilePipeBuilder } from '@nestjs/common/pipes';
 import { HttpStatus } from '@nestjs/common';
@@ -197,6 +197,18 @@ export class StudentController {
 
     const result = await this.studentsService.getStudentDetail(studentId, role);
     return new ResponseSuccess('Lấy thông tin thành công', result);
+  }
+
+  @Patch('me/job-preference')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.STUDENT)
+  async updateJobPreference(
+    @Req() req,
+    @Body() dto: UpdateJobPreferenceDto,
+  ) {
+    const userId = req.user.userId;
+    await this.studentsService.updateJobPreference(userId, dto);
   }
 
 }

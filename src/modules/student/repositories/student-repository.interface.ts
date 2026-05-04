@@ -1,43 +1,61 @@
-import { PaginationResponse } from "src/common/types/pagination-response";
-import { CreateResumeDto } from "../dto/update-student.dto";
-import { GetStudentsQuery, StudentAdminListResult, StudentCard, StudentGeneralInfo, StudentProfile, StudentResponse, StudentResumeItem } from "../types/student.interface";
+import { PaginationResponse } from 'src/common/types/pagination-response';
+import { CreateResumeDto } from '../dto/update-student.dto';
+import { GetStudentsQuery } from '../types/student.interface';
+import {
+  MajorRaw,
+  StudentAdminListRaw,
+  StudentApplicationCountRaw,
+  StudentCardRaw,
+  StudentGeneralInfoRaw,
+  StudentProfileRaw,
+  StudentRaw,
+  StudentResumeRaw,
+  StudentSkillsRaw,
+  StudentWithMajorRaw,
+} from '../types/student.raw';
 
 export interface IStudentRepository {
-  getMajors();
-  // Read
-  getGeneralInformation(): Promise<StudentGeneralInfo>;
+
+  getMajors(): Promise<MajorRaw[]>;
+
+  getGeneralInformation(): Promise<StudentGeneralInfoRaw>;
 
   getStudentListAdmin(
     page: number,
     limit: number,
-    status?: "STUDYING" | "GRADUATED" | "DROPPED_OUT",
-    keyword?: string
-  ): Promise<StudentAdminListResult>;
+    status?: 'STUDYING' | 'GRADUATED' | 'DROPPED_OUT',
+    keyword?: string,
+  ): Promise<StudentAdminListRaw>;
 
-  getStudentBasicInfo(studentId: number): Promise<StudentResponse | null>;
+  findStudentWithMajor(studentId: number): Promise<StudentWithMajorRaw | null>;
 
-  getStudentSkills(studentId: number): Promise<string[]>;
+  findSkillsByStudent(studentId: number): Promise<StudentSkillsRaw>;
 
-  getStudentResumes(studentId: number): Promise<StudentResumeItem[]>;
+  findResumesByStudent(studentId: number, isDefault?: boolean): Promise<StudentResumeRaw[]>;
 
-  getStudentApplicationCount(studentId: number): Promise<number>;
+  countApplicationsByStudent(studentId: number): Promise<StudentApplicationCountRaw>;
 
-  // Update
-  updateJobStatus(studentId: number, isOpenToWork: boolean): Promise<StudentResponse | null>;
+  findStudentCards(query: GetStudentsQuery): Promise<PaginationResponse<StudentCardRaw>>;
 
-  syncStudentSkills(studentId: number, skillIds: number[]): Promise<void>;
+  findStudentProfileByUserId(userId: number): Promise<StudentProfileRaw | null>;
 
-  addResume(studentId: number, data: CreateResumeDto): Promise<StudentResumeItem>;
+  findRawById(studentId: number): Promise<StudentRaw | null>;
 
-  deleteResume(studentId: number, resumeId: number): Promise<void>;
+  updateFields(userId: number, fields: Partial<Record<string, unknown>>): Promise<void>;
 
-  setResumeAsDefault(studentId: number, resumeId: number): Promise<StudentResumeItem | null>;
+  updateByStudentId(studentId: number, fields: Partial<Record<string, unknown>>): Promise<void>;
 
-  findStudentCards(
-    query: GetStudentsQuery
-  ): Promise<PaginationResponse<StudentCard>>;
+  replaceSkills(studentId: number, skillIds: number[]): Promise<void>;
 
-  findStudentProfileByUserId(userId: number): Promise<StudentProfile | null>;
+  insertResume(
+    studentId: number,
+    data: CreateResumeDto,
+    isDefault: boolean,
+  ): Promise<StudentResumeRaw>;
 
-  updateStudentFields(userId: number, fields: any);
+  deleteResume(resumeId: number): Promise<void>;
+
+  setDefaultResume(studentId: number, resumeId: number): Promise<StudentResumeRaw | null>;
+
+  findResumeById(resumeId: number, studentId: number): Promise<StudentResumeRaw | null>;
 }
