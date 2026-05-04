@@ -21,6 +21,7 @@ export type StudentAdminCardRaw = {
     current_year: number | null;
     enrollment_year: number | null;
     student_status: string | null;
+    is_active: boolean | null;
     total_applications: number;
 };
 

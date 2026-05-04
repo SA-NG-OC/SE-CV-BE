@@ -45,6 +45,7 @@ export class StudentMapper {
             enrollmentYear: raw.enrollment_year,
             studentStatus: (raw.student_status ?? 'STUDYING') as StudentStatus,
             totalApplications: raw.total_applications,
+            isActive: raw.is_active,
         };
     }
 
@@ -83,6 +84,7 @@ export class StudentMapper {
             skills: extra.skills,
             resumes: extra.resumes,
             totalApplications: extra.totalApplications,
+            isActive: domain.isActive,
         };
     }
 

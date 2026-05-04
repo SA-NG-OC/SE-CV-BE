@@ -40,6 +40,7 @@ export interface StudentResponse {
     skills: string[];
     resumes: StudentResumeItem[];
     totalApplications: number;
+    isActive: boolean | null;
 }
 
 export interface StudentAdminCard {
@@ -51,6 +52,7 @@ export interface StudentAdminCard {
     enrollmentYear: number | null;
     studentStatus: StudentStatus;
     totalApplications: number;
+    isActive: boolean | null;
 }
 
 export interface StudentListMeta {

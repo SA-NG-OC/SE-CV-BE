@@ -125,7 +125,8 @@ export class JobPostingRepository implements IJobPostingRepository {
                 categoryId: schema.job_categories.category_id,
                 categoryName: schema.job_categories.category_name,
             })
-            .from(schema.job_categories) as Promise<CategoryItem[]>;
+            .from(schema.job_categories)
+            .where(eq(schema.job_categories.is_active, true)) as Promise<CategoryItem[]>;
     }
 
     async getJobSkills(): Promise<JobSkillItem[]> {

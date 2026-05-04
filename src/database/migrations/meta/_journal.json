@@ -176,6 +176,13 @@
       "when": 1777878183201,
       "tag": "0024_plain_wendigo",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1777917916646,
+      "tag": "0025_slimy_dagger",
+      "breakpoints": true
     }
   ]
 }

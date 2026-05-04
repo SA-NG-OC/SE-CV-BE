@@ -214,6 +214,7 @@ export const students = pgTable(
         desired_location: varchar("desired_location", { length: 255 }),
         work_type: varchar("work_type", { length: 50 }),
         is_open_to_work: boolean("is_open_to_work").default(false),
+        is_active: boolean("is_active").default(true),
         created_at: timestamp("created_at").defaultNow(),
         updated_at: timestamp("updated_at").defaultNow(),
     },

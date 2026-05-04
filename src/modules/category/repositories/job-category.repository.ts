@@ -114,14 +114,19 @@ export class JobCategoryRepository implements IJobCategoryRepository {
                 .where(eq(schema.job_categories.category_name, 'Khác'))
                 .limit(1);
 
+            let defaultId: number;
             if (!defaultCategory) {
-                throw new BadRequestException('Chưa tồn tại danh mục "Khác"');
+                const [category] = await tx.insert(schema.job_categories).values({ category_name: 'Khác' }).returning();
+                defaultId = category.category_id;
+            }
+            else {
+                defaultId = defaultCategory.category_id;
             }
 
             await tx
                 .update(schema.job_postings)
                 .set({
-                    category_id: defaultCategory.category_id,
+                    category_id: defaultId,
                 })
                 .where(eq(schema.job_postings.category_id, id));
 

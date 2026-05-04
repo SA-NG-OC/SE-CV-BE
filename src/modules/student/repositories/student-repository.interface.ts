@@ -57,4 +57,5 @@ export interface IStudentRepository {
   setDefaultResume(studentId: number, resumeId: number): Promise<StudentResumeRaw | null>;
 
   findResumeById(resumeId: number, studentId: number): Promise<StudentResumeRaw | null>;
+  isActive(studentId: number, isActive: boolean): Promise<void>;
 }

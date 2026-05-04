@@ -29,7 +29,8 @@ const GetStudentsDocs = () => applyDecorators(
                             currentYear: 4,
                             enrollmentYear: 2021,
                             studentStatus: "STUDYING",
-                            totalApplications: 0
+                            totalApplications: 0,
+                            isActive: true,
                         }
                     ],
                     meta: {
