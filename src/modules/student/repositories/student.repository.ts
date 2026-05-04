@@ -33,6 +33,14 @@ export class StudentRepository implements IStudentRepository {
         private readonly redis: Redis,
     ) { }
 
+    async findRawById(actorId: number): Promise<number | null> {
+        const [data] = await this.db
+            .select({ id: schema.students.user_id })
+            .from(schema.students)
+            .where(eq(schema.students.student_id, actorId))
+        return data.id;
+    }
+
     // =========================================================================
     // READ — Raw
     // =========================================================================
@@ -318,7 +326,7 @@ export class StudentRepository implements IStudentRepository {
         return row ?? null;
     }
 
-    async findRawById(studentId: number): Promise<StudentRaw | null> {
+    async findRawById2(studentId: number): Promise<StudentRaw | null> {
         const [row] = await this.db
             .select()
             .from(schema.students)

@@ -139,7 +139,7 @@ export class StudentService {
 
   async updateJobStatus(studentId: number, dto: UpdateJobStatusDto) {
     // 1. Load raw row
-    const raw = await this.repo.findRawById(studentId);
+    const raw = await this.repo.findRawById2(studentId);
     if (!raw) throw new NotFoundException(`Không tìm thấy sinh viên với ID ${studentId}`);
 
     // 2. Tạo domain, gọi business method
@@ -155,7 +155,7 @@ export class StudentService {
   async updateSkills(studentId: number, dto: UpdateSkillsDto) {
     try {
       // Validate ở service qua domain — không để trong repo
-      const raw = await this.repo.findRawById(studentId);
+      const raw = await this.repo.findRawById2(studentId);
       if (!raw) throw new NotFoundException(`Không tìm thấy sinh viên với ID ${studentId}`);
 
       const domain = StudentDomain.fromPersistence(raw);

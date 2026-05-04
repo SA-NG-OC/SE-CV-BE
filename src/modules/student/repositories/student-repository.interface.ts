@@ -1,6 +1,6 @@
 import { PaginationResponse } from 'src/common/types/pagination-response';
 import { CreateResumeDto } from '../dto/update-student.dto';
-import { GetStudentsQuery } from '../types/student.interface';
+import { GetStudentsQuery, StudentGeneralInfo } from '../types/student.interface';
 import {
   MajorRaw,
   StudentAdminListRaw,
@@ -15,11 +15,10 @@ import {
 } from '../types/student.raw';
 
 export interface IStudentRepository {
-
-  getMajors(): Promise<MajorRaw[]>;
-
-  getGeneralInformation(): Promise<StudentGeneralInfoRaw>;
-
+  findRawById(actorId: number): Promise<number | null>
+  getMajors();
+  // Read
+  getGeneralInformation(): Promise<StudentGeneralInfoRaw>
   getStudentListAdmin(
     page: number,
     limit: number,
@@ -39,7 +38,7 @@ export interface IStudentRepository {
 
   findStudentProfileByUserId(userId: number): Promise<StudentProfileRaw | null>;
 
-  findRawById(studentId: number): Promise<StudentRaw | null>;
+  findRawById2(studentId: number): Promise<StudentRaw | null>
 
   updateFields(userId: number, fields: Partial<Record<string, unknown>>): Promise<void>;
 

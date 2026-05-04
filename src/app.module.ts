@@ -20,6 +20,7 @@ import { ApplicationModule } from './modules/application/application.module';
 import { CommentModule } from './modules/comment/comment.module';
 import { CategoryModule } from './modules/category/category.module';
 import { RecommendationsModule } from './modules/recommendations/recommendations.module';
+import { ChatModule } from './modules/chat/chat.module';
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { RecommendationsModule } from './modules/recommendations/recommendations
     CommentModule,
     CategoryModule,
     RecommendationsModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [AppService, EventsGateway, NotificationsGateway],

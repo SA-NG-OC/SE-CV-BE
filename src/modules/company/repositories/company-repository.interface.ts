@@ -14,6 +14,8 @@ import { CompanyStatus } from '../domain/company.props';
 
 export interface ICompanyRepository {
 
+    findRawById(actorId: number): Promise<number | null>
+
     // ── Create ──────────────────────────────────────────────────────────────
     createCompanyWithImages(
         userId: number,
