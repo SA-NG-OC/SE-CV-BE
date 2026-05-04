@@ -169,6 +169,13 @@
       "when": 1777600024548,
       "tag": "0023_third_post",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1777878183201,
+      "tag": "0024_plain_wendigo",
+      "breakpoints": true
     }
   ]
 }

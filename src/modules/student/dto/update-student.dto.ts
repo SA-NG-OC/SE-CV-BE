@@ -46,6 +46,33 @@ export const updateGeneralInfoSchema = z.object({
         .string({ message: 'Email không đúng định dạng' })
         .email({ message: 'Email không hợp lệ' })
         .max(255),
+
+    phoneNumber: z
+        .string({ message: 'Số điện thoại phải là chuỗi' })
+        .regex(/^[0-9]{9,11}$/, { message: 'Số điện thoại không hợp lệ' })
+        .optional(),
 });
 
 export class UpdateGeneralInfoDto extends createZodDto(updateGeneralInfoSchema) { }
+
+// 6. DTO cho update preference
+export const updateJobPreferenceSchema = z.object({
+    desiredSalaryMin: z
+        .number({ message: 'Mức lương tối thiểu phải là số' })
+        .int({ message: 'Mức lương tối thiểu phải là số nguyên' })
+        .min(0, { message: 'Mức lương tối thiểu không được nhỏ hơn 0' })
+        .optional(),
+
+    desiredSalaryMax: z
+        .number({ message: 'Mức lương tối đa phải là số' })
+        .int({ message: 'Mức lương tối đa phải là số nguyên' })
+        .min(0, { message: 'Mức lương tối đa không được nhỏ hơn 0' })
+        .optional(),
+
+    desiredLocation: z
+        .string({ message: 'Địa điểm mong muốn phải là chuỗi' })
+        .max(255, { message: 'Địa điểm không được vượt quá 255 ký tự' })
+        .optional(),
+});
+
+export class UpdateJobPreferenceDto extends createZodDto(updateJobPreferenceSchema) { }

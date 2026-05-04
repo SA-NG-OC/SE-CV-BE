@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Put, UseGuards, Query, UseInterceptors, UploadedFile, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Put, UseGuards, Query, UseInterceptors, UploadedFile, NotFoundException, Delete, HttpCode } from '@nestjs/common';
 import { StudentService } from './student.service';
 import ResponseSuccess from 'src/common/types/response-success';
 import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
@@ -10,7 +10,7 @@ import { ParseIntPipe } from '@nestjs/common';
 import GetGeneralInformationDocs from './decorators/get-general-information.decorator';
 import GetStudentsDocs from './decorators/get-students.decorator';
 import GetStudentProfileDocs from './decorators/get-student-profile.decorator';
-import { CreateResumeDto, UpdateAvatarDto, UpdateGeneralInfoDto, UpdateJobStatusDto, UpdateSkillsDto } from './dto/update-student.dto';
+import { CreateResumeDto, UpdateAvatarDto, UpdateGeneralInfoDto, UpdateJobPreferenceDto, UpdateJobStatusDto, UpdateSkillsDto } from './dto/update-student.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ParseFilePipeBuilder } from '@nestjs/common/pipes';
 import { HttpStatus } from '@nestjs/common';
@@ -19,6 +19,9 @@ import { SetDefaultResumeDocs, UpdateJobStatusDocs, UpdateSkillsDocs, UploadResu
 import { GetStudentsQueryDto } from './dto/get-students-query.dto';
 import { GetStudentsCardDocs } from './decorators/get-student-card.decorator';
 import GetMajorsDocs from './decorators/get-majors.decorator';
+import GetMyProfileDocs from './decorators/get-my-profile.decorator';
+import UpdateAvatarDocs from './decorators/update-avatar.decorator';
+import DeleteResumeDocs from './decorators/delete-resume.decorator';
 
 @Controller('student')
 export class StudentController {
@@ -72,6 +75,7 @@ export class StudentController {
   }
 
   @Get('me')
+  @GetMyProfileDocs()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.STUDENT)
   async getMe(@Req() req: any) {
@@ -130,9 +134,20 @@ export class StudentController {
       resumeName: resumeName,
       cvUrl: uploadRes.secure_url,
     });
-    console.log('Cloudinary URL:', uploadRes.secure_url);
-    console.log('Resource type:', uploadRes.resource_type);
     return new ResponseSuccess('Thêm mới CV thành công', data);
+  }
+
+  @Delete('me/resumes/:resumeId')
+  @DeleteResumeDocs()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.STUDENT)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteResume(
+    @Req() req: any,
+    @Param('resumeId', ParseIntPipe) resumeId: number,
+  ): Promise<void> {
+    const studentId = req.user.studentId;
+    await this.studentsService.deleteResume(studentId, resumeId);
   }
 
   @Patch('me/resumes/:resumeId/default')
@@ -149,6 +164,7 @@ export class StudentController {
   }
 
   @Patch('me/avatar')
+  @UpdateAvatarDocs()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.STUDENT)
   @UseInterceptors(FileInterceptor("avatar"))
@@ -181,6 +197,18 @@ export class StudentController {
 
     const result = await this.studentsService.getStudentDetail(studentId, role);
     return new ResponseSuccess('Lấy thông tin thành công', result);
+  }
+
+  @Patch('me/job-preference')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.STUDENT)
+  async updateJobPreference(
+    @Req() req,
+    @Body() dto: UpdateJobPreferenceDto,
+  ) {
+    const userId = req.user.userId;
+    await this.studentsService.updateJobPreference(userId, dto);
   }
 
 }

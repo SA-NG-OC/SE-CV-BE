@@ -4,6 +4,7 @@ export { GetMyApplicationsDocs } from './get-my-applications.docs';
 export { GetMyStatsDocs } from './get-my-stats.docs';
 export { GetMyInvitationsDocs } from './get-my-invitations.docs';
 export { RespondInvitationDocs } from './respond-invitation.docs';
+export { GetStudentInvitationStatsDocs } from './get-student-stats.docs';
 
 // Company
 export { GetApplicantsDocs } from './get-applicants.docs';

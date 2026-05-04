@@ -122,6 +122,7 @@ export class ApplicationRepository implements IApplicationRepository {
                 application_id: applications.application_id,
                 status: applications.status,
                 created_at: applications.created_at,
+                company_id: job_postings.company_id,
                 job_id: job_postings.job_id,
                 job_title: job_postings.job_title,
                 company_name: companies.company_name,

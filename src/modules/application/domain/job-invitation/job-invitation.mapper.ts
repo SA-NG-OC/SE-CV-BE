@@ -9,6 +9,11 @@ export interface InvitationCardView {
     job: {
         jobId: number;
         jobTitle: string;
+        city: string | null;
+        salaryMin: number | null,
+        salaryMax: number | null,
+        salaryType: string | null,
+        isSalaryNegotiable: boolean,
     };
     company: {
         companyName: string;
@@ -50,6 +55,11 @@ export class JobInvitationMapper {
         created_at: Date;
         job_id: number;
         job_title: string;
+        city: string | null;
+        salary_min: number | null;
+        salary_max: number | null;
+        salary_type: string | null;
+        is_salary_negotiable: boolean | null;
         company_name: string;
         logo_url: string | null;
     }): InvitationCardView {
@@ -61,6 +71,11 @@ export class JobInvitationMapper {
             job: {
                 jobId: raw.job_id,
                 jobTitle: raw.job_title,
+                city: raw.city,
+                salaryMin: raw.salary_min,
+                salaryMax: raw.salary_max,
+                salaryType: raw.salary_type,
+                isSalaryNegotiable: raw.is_salary_negotiable || false,
             },
             company: {
                 companyName: raw.company_name,

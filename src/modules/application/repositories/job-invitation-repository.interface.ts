@@ -28,4 +28,9 @@ export interface IJobInvitationRepository {
         total: number;
         byStatus: Record<string, number>;
     }>
+
+    countStatsByStudent(studentId: number): Promise<{
+        total: number;
+        byStatus: Record<string, number>;
+    }>
 }
