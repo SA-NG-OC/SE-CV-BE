@@ -7,7 +7,7 @@ import {
     StudentSkillItem,
     StudentCard,
     StudentProfile,
-} from '../interfaces/student.interface';
+} from '../types/student.interface';
 import { StudentStatus } from '../domain/student.props';
 
 export interface RawStudentAdminCard {

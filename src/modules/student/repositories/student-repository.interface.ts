@@ -1,6 +1,6 @@
 import { PaginationResponse } from "src/common/types/pagination-response";
 import { CreateResumeDto } from "../dto/update-student.dto";
-import { GetStudentsQuery, StudentAdminListResult, StudentCard, StudentGeneralInfo, StudentProfile, StudentResponse, StudentResumeItem } from "../interfaces/student.interface";
+import { GetStudentsQuery, StudentAdminListResult, StudentCard, StudentGeneralInfo, StudentProfile, StudentResponse, StudentResumeItem } from "../types/student.interface";
 
 export interface IStudentRepository {
   getMajors();

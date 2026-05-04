@@ -46,6 +46,11 @@ export const updateGeneralInfoSchema = z.object({
         .string({ message: 'Email không đúng định dạng' })
         .email({ message: 'Email không hợp lệ' })
         .max(255),
+
+    phoneNumber: z
+        .string({ message: 'Số điện thoại phải là chuỗi' })
+        .regex(/^[0-9]{9,11}$/, { message: 'Số điện thoại không hợp lệ' })
+        .optional(),
 });
 
 export class UpdateGeneralInfoDto extends createZodDto(updateGeneralInfoSchema) { }

@@ -6,7 +6,7 @@ import { GeneralInformationDto } from './dto/general-information.dto';
 import { CreateResumeDto, UpdateAvatarDto, UpdateGeneralInfoDto, UpdateJobStatusDto, UpdateSkillsDto } from './dto/update-student.dto';
 import { GetStudentsQueryDto } from './dto/get-students-query.dto';
 import { CloudinaryService } from 'src/shared/cloudinary/cloudinary.service';
-import { MajorResponse } from './interfaces/student.interface';
+import { MajorResponse } from './types/student.interface';
 
 @Injectable()
 export class StudentService {
@@ -66,9 +66,6 @@ export class StudentService {
   async getStudentDetail(studentId: number, role: string) {
     const student = await this.repo.getStudentBasicInfo(studentId);
     if (!student) throw new NotFoundException(`Không tìm thấy sinh viên với ID ${studentId}`);
-
-    // applicationCount đã có trong response nhưng chỉ expose cho admin
-    console.log(`ROLE NÈ: ${role}`);
     if (role !== 'admin') {
       const { totalApplications, ...rest } = student;
       return rest;
@@ -144,7 +141,8 @@ export class StudentService {
   async updateGeneralInfo(userId: number, dto: UpdateGeneralInfoDto) {
     await this.repo.updateStudentFields(userId, {
       full_name: dto.fullName,
-      email_student: dto.email
+      email_student: dto.email,
+      phone: dto.phoneNumber,
     });
     return dto;
   }

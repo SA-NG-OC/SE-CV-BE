@@ -134,8 +134,6 @@ export class StudentController {
       resumeName: resumeName,
       cvUrl: uploadRes.secure_url,
     });
-    console.log('Cloudinary URL:', uploadRes.secure_url);
-    console.log('Resource type:', uploadRes.resource_type);
     return new ResponseSuccess('Thêm mới CV thành công', data);
   }
 

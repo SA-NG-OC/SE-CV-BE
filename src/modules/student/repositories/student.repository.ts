@@ -17,7 +17,7 @@ import {
     GetStudentsQuery,
     StudentCard,
     StudentProfile,
-} from '../interfaces/student.interface';
+} from '../types/student.interface';
 import { PaginationResponse } from 'src/common/types/pagination-response';
 
 @Injectable()
@@ -352,12 +352,18 @@ export class StudentRepository implements IStudentRepository {
     }
 
     async addResume(studentId: number, data: CreateResumeDto): Promise<StudentResumeItem> {
+        let isDefault = false;
+        const checkDefault = await this.fetchResumes(studentId, true);
+        if (checkDefault.length <= 0) {
+            isDefault = true;
+        }
         const [newResume] = await this.db
             .insert(schema.student_resumes)
             .values({
                 student_id: studentId,
                 resume_name: data.resumeName,
                 cv_url: data.cvUrl,
+                is_default: isDefault,
             })
             .returning();
 
@@ -428,10 +434,14 @@ export class StudentRepository implements IStudentRepository {
     }
 
     async updateStudentFields(userId: number, fields: any) {
+        const filteredFields = Object.fromEntries(
+            Object.entries(fields).filter(([_, v]) => v !== undefined)
+        );
+
         return await this.db
             .update(schema.students)
             .set({
-                ...fields,
+                ...filteredFields,
                 updated_at: new Date(),
             })
             .where(eq(schema.students.user_id, userId));
