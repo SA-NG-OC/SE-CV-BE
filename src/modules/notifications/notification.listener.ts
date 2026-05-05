@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { NotificationsService } from './notifications.service';
 @Injectable()
@@ -48,7 +48,7 @@ export class NotificationsListener {
         await this.notificationsService.createAndNotifyToAdmin({
             title: 'Một tin tuyển dụng mới vừa được thêm!!',
             message: 'Một tin tuyển dụng mới đang chờ duyệt'
-        })
+        });
     }
 
     @OnEvent('job.updated')
@@ -58,6 +58,57 @@ export class NotificationsListener {
             title: 'Một tin tuyển dụng đã được cập nhật gần đây',
             message: `Tin tuyển dụng ${jobTitle} vừa được cập nhật`
         })
+    }
+
+    @OnEvent('job.statusChanged')
+    async handleChangeJobStatus(payload: {
+        companyId: number | null;
+        companyName: string;
+        userId: number | null;
+        jobTitle: string;
+        newStatus: "pending" | "approved" | "rejected" | "restricted" | null;
+    }) {
+        try {
+            const { companyId, companyName, userId, jobTitle, newStatus } = payload;
+
+            if (!companyId || !userId) {
+                console.warn('[NotificationListener]: Missing companyId or userId', payload);
+                return;
+            }
+
+            let messageFollower = '';
+            let messageCompany = '';
+
+            if (newStatus === 'approved') {
+                messageCompany = `Tin tuyển dụng "${jobTitle}" của bạn đã được phê duyệt.`;
+
+                messageFollower = `Công ty mà bạn đang theo dõi ${companyName} vừa đăng tin tuyển dụng mới: ${jobTitle}`;
+
+                await this.notificationsService.notifyToFollowers(companyId, {
+                    title: 'Tin tuyển dụng mới mà bạn có thể thích',
+                    message: messageFollower,
+                });
+
+            } else if (newStatus === 'rejected') {
+                messageCompany = `Rất tiếc, tin tuyển dụng "${jobTitle}" của bạn đã bị từ chối. Vui lòng kiểm tra lại thông tin và thử lại.`;
+
+            } else {
+                messageCompany = `Trạng thái tin tuyển dụng "${jobTitle}" của bạn đã thay đổi thành ${newStatus}.`;
+            }
+
+            await this.notificationsService.createAndNotify({
+                user_id: userId,
+                title: 'Cập nhật trạng thái tin tuyển dụng',
+                message: messageCompany,
+                type: 'JOB_COMPANY_STATUS_CHANGED',
+            });
+
+        } catch (error) {
+            console.error('[NotificationListener Error]', {
+                error,
+                payload,
+            });
+        }
     }
 
 }

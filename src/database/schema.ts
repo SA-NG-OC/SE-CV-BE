@@ -634,7 +634,6 @@ export const messages = pgTable(
         index("idx_messages_created_at").on(t.created_at),
     ]
 );
-
 // =============================================
 // RELATIONS
 // =============================================

@@ -46,7 +46,8 @@ export const GetCompanyByIdDocs = () => applyDecorators(
                         imageUrl: "https://res.cloudinary.com/deagejli9/image/upload/v1775297601/nest_uploads/zguyphl8y7xvuu951wuq.png",
                         createdAt: "2026-04-04T10:13:24.037Z"
                     }
-                ]
+                ],
+                followed: true,
             }
         },
     }),

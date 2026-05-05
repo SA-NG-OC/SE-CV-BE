@@ -32,6 +32,29 @@ export class CompanyController {
 
     }
 
+    @Get('followed')
+    @GetCompanyCardsForUserDocs()
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.STUDENT)
+    async getFollowedCompanies(
+        @Req() req: any,
+        @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+        @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+        @Query('search') search?: string,
+        @Query('location') location?: string,
+        @Query('scale') scale?: string,
+    ) {
+        const studentId = req.user.studentId;
+
+        const data = await this.companyService.getFollowedCompanyCardForUser(
+            studentId,
+            page,
+            limit,
+            { search, location, scale },
+        );
+        return new ResponseSuccess('Lấy danh sách công ty đã follow thành công', data);
+    }
+
     @Post()
     @CreateCompanyDocs()
     @UseGuards(JwtAuthGuard, RolesGuard)
@@ -97,9 +120,10 @@ export class CompanyController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN, Role.STUDENT)
     async getCompanyById(@Req() req, @Param() param: GetCompanyParamDto) {
-        const role = req.roleId;
+        const role = req.user.roleId;
+        const userId = req.user.userId;
         const includeAllStatus: boolean = (role === Role.ADMIN);
-        const company = await this.companyService.getCompanyById(param.companyId, includeAllStatus);
+        const company = await this.companyService.getCompanyById(param.companyId, includeAllStatus, userId);
         return new ResponseSuccess('Lấy thông tin công ty thành công', company);
     }
 
@@ -278,8 +302,15 @@ export class CompanyController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN)
     async getCompanyCardAdmin(@Query() query: AdminCompanyFilterDto) {
-        const { page, limit, status } = query;
-        const data = await this.companyService.getCompanyCardAdmin(page, limit, status);
+        const { page, limit, status, search } = query;
+
+        const data = await this.companyService.getCompanyCardAdmin(
+            page,
+            limit,
+            status,
+            search,
+        );
+
         return new ResponseSuccess("Lấy thông tin thành công", data);
     }
 

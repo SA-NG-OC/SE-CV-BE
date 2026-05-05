@@ -6,9 +6,10 @@ import { AuthModule } from 'src/modules/auth/auth.module';
 import { JobPostingRepository } from './repositories/job-posting.repository';
 import { CommonModule } from 'src/common/common.module';
 import { RecommendationsModule } from '../recommendations/recommendations.module';
+import { CompanyModule } from '../company/company.module';
 
 @Module({
-  imports: [AuthModule, CommonModule, RecommendationsModule],
+  imports: [AuthModule, CommonModule, RecommendationsModule, CompanyModule],
   controllers: [JobPostingController],
   providers: [
     JobPostingService,

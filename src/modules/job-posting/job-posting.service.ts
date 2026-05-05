@@ -19,12 +19,16 @@ import { ChangeJobPostingStatusDto } from './dto/change-job-posting-status.dto';
 import { JobPostingDomainError } from './domain/job-posting.domain';
 import { JobPostingFilterDto } from './dto/filter-job-card.dto';
 import { EmbeddingQueueService } from '../recommendations/embedding/embedding-queue.service';
+import { I_COMPANY_REPOSITORY } from '../company/company.tokens';
+import { type ICompanyRepository } from '../company/repositories/company-repository.interface';
 
 @Injectable()
 export class JobPostingService {
   constructor(
     @Inject(I_JOB_POSTING_REPOSITORY)
     private readonly jobPostingRepository: IJobPostingRepository,
+    @Inject(I_COMPANY_REPOSITORY)
+    private readonly companyRepository: ICompanyRepository,
     private readonly eventEmitter: EventEmitter2,
     private readonly embeddingQueue: EmbeddingQueueService,
   ) { }
@@ -146,7 +150,16 @@ export class JobPostingService {
   ) {
     try {
       const result = await this.jobPostingRepository.changeJobStatus(jobId, dto, adminId);
-      if (!result) throw new NotFoundException(`Không tìm thấy job với ID ${jobId}`);
+      if (!result?.company_id) throw new NotFoundException(`Không tìm thấy job với ID ${jobId}`);
+      const company = await this.companyRepository.getCompanyName(result.company_id);
+      this.eventEmitter.emit('job.statusChanged', {
+        companyId: result.company_id,
+        companyName: company.company_name,
+        userId: company.user_id,
+        jobId: result.job_id,
+        jobTitle: result.job_title,
+        newStatus: result.status
+      })
       return result;
     } catch (error) {
       if (error instanceof JobPostingDomainError) {

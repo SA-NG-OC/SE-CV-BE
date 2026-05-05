@@ -16,11 +16,13 @@ import { UpdateCompanyContactDto } from './dto/update-company-contact.dto';
 import { UpdateCompanyDetailDto } from './dto/update-company-detail.dto';
 import { ChangeCompanyStatusDto } from './dto/change-company-status.dto';
 import { PaginationResponse } from 'src/common/types/pagination-response';
+import { I_FOLLOWED_COMPANY_REPOSITORY, type IFollowedCompanyRepository } from '../follow/repositories/follow-repository.interface';
 
 @Injectable()
 export class CompanyService {
     constructor(
         @Inject(I_COMPANY_REPOSITORY) private readonly companyRepo: ICompanyRepository,
+        @Inject(I_FOLLOWED_COMPANY_REPOSITORY) private readonly followRepo: IFollowedCompanyRepository,
         private readonly eventEmitter: EventEmitter2,
     ) { }
 
@@ -60,10 +62,14 @@ export class CompanyService {
         }
     }
 
-    async getCompanyById(companyId: number, includeAllStatus = false) {
+    async getCompanyById(companyId: number, includeAllStatus = false, userId: number) {
         const company = await this.companyRepo.findById(companyId, includeAllStatus);
+        const checkFollowed = await this.followRepo.checkFollowed(userId, companyId);
         if (!company) throw new NotFoundException('Không tìm thấy công ty.');
-        return company;
+        return {
+            ...company,
+            follwed: checkFollowed
+        };
     }
 
     async getMyCompany(userId: number) {
@@ -152,9 +158,15 @@ export class CompanyService {
         page: number,
         limit: number,
         status?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'RESTRICTED',
+        search?: string,
     ) {
         const { companies, totalItems, statusCount } =
-            await this.companyRepo.getCompanyListForAdmin(page, limit, status);
+            await this.companyRepo.getCompanyListForAdmin(
+                page,
+                limit,
+                status,
+                search,
+            );
 
         return {
             ...new PaginationResponse(companies, page, limit, totalItems),
@@ -204,5 +216,26 @@ export class CompanyService {
         } catch (error) {
             this.rethrow(error);
         }
+    }
+
+    async getFollowedCompanyCardForUser(
+        studentId: number,
+        page: number,
+        limit: number,
+        filters?: {
+            search?: string;
+            location?: string;
+            scale?: string;
+        }
+    ) {
+        const { companies, totalItems } =
+            await this.companyRepo.getFollowedCompaniesForUser(
+                studentId,
+                page,
+                limit,
+                filters,
+            );
+
+        return new PaginationResponse(companies, page, limit, totalItems);
     }
 }

@@ -27,6 +27,7 @@ import { JobPostingDomain, JobPostingDomainError } from '../domain/job-posting.d
 import { JobPostingMapper } from '../domain/job-posting.mapper';
 import { ChangeJobPostingStatusDto } from '../dto/change-job-posting-status.dto';
 import { JobPostingFilterDto } from '../dto/filter-job-card.dto';
+import { JobPostingEntity } from '../domain/job-posting.entity';
 
 
 @Injectable()
@@ -566,7 +567,7 @@ export class JobPostingRepository implements IJobPostingRepository {
         jobId: number,
         dto: ChangeJobPostingStatusDto,
         adminId: number,
-    ): Promise<number | null> {
+    ): Promise<JobPostingEntity | null> {
         const [existing] = await this.db
             .select()
             .from(schema.job_postings)
@@ -577,12 +578,13 @@ export class JobPostingRepository implements IJobPostingRepository {
         const domain = JobPostingDomain.fromPersistence(existing);
         domain.changeStatus(dto, adminId);
 
-        await this.db
+        const [updated] = await this.db
             .update(schema.job_postings)
             .set(domain.toUpdatePersistence())
-            .where(eq(schema.job_postings.job_id, jobId));
+            .where(eq(schema.job_postings.job_id, jobId))
+            .returning();
 
-        return jobId;
+        return updated;
     }
 
     async toggleActiveStatus(jobId: number, companyId: number): Promise<void> {

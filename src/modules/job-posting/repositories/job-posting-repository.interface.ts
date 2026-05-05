@@ -6,6 +6,7 @@ import { AdminJobCard, AdminJobStats, CategoryItem, CompanyJobCard, JobList, Job
 import { ChangeJobPostingStatusDto } from '../dto/change-job-posting-status.dto';
 import { JobPostingFilterDto } from '../dto/filter-job-card.dto';
 import { RoleName } from 'src/common/types/role.enum';
+import { JobPostingEntity } from '../domain/job-posting.entity';
 
 export interface IJobPostingRepository {
     checkCompany(companyId: number): Promise<boolean>
@@ -45,7 +46,7 @@ export interface IJobPostingRepository {
 
     findByCompanyId(companyId: number, page: number, limit: number, roleName: RoleName): Promise<PaginationResponse<ProfileJobCard>>;
 
-    changeJobStatus(jobId: number, dto: ChangeJobPostingStatusDto, adminId: number): Promise<number | null>;
+    changeJobStatus(jobId: number, dto: ChangeJobPostingStatusDto, adminId: number): Promise<JobPostingEntity | null>;
 
     getJobStatsByCompanyId(companyId: number): Promise<JobPostingStats>
 
