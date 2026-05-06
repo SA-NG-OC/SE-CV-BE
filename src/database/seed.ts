@@ -1040,11 +1040,11 @@ async function main() {
     // 12. Thêm SAVED JOBS (job_id cập nhật)
     console.log('📦 Thêm Saved Jobs...');
     await db.insert(schema.saved_jobs).values([
-        { student_id: 100, job_id: 107, notes: 'Vị trí rất tốt, cần ôn lại Go trước khi apply' },
-        { student_id: 100, job_id: 114, notes: 'MoMo Fintech - mục tiêu sau khi tốt nghiệp' },
-        { student_id: 101, job_id: 115, notes: 'Data Scientist tại MoMo, phù hợp với định hướng' },
-        { student_id: 103, job_id: 115, notes: 'Cân nhắc apply sau khi hoàn thiện portfolio' },
-        { student_id: 109, job_id: 114, notes: 'Backup option nếu VNG không chọn' },
+        { student_id: 100, job_id: 107 },
+        { student_id: 100, job_id: 114 },
+        { student_id: 101, job_id: 115 },
+        { student_id: 103, job_id: 115 },
+        { student_id: 109, job_id: 114 },
     ]);
 
     // 13. Thêm FOLLOWED COMPANIES (company_id cập nhật)

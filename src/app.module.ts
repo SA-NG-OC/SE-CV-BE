@@ -23,6 +23,7 @@ import { RecommendationsModule } from './modules/recommendations/recommendations
 import { ChatModule } from './modules/chat/chat.module';
 import { StatisticsModule } from './modules/statistics/statistics.module';
 import { FollowedCompanyModule } from './modules/follow/follow.module';
+import { SavedJobsModule } from './modules/saved-jobs/saved-jobs.module';
 
 @Module({
   imports: [
@@ -65,7 +66,8 @@ import { FollowedCompanyModule } from './modules/follow/follow.module';
     RecommendationsModule,
     ChatModule,
     StatisticsModule,
-    FollowedCompanyModule
+    FollowedCompanyModule,
+    SavedJobsModule
   ],
   controllers: [AppController],
   providers: [AppService, EventsGateway, NotificationsGateway],

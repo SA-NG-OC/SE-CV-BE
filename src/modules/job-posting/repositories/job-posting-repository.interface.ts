@@ -44,6 +44,11 @@ export interface IJobPostingRepository {
 
     findAllForStudent(dto: ListJobPostingDto): Promise<PaginationResponse<StudentJobCard>>;
 
+    findSavedJobsForStudent(
+        studentId: number,
+        dto: ListJobPostingDto,
+    ): Promise<PaginationResponse<StudentJobCard>>
+
     findByCompanyId(companyId: number, page: number, limit: number, roleName: RoleName): Promise<PaginationResponse<ProfileJobCard>>;
 
     changeJobStatus(jobId: number, dto: ChangeJobPostingStatusDto, adminId: number): Promise<JobPostingEntity | null>;

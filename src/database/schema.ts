@@ -461,7 +461,6 @@ export const saved_jobs = pgTable(
         job_id: integer("job_id").references(() => job_postings.job_id, {
             onDelete: "cascade",
         }),
-        notes: text("notes"),
         created_at: timestamp("created_at").defaultNow(),
     },
     (t) => [uniqueIndex("uq_saved_job_student").on(t.student_id, t.job_id)]

@@ -21,6 +21,7 @@ import { JobPostingFilterDto } from './dto/filter-job-card.dto';
 import { EmbeddingQueueService } from '../recommendations/embedding/embedding-queue.service';
 import { I_COMPANY_REPOSITORY } from '../company/company.tokens';
 import { type ICompanyRepository } from '../company/repositories/company-repository.interface';
+import { I_SAVED_JOB_REPOSITORY, type ISavedJobRepository } from '../saved-jobs/repositories/saved-jobs-repository.interface';
 
 @Injectable()
 export class JobPostingService {
@@ -29,6 +30,8 @@ export class JobPostingService {
     private readonly jobPostingRepository: IJobPostingRepository,
     @Inject(I_COMPANY_REPOSITORY)
     private readonly companyRepository: ICompanyRepository,
+    @Inject(I_SAVED_JOB_REPOSITORY)
+    private readonly savedJobsRepository: ISavedJobRepository,
     private readonly eventEmitter: EventEmitter2,
     private readonly embeddingQueue: EmbeddingQueueService,
   ) { }
@@ -114,6 +117,7 @@ export class JobPostingService {
     role: RoleName,
     dto: ListJobPostingDto,
     companyId?: number,
+    studentId?: number,
   ): Promise<
     PaginationResponse<AdminJobCard> |
     PaginationResponse<CompanyJobCard> |
@@ -126,7 +130,29 @@ export class JobPostingService {
     }
 
     // STUDENT — bỏ qua filter status dù FE có truyền lên
-    const data = await this.jobPostingRepository.findAllForStudent(dto);
+    const [data, savedJobIds] = await Promise.all([
+      this.jobPostingRepository.findAllForStudent(dto),
+      this.savedJobsRepository.getJobSaved(studentId!),
+    ]);
+
+    const savedSet = new Set(savedJobIds);
+
+    data.data = data.data.map((job) => ({
+      ...job,
+      saved: savedSet.has(job.jobId),
+    }));
+
+    return data;
+  }
+
+  async getSavedJobsForStudent(
+    studentId: number,
+    dto: ListJobPostingDto,
+  ) {
+    const data = await this.jobPostingRepository.findSavedJobsForStudent(
+      studentId,
+      dto,
+    );
     return data;
   }
 

@@ -29,6 +29,7 @@ import {
 
 import ResponseSuccess from 'src/common/types/response-success';
 import { GetConversationsQueryDto } from './dto/get-conversations-query.dto';
+import { GetConversationsDocs, GetMessagesDocs, GetOrCreateConversationDocs, MarkReadDocs, SendMessageDocs, SetBlockedDocs, SetHiddenDocs } from './decorators';
 
 @Controller('chat')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -39,6 +40,7 @@ export class ChatController {
     // GET OR CREATE CONVERSATION
     // =========================================================================
     @Post('conversation')
+    @GetOrCreateConversationDocs()
     @Roles(Role.COMPANY, Role.STUDENT)
     @HttpCode(HttpStatus.OK)
     async getOrCreateConversation(
@@ -57,6 +59,7 @@ export class ChatController {
     // SEND MESSAGE
     // =========================================================================
     @Post('message')
+    @SendMessageDocs()
     @Roles(Role.COMPANY, Role.STUDENT)
     async sendMessage(
         @Req() req,
@@ -77,6 +80,7 @@ export class ChatController {
     // GET MESSAGES (pagination bằng cursor)
     // =========================================================================
     @Get('conversation/:id/messages')
+    @GetMessagesDocs()
     @Roles(Role.COMPANY, Role.STUDENT)
     async getMessages(
         @Req() req,
@@ -98,6 +102,7 @@ export class ChatController {
     // CONVERSATION LIST
     // =========================================================================
     @Get('conversations')
+    @GetConversationsDocs()
     @Roles(Role.COMPANY, Role.STUDENT)
     async getConversations(
         @Req() req,
@@ -119,6 +124,7 @@ export class ChatController {
     // MARK READ
     // =========================================================================
     @Patch('read')
+    @MarkReadDocs()
     @Roles(Role.COMPANY, Role.STUDENT)
     async markRead(
         @Req() req,
@@ -135,6 +141,7 @@ export class ChatController {
     // HIDE CONVERSATION
     // =========================================================================
     @Patch('hidden')
+    @SetHiddenDocs()
     @Roles(Role.COMPANY, Role.STUDENT)
     async setHidden(
         @Req() req,
@@ -151,6 +158,7 @@ export class ChatController {
     // BLOCK CONVERSATION
     // =========================================================================
     @Patch('blocked')
+    @SetBlockedDocs()
     @Roles(Role.COMPANY, Role.STUDENT)
     async setBlocked(
         @Req() req,

@@ -563,6 +563,84 @@ export class JobPostingRepository implements IJobPostingRepository {
         return new PaginationResponse(items, page, limit, Number(total));
     }
 
+    async findSavedJobsForStudent(
+        studentId: number,
+        dto: ListJobPostingDto,
+    ): Promise<PaginationResponse<StudentJobCard>> {
+        const { page, limit, search, city } = dto;
+        const offset = (page - 1) * limit;
+
+        const conditions: SQL[] = [
+            eq(schema.saved_jobs.student_id, studentId),
+        ];
+
+        if (search) {
+            conditions.push(
+                ilike(schema.job_postings.job_title, `%${search}%`)
+            );
+        }
+
+        if (city) {
+            conditions.push(
+                ilike(schema.job_postings.city, `%${city}%`)
+            );
+        }
+
+        const whereClause = and(...conditions);
+
+        const [rows, [{ total }]] = await Promise.all([
+            this.db
+                .select({
+                    job: schema.job_postings,
+                    company_name: schema.companies.company_name,
+                    logo_url: schema.companies.logo_url,
+                })
+                .from(schema.saved_jobs)
+                .innerJoin(
+                    schema.job_postings,
+                    eq(schema.saved_jobs.job_id, schema.job_postings.job_id),
+                )
+                .innerJoin(
+                    schema.companies,
+                    eq(schema.job_postings.company_id, schema.companies.company_id),
+                )
+                .where(whereClause)
+                .orderBy(sql`${schema.saved_jobs.created_at} desc`)
+                .limit(limit)
+                .offset(offset),
+
+            this.db
+                .select({ total: count() })
+                .from(schema.saved_jobs)
+                .innerJoin(
+                    schema.job_postings,
+                    eq(schema.saved_jobs.job_id, schema.job_postings.job_id),
+                )
+                .where(whereClause),
+        ]);
+
+        const jobIds = rows.map((r) => r.job.job_id);
+
+        const [skillMap, countMap] = await Promise.all([
+            this.fetchSkillMap(jobIds),
+            this.fetchApplicantCountMap(jobIds),
+        ]);
+
+        const items = rows.map((r) => {
+            const domain = JobPostingDomain.fromPersistence(r.job);
+
+            return JobPostingMapper.toStudentCard(domain, {
+                companyName: r.company_name,
+                logoUrl: r.logo_url ?? null,
+                skills: skillMap.get(r.job.job_id) ?? [],
+                applicantCount: countMap.get(r.job.job_id) ?? 0,
+                saved: true
+            });
+        });
+
+        return new PaginationResponse(items, page, limit, Number(total));
+    }
+
     async changeJobStatus(
         jobId: number,
         dto: ChangeJobPostingStatusDto,
@@ -651,15 +729,12 @@ export class JobPostingRepository implements IJobPostingRepository {
         const [result] = await this.db
             .select({
                 total: count(),
-                // Đếm tin đang chờ duyệt
                 pending: sql<number>`count(*) filter (where ${schema.job_postings.status} = 'pending')`,
-                // Đếm tin đã duyệt trong ngày hôm nay
                 approvedToday: sql<number>`
                 count(*) filter (
                     where ${schema.job_postings.status} = 'approved' 
                     and ${schema.job_postings.approved_at} >= date_trunc('day', now())
                 )`,
-                // Đếm tin đã từ chối
                 rejected: sql<number>`count(*) filter (where ${schema.job_postings.status} = 'rejected')`,
             })
             .from(schema.job_postings);

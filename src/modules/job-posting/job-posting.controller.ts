@@ -25,7 +25,7 @@ import ResponseSuccess from 'src/common/types/response-success';
 import { UpdateJobPostingDto } from './dto/update-job-posting.dto';
 import { ListJobPostingDto } from './dto/list-job-posting.dto';
 import { ChangeJobPostingStatusDto } from './dto/change-job-posting-status.dto';
-import { ChangeJobStatusDocs, CreateJobPostingDocs, GetAdminJobStatsDocs, GetJobByIdDocs, GetJobCardCompanyDocs, GetJobCategoriesDocs, GetJobListDocs, GetJobSkillsDocs, GetJobStatsDocs, GetProfileJobDocs, ListJobPostingsDocs, ToggleJobActiveDocs, UpdateJobPostingDocs } from './decorators';
+import { ChangeJobStatusDocs, CreateJobPostingDocs, GetAdminJobStatsDocs, GetJobByIdDocs, GetJobCardCompanyDocs, GetJobCategoriesDocs, GetJobListDocs, GetJobSaveDocs, GetJobSkillsDocs, GetJobStatsDocs, GetProfileJobDocs, ListJobPostingsDocs, ToggleJobActiveDocs, UpdateJobPostingDocs } from './decorators';
 import { JobPostingFilterDto } from './dto/filter-job-card.dto';
 
 @Controller('job-postings')
@@ -77,6 +77,24 @@ export class JobPostingController {
     return new ResponseSuccess('Lấy thông tin thành công', data);
   }
 
+  @Get('saved')
+  @GetJobSaveDocs()
+  @Roles(Role.STUDENT)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  async getSavedJobs(
+    @Req() req: any,
+    @Query() dto: ListJobPostingDto,
+  ) {
+    const studentId = req.user.studentId;
+
+    const data = await this.jobPostingService.getSavedJobsForStudent(
+      studentId,
+      dto,
+    );
+
+    return new ResponseSuccess('Lấy danh sách job đã lưu thành công', data);
+  }
+
   @Get('card')
   @ListJobPostingsDocs()
   @Roles(Role.ADMIN, Role.COMPANY, Role.STUDENT)
@@ -87,9 +105,9 @@ export class JobPostingController {
     @Query() dto: ListJobPostingDto,
   ) {
     const role: RoleName = req.user.roleName;
+    const studentId = req.user.studentId;
     const companyId = role === RoleName.COMPANY ? req.user.companyId : undefined;
-
-    const result = await this.jobPostingService.listJobPostings(role, dto, companyId);
+    const result = await this.jobPostingService.listJobPostings(role, dto, companyId, studentId);
     return new ResponseSuccess('Lấy thông tin thành công', result);
   }
 
