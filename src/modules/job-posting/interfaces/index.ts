@@ -124,6 +124,7 @@ export interface StudentJobCard {
     applicantCount: number;
 
     skills: JobSkillItem[];
+    saved: boolean;
 
 }
 

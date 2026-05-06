@@ -123,8 +123,9 @@ export class CompanyRepository implements ICompanyRepository {
 
     async findById(
         companyId: number,
-        includeAllStatus = false,
+        includeAllStatus,
     ): Promise<CompanyResponse | null> {
+        console.log(`includeAllStatus: ${includeAllStatus}`)
         const condition = includeAllStatus
             ? eq(schema.companies.company_id, companyId)
             : and(
@@ -306,9 +307,25 @@ export class CompanyRepository implements ICompanyRepository {
         page: number,
         limit: number,
         status?: CompanyStatus,
+        search?: string,
     ): Promise<CompanyAdminListResult> {
         const offset = (page - 1) * limit;
-        const condition = status ? eq(schema.companies.status, status) : undefined;
+
+        const conditions: SQL[] = [];
+
+        // filter status
+        if (status) {
+            conditions.push(eq(schema.companies.status, status));
+        }
+
+        // filter search
+        if (search) {
+            conditions.push(
+                ilike(schema.companies.company_name, `%${search}%`)
+            );
+        }
+
+        const whereClause = conditions.length ? and(...conditions) : undefined;
 
         const [companies, [{ totalItems }], statusCount] = await Promise.all([
             this.db
@@ -325,14 +342,14 @@ export class CompanyRepository implements ICompanyRepository {
                     createdAt: schema.companies.created_at,
                 })
                 .from(schema.companies)
-                .where(condition)
+                .where(whereClause)
                 .limit(limit)
                 .offset(offset),
 
             this.db
                 .select({ totalItems: sql<number>`count(*)`.mapWith(Number) })
                 .from(schema.companies)
-                .where(condition),
+                .where(whereClause),
 
             this.db
                 .select({
@@ -363,7 +380,6 @@ export class CompanyRepository implements ICompanyRepository {
 
         const conditions: SQL[] = [];
 
-        // luôn filter APPROVED
         conditions.push(eq(schema.companies.status, 'APPROVED'));
 
         // ================= SEARCH =================
@@ -419,5 +435,105 @@ export class CompanyRepository implements ICompanyRepository {
             companies: companies.map(CompanyMapper.toUserCard),
             totalItems: Number(totalItems),
         };
+    }
+
+    async getFollowedCompaniesForUser(
+        studentId: number,
+        page: number,
+        limit: number,
+        filters?: {
+            search?: string;
+            location?: string;
+            scale?: string;
+        }
+    ): Promise<CompanyUserListResult> {
+        const offset = (page - 1) * limit;
+
+        const conditions: SQL[] = [];
+
+        // chỉ lấy company approved
+        conditions.push(eq(schema.companies.status, 'APPROVED'));
+
+        // filter follow theo student
+        conditions.push(eq(schema.followed_companies.student_id, studentId));
+
+        // ===== SEARCH =====
+        if (filters?.search) {
+            conditions.push(
+                ilike(schema.companies.company_name, `%${filters.search}%`)
+            );
+        }
+
+        // ===== LOCATION =====
+        if (filters?.location) {
+            conditions.push(
+                ilike(schema.companies.address, `%${filters.location}%`)
+            );
+        }
+
+        // ===== SCALE =====
+        if (filters?.scale) {
+            conditions.push(
+                eq(schema.companies.company_size, filters.scale)
+            );
+        }
+
+        const whereClause = and(...conditions);
+
+        const [companies, [{ totalItems }]] = await Promise.all([
+            this.db
+                .select({
+                    company_id: schema.companies.company_id,
+                    company_name: schema.companies.company_name,
+                    logo_url: schema.companies.logo_url,
+                    industry: schema.companies.industry,
+                    active_jobs: sql<number>`(
+          SELECT COUNT(job_id)
+          FROM ${schema.job_postings}
+          WHERE company_id = ${schema.companies.company_id}
+          AND status = 'approved'
+        )`.mapWith(Number),
+                })
+                .from(schema.followed_companies)
+                .innerJoin(
+                    schema.companies,
+                    eq(schema.followed_companies.company_id, schema.companies.company_id)
+                )
+                .where(whereClause)
+                .orderBy(desc(schema.companies.created_at))
+                .limit(limit)
+                .offset(offset),
+
+            this.db
+                .select({ totalItems: count() })
+                .from(schema.followed_companies)
+                .innerJoin(
+                    schema.companies,
+                    eq(schema.followed_companies.company_id, schema.companies.company_id)
+                )
+                .where(whereClause),
+        ]);
+
+        return {
+            companies: companies.map(CompanyMapper.toUserCard),
+            totalItems: Number(totalItems),
+        };
+    }
+
+    async getCompanyName(companyId: number): Promise<{
+        company_name: string | null,
+        user_id: number | null
+    }> {
+        const [data] = await this.db
+            .select({
+                company_name: schema.companies.company_name,
+                user_id: schema.companies.user_id
+            })
+            .from(schema.companies)
+            .where(eq(schema.companies.company_id, companyId));
+        return {
+            company_name: data.company_name,
+            user_id: data.user_id,
+        }
     }
 }

@@ -19,12 +19,19 @@ import { ChangeJobPostingStatusDto } from './dto/change-job-posting-status.dto';
 import { JobPostingDomainError } from './domain/job-posting.domain';
 import { JobPostingFilterDto } from './dto/filter-job-card.dto';
 import { EmbeddingQueueService } from '../recommendations/embedding/embedding-queue.service';
+import { I_COMPANY_REPOSITORY } from '../company/company.tokens';
+import { type ICompanyRepository } from '../company/repositories/company-repository.interface';
+import { I_SAVED_JOB_REPOSITORY, type ISavedJobRepository } from '../saved-jobs/repositories/saved-jobs-repository.interface';
 
 @Injectable()
 export class JobPostingService {
   constructor(
     @Inject(I_JOB_POSTING_REPOSITORY)
     private readonly jobPostingRepository: IJobPostingRepository,
+    @Inject(I_COMPANY_REPOSITORY)
+    private readonly companyRepository: ICompanyRepository,
+    @Inject(I_SAVED_JOB_REPOSITORY)
+    private readonly savedJobsRepository: ISavedJobRepository,
     private readonly eventEmitter: EventEmitter2,
     private readonly embeddingQueue: EmbeddingQueueService,
   ) { }
@@ -110,6 +117,7 @@ export class JobPostingService {
     role: RoleName,
     dto: ListJobPostingDto,
     companyId?: number,
+    studentId?: number,
   ): Promise<
     PaginationResponse<AdminJobCard> |
     PaginationResponse<CompanyJobCard> |
@@ -122,7 +130,29 @@ export class JobPostingService {
     }
 
     // STUDENT — bỏ qua filter status dù FE có truyền lên
-    const data = await this.jobPostingRepository.findAllForStudent(dto);
+    const [data, savedJobIds] = await Promise.all([
+      this.jobPostingRepository.findAllForStudent(dto),
+      this.savedJobsRepository.getJobSaved(studentId!),
+    ]);
+
+    const savedSet = new Set(savedJobIds);
+
+    data.data = data.data.map((job) => ({
+      ...job,
+      saved: savedSet.has(job.jobId),
+    }));
+
+    return data;
+  }
+
+  async getSavedJobsForStudent(
+    studentId: number,
+    dto: ListJobPostingDto,
+  ) {
+    const data = await this.jobPostingRepository.findSavedJobsForStudent(
+      studentId,
+      dto,
+    );
     return data;
   }
 
@@ -146,7 +176,16 @@ export class JobPostingService {
   ) {
     try {
       const result = await this.jobPostingRepository.changeJobStatus(jobId, dto, adminId);
-      if (!result) throw new NotFoundException(`Không tìm thấy job với ID ${jobId}`);
+      if (!result?.company_id) throw new NotFoundException(`Không tìm thấy job với ID ${jobId}`);
+      const company = await this.companyRepository.getCompanyName(result.company_id);
+      this.eventEmitter.emit('job.statusChanged', {
+        companyId: result.company_id,
+        companyName: company.company_name,
+        userId: company.user_id,
+        jobId: result.job_id,
+        jobTitle: result.job_title,
+        newStatus: result.status
+      })
       return result;
     } catch (error) {
       if (error instanceof JobPostingDomainError) {

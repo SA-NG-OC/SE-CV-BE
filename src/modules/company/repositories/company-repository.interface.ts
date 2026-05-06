@@ -53,7 +53,8 @@ export interface ICompanyRepository {
         page: number,
         limit: number,
         status?: CompanyStatus,
-    ): Promise<CompanyAdminListResult>;
+        search?: string,
+    ): Promise<CompanyAdminListResult>
 
     getCompanyListForUser(
         page: number,
@@ -64,4 +65,20 @@ export interface ICompanyRepository {
             scale?: string;
         }
     ): Promise<CompanyUserListResult>
+
+    getCompanyName(companyId: number): Promise<{
+        company_name: string | null,
+        user_id: number | null
+    }>;
+
+    getFollowedCompaniesForUser(
+        studentId: number,
+        page: number,
+        limit: number,
+        filters?: {
+            search?: string;
+            location?: string;
+            scale?: string;
+        }
+    ): Promise<CompanyUserListResult>;
 }

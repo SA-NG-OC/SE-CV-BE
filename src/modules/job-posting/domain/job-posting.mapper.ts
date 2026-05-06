@@ -26,6 +26,7 @@ export class JobPostingMapper {
             logoUrl: string | null;
             skills: JobSkillItem[];
             applicantCount: number;
+            saved?: boolean;
         }
     ): StudentJobCard {
         return {
@@ -42,6 +43,7 @@ export class JobPostingMapper {
             postedAt: toRelativeTime(domain.createdAt),
             applicantCount: extra.applicantCount,
             skills: extra.skills,
+            saved: extra.saved || false,
             // Computed từ domain — mapper chỉ gọi, không tự tính
             //isExpired:           domain.isExpired(),
             //canApply:            domain.canAcceptApplications(),

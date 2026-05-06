@@ -15,4 +15,5 @@ export interface StudentProps {
     isOpenToWork: boolean;
     createdAt: Date | null;
     updatedAt: Date | null;
+    isActive: boolean | null;
 }

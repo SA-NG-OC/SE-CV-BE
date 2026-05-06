@@ -86,21 +86,17 @@ export class StudentService {
   }
 
   async getStudentDetail(studentId: number, role: string): Promise<Omit<StudentResponse, 'totalApplications'> | StudentResponse> {
-    // 1. Lấy student + major
     const raw = await this.repo.findStudentWithMajor(studentId);
     if (!raw) throw new NotFoundException(`Không tìm thấy sinh viên với ID ${studentId}`);
 
-    // 2. Fetch thêm skills, resumes, count — service quyết định cần gì
     const [skills, resumes, totalApplications] = await Promise.all([
       this.repo.findSkillsByStudent(studentId),
       this.repo.findResumesByStudent(studentId, true),
       this.repo.countApplicationsByStudent(studentId),
     ]);
 
-    // 3. Tạo Domain từ raw row
     const domain = StudentDomain.fromPersistence(raw.student);
 
-    // 4. Map sang response — mapper nằm ở service
     const response = StudentMapper.toResponse(domain, {
       majorName: raw.major_name,
       skills,
@@ -108,7 +104,6 @@ export class StudentService {
       totalApplications,
     });
 
-    // 5. Business rule: non-admin không thấy totalApplications
     if (role !== 'admin') {
       const { totalApplications: _, ...rest } = response;
       return rest;
@@ -138,15 +133,12 @@ export class StudentService {
   // =========================================================================
 
   async updateJobStatus(studentId: number, dto: UpdateJobStatusDto) {
-    // 1. Load raw row
     const raw = await this.repo.findRawById2(studentId);
     if (!raw) throw new NotFoundException(`Không tìm thấy sinh viên với ID ${studentId}`);
 
-    // 2. Tạo domain, gọi business method
     const domain = StudentDomain.fromPersistence(raw);
     domain.setOpenToWork(dto.isOpenToWork);
 
-    // 3. Persist — repo không biết gì về domain logic
     await this.repo.updateByStudentId(studentId, domain.toUpdatePersistence());
 
     return { message: 'Cập nhật trạng thái tìm việc thành công' };
@@ -154,12 +146,11 @@ export class StudentService {
 
   async updateSkills(studentId: number, dto: UpdateSkillsDto) {
     try {
-      // Validate ở service qua domain — không để trong repo
       const raw = await this.repo.findRawById2(studentId);
       if (!raw) throw new NotFoundException(`Không tìm thấy sinh viên với ID ${studentId}`);
 
       const domain = StudentDomain.fromPersistence(raw);
-      domain.validateSkillIds(dto.skillIds); // throw StudentDomainError nếu sai
+      domain.validateSkillIds(dto.skillIds);
 
       await this.repo.replaceSkills(studentId, dto.skillIds);
 
@@ -170,7 +161,6 @@ export class StudentService {
   }
 
   async uploadResume(studentId: number, dto: CreateResumeDto) {
-    // Business rule: nếu chưa có resume nào thì set default
     const existingResumes = await this.repo.findResumesByStudent(studentId, true);
     const isDefault = existingResumes.length === 0;
 
@@ -183,11 +173,9 @@ export class StudentService {
   }
 
   async deleteResume(studentId: number, resumeId: number): Promise<void> {
-    // Business guards ở service, không phải repo
     const resume = await this.repo.findResumeById(resumeId, studentId);
     if (!resume) throw new NotFoundException('CV không tồn tại');
     if (resume.is_default) throw new BadRequestException('Không thể xóa CV mặc định');
-
     await this.repo.deleteResume(resumeId);
   }
 
@@ -234,5 +222,12 @@ export class StudentService {
       desired_salary_max: dto.desiredSalaryMax,
       desired_location: dto.desiredLocation,
     });
+  }
+
+  async updateActiveStatus(studentId: number, isActive: boolean) {
+    await this.repo.updateFields(studentId, {
+      is_active: isActive,
+    });
+    await this.repo.isActive(studentId, isActive);
   }
 }

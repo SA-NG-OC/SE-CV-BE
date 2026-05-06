@@ -21,3 +21,4 @@ export enum PositionLevel {
     DIRECTOR = 'DIRECTOR',
     C_LEVEL = 'C_LEVEL',
 }
+

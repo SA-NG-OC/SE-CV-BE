@@ -1,5 +1,3 @@
-import { GetJobCardCompanyDocs } from './get-job-company-card.docs';
-
 export { CreateJobPostingDocs } from './create-job-posting.docs';
 export { UpdateJobPostingDocs } from './update-job-posting.docs';
 export { GetProfileJobDocs } from './get-profile-job.docs';
@@ -12,3 +10,4 @@ export { GetJobListDocs } from './get-job-list.docs'
 export { GetJobStatsDocs, GetAdminJobStatsDocs } from './job-posting.decorator';
 export { GetJobCardCompanyDocs } from './get-job-company-card.docs'
 export { ToggleJobActiveDocs } from './toggle-job.docs'
+export { GetJobSaveDocs } from './get-job-saved.docs';

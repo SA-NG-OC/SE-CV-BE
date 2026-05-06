@@ -22,6 +22,8 @@ import GetMajorsDocs from './decorators/get-majors.decorator';
 import GetMyProfileDocs from './decorators/get-my-profile.decorator';
 import UpdateAvatarDocs from './decorators/update-avatar.decorator';
 import DeleteResumeDocs from './decorators/delete-resume.decorator';
+import { ToggleActiveDto } from './dto/toggle-active.dto';
+import ToggleStudentActiveDocs from './decorators/update-student-active.docs';
 
 @Controller('student')
 export class StudentController {
@@ -209,6 +211,18 @@ export class StudentController {
   ) {
     const userId = req.user.userId;
     await this.studentsService.updateJobPreference(userId, dto);
+  }
+
+  @Patch(':studentId/active')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ToggleStudentActiveDocs()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  async toggleStudentActive(
+    @Param('studentId', ParseIntPipe) studentId: number,
+    @Body() dto: ToggleActiveDto,
+  ) {
+    await this.studentsService.updateActiveStatus(studentId, dto.isActive);
   }
 
 }

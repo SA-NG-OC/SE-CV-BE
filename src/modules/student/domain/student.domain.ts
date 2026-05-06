@@ -27,6 +27,7 @@ export class StudentDomain {
             isOpenToWork: raw.is_open_to_work ?? false,
             createdAt: raw.created_at ?? null,
             updatedAt: raw.updated_at ?? null,
+            isActive: raw.is_active ?? null,
         })
     }
 
@@ -44,7 +45,7 @@ export class StudentDomain {
         }
     }
 
-    isActive(): boolean {
+    isStudying(): boolean {
         return this.props.studentStatus === 'STUDYING';
     }
 
@@ -73,4 +74,5 @@ export class StudentDomain {
     get isOpenToWork() { return this.props.isOpenToWork; }
     get createdAt() { return this.props.createdAt; }
     get updatedAt() { return this.props.updatedAt; }
+    get isActive() { return this.props.isActive; }
 }

@@ -3,12 +3,15 @@ import type { INotificationsRepository } from './repositories/notifications-repo
 import { NotificationsGateway } from './notifications.gateway';
 import { CreateNotificationDto, MarkReadDto } from './dto/notification.dto';
 import { I_NOTIFICATIONS_REPOSITORY } from './notification.token';
+import { I_FOLLOWED_COMPANY_REPOSITORY, type IFollowedCompanyRepository } from '../follow/repositories/follow-repository.interface';
 
 @Injectable()
 export class NotificationsService {
     constructor(
         @Inject(I_NOTIFICATIONS_REPOSITORY)
         private readonly repo: INotificationsRepository,
+        @Inject(I_FOLLOWED_COMPANY_REPOSITORY)
+        private readonly followedCompanyRepo: IFollowedCompanyRepository,
         private readonly gateway: NotificationsGateway,
     ) { }
 
@@ -18,27 +21,47 @@ export class NotificationsService {
 
         return notification;
     }
-    async createAndNotifyToAdmin(data: Omit<CreateNotificationDto, 'user_id'>) {
-        const adminIds = await this.repo.getAdminId();
+    private async createAndEmit(
+        userIds: number[],
+        data: Omit<CreateNotificationDto, 'user_id'>,
+    ) {
+        if (!userIds.length) return [];
 
-        if (!adminIds || adminIds.length === 0) {
-            throw new NotFoundException('Không tìm thấy admin');
-        }
-
-        const notificationsToSave = adminIds.map((adminId) => ({
+        const notifications = userIds.map((id) => ({
             ...data,
-            user_id: adminId,
+            user_id: id,
         }));
 
-        const savedNotifications = await this.repo.createMany(notificationsToSave);
+        const saved = await this.repo.createMany(notifications);
 
-        this.gateway.sendToUsers(adminIds, 'new_notification', {
+        this.gateway.sendToUsers(userIds, 'new_notification', {
             ...data,
             created_at: new Date().toISOString(),
         });
 
-        return savedNotifications;
+        return saved;
     }
+
+    async createAndNotifyToAdmin(data: Omit<CreateNotificationDto, 'user_id'>) {
+        const adminIds = await this.repo.getAdminId();
+
+        if (!adminIds.length) {
+            throw new NotFoundException('Không tìm thấy admin');
+        }
+
+        return this.createAndEmit(adminIds, data);
+    }
+
+    async notifyToFollowers(
+        companyId: number,
+        data: Omit<CreateNotificationDto, 'user_id'>,
+    ) {
+        const followerIds =
+            await this.followedCompanyRepo.getFollowerUserIdsByCompanyId(companyId);
+
+        return this.createAndEmit(followerIds, data);
+    }
+
     async getUserNotifications(userId: number, page: number, limit: number) {
         const notifications = await this.repo.findByUserId(userId, page, limit);
         return notifications;

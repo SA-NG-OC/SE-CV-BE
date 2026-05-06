@@ -6,9 +6,10 @@ import { NotificationsService } from './notifications.service';
 import { NotificationsRepository } from './repositories/notifications.repository';
 import { NotificationsListener } from './notification.listener';
 import { I_NOTIFICATIONS_REPOSITORY } from './notification.token';
+import { FollowedCompanyModule } from '../follow/follow.module';
 
 @Module({
-    imports: [AuthModule],
+    imports: [AuthModule, FollowedCompanyModule],
     providers: [NotificationsGateway, NotificationsService, NotificationsListener, {
         provide: I_NOTIFICATIONS_REPOSITORY,
         useClass: NotificationsRepository,

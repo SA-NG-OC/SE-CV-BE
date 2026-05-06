@@ -29,6 +29,7 @@ const GetStudentProfileDocs = () => applyDecorators(
                     gpa: 3.45,
                     isOpenToWork: true,
                     majorName: "Công nghệ thông tin",
+                    isActive: true,
                     skills: [
                         "React",
                         "Node.js",

@@ -98,6 +98,7 @@ export class StudentRepository implements IStudentRepository {
                     current_year: schema.students.current_year,
                     enrollment_year: schema.students.enrollment_year,
                     student_status: schema.students.student_status,
+                    is_active: schema.students.is_active,
                     total_applications: sql<number>`
                         coalesce(count(${schema.applications.application_id}), 0)
                     `.mapWith(Number),
@@ -227,6 +228,7 @@ export class StudentRepository implements IStudentRepository {
         }
 
         conditions.push(eq(schema.students.is_open_to_work, true));
+        conditions.push(eq(schema.students.is_active, true))
 
         const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
@@ -372,6 +374,18 @@ export class StudentRepository implements IStudentRepository {
             .update(schema.students)
             .set({ ...filtered, updated_at: new Date() })
             .where(eq(schema.students.user_id, userId));
+    }
+
+    async isActive(studentId: number, isActive: boolean) {
+        const userId = await this.findRawById(studentId);
+        if (userId === null)
+            return;
+        await this.db
+            .update(schema.users)
+            .set({
+                is_active: isActive
+            })
+            .where(eq(schema.users.user_id, userId))
     }
 
     async updateByStudentId(

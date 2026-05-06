@@ -15,6 +15,7 @@ export const GetCompanyCardAdminDocs = () => applyDecorators(
         enum: ['PENDING', 'APPROVED', 'REJECTED', 'RESTRICTED'],
         description: 'Lọc theo trạng thái công ty',
     }),
+    ApiQuery({ name: 'search', required: false, type: String, example: 'a' }),
     ApiOkResponse({
         description: 'Lấy danh sách công ty thành công',
         example: {

@@ -5,9 +5,10 @@ import { AuthModule } from 'src/modules/auth/auth.module';
 import { CloudinaryModule } from 'src/shared/cloudinary/cloudinary.module';
 import { CompanyRepository } from './repositories/company.repository';
 import { I_COMPANY_REPOSITORY } from './company.tokens';
+import { FollowedCompanyModule } from '../follow/follow.module';
 
 @Module({
-  imports: [AuthModule, CloudinaryModule],
+  imports: [AuthModule, CloudinaryModule, FollowedCompanyModule],
   controllers: [CompanyController],
   providers: [CompanyService, {
     provide: I_COMPANY_REPOSITORY,

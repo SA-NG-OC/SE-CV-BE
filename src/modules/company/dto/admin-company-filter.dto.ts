@@ -7,6 +7,8 @@ export const AdminCompanyFilterSchema = z.object({
     limit: z.coerce.number().min(1).max(100).default(10),
 
     status: z.enum(["PENDING", "APPROVED", "REJECTED", "RESTRICTED"]).optional(),
+
+    search: z.string().trim().min(1).optional(),
 });
 
 export class AdminCompanyFilterDto extends createZodDto(AdminCompanyFilterSchema) { }

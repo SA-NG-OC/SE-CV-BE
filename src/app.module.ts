@@ -21,6 +21,9 @@ import { CommentModule } from './modules/comment/comment.module';
 import { CategoryModule } from './modules/category/category.module';
 import { RecommendationsModule } from './modules/recommendations/recommendations.module';
 import { ChatModule } from './modules/chat/chat.module';
+import { StatisticsModule } from './modules/statistics/statistics.module';
+import { FollowedCompanyModule } from './modules/follow/follow.module';
+import { SavedJobsModule } from './modules/saved-jobs/saved-jobs.module';
 
 @Module({
   imports: [
@@ -62,6 +65,9 @@ import { ChatModule } from './modules/chat/chat.module';
     CategoryModule,
     RecommendationsModule,
     ChatModule,
+    StatisticsModule,
+    FollowedCompanyModule,
+    SavedJobsModule
   ],
   controllers: [AppController],
   providers: [AppService, EventsGateway, NotificationsGateway],

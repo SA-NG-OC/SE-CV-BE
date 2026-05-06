@@ -27,6 +27,7 @@ import { JobPostingDomain, JobPostingDomainError } from '../domain/job-posting.d
 import { JobPostingMapper } from '../domain/job-posting.mapper';
 import { ChangeJobPostingStatusDto } from '../dto/change-job-posting-status.dto';
 import { JobPostingFilterDto } from '../dto/filter-job-card.dto';
+import { JobPostingEntity } from '../domain/job-posting.entity';
 
 
 @Injectable()
@@ -125,7 +126,8 @@ export class JobPostingRepository implements IJobPostingRepository {
                 categoryId: schema.job_categories.category_id,
                 categoryName: schema.job_categories.category_name,
             })
-            .from(schema.job_categories) as Promise<CategoryItem[]>;
+            .from(schema.job_categories)
+            .where(eq(schema.job_categories.is_active, true)) as Promise<CategoryItem[]>;
     }
 
     async getJobSkills(): Promise<JobSkillItem[]> {
@@ -561,11 +563,89 @@ export class JobPostingRepository implements IJobPostingRepository {
         return new PaginationResponse(items, page, limit, Number(total));
     }
 
+    async findSavedJobsForStudent(
+        studentId: number,
+        dto: ListJobPostingDto,
+    ): Promise<PaginationResponse<StudentJobCard>> {
+        const { page, limit, search, city } = dto;
+        const offset = (page - 1) * limit;
+
+        const conditions: SQL[] = [
+            eq(schema.saved_jobs.student_id, studentId),
+        ];
+
+        if (search) {
+            conditions.push(
+                ilike(schema.job_postings.job_title, `%${search}%`)
+            );
+        }
+
+        if (city) {
+            conditions.push(
+                ilike(schema.job_postings.city, `%${city}%`)
+            );
+        }
+
+        const whereClause = and(...conditions);
+
+        const [rows, [{ total }]] = await Promise.all([
+            this.db
+                .select({
+                    job: schema.job_postings,
+                    company_name: schema.companies.company_name,
+                    logo_url: schema.companies.logo_url,
+                })
+                .from(schema.saved_jobs)
+                .innerJoin(
+                    schema.job_postings,
+                    eq(schema.saved_jobs.job_id, schema.job_postings.job_id),
+                )
+                .innerJoin(
+                    schema.companies,
+                    eq(schema.job_postings.company_id, schema.companies.company_id),
+                )
+                .where(whereClause)
+                .orderBy(sql`${schema.saved_jobs.created_at} desc`)
+                .limit(limit)
+                .offset(offset),
+
+            this.db
+                .select({ total: count() })
+                .from(schema.saved_jobs)
+                .innerJoin(
+                    schema.job_postings,
+                    eq(schema.saved_jobs.job_id, schema.job_postings.job_id),
+                )
+                .where(whereClause),
+        ]);
+
+        const jobIds = rows.map((r) => r.job.job_id);
+
+        const [skillMap, countMap] = await Promise.all([
+            this.fetchSkillMap(jobIds),
+            this.fetchApplicantCountMap(jobIds),
+        ]);
+
+        const items = rows.map((r) => {
+            const domain = JobPostingDomain.fromPersistence(r.job);
+
+            return JobPostingMapper.toStudentCard(domain, {
+                companyName: r.company_name,
+                logoUrl: r.logo_url ?? null,
+                skills: skillMap.get(r.job.job_id) ?? [],
+                applicantCount: countMap.get(r.job.job_id) ?? 0,
+                saved: true
+            });
+        });
+
+        return new PaginationResponse(items, page, limit, Number(total));
+    }
+
     async changeJobStatus(
         jobId: number,
         dto: ChangeJobPostingStatusDto,
         adminId: number,
-    ): Promise<number | null> {
+    ): Promise<JobPostingEntity | null> {
         const [existing] = await this.db
             .select()
             .from(schema.job_postings)
@@ -576,12 +656,13 @@ export class JobPostingRepository implements IJobPostingRepository {
         const domain = JobPostingDomain.fromPersistence(existing);
         domain.changeStatus(dto, adminId);
 
-        await this.db
+        const [updated] = await this.db
             .update(schema.job_postings)
             .set(domain.toUpdatePersistence())
-            .where(eq(schema.job_postings.job_id, jobId));
+            .where(eq(schema.job_postings.job_id, jobId))
+            .returning();
 
-        return jobId;
+        return updated;
     }
 
     async toggleActiveStatus(jobId: number, companyId: number): Promise<void> {
@@ -648,15 +729,12 @@ export class JobPostingRepository implements IJobPostingRepository {
         const [result] = await this.db
             .select({
                 total: count(),
-                // Đếm tin đang chờ duyệt
                 pending: sql<number>`count(*) filter (where ${schema.job_postings.status} = 'pending')`,
-                // Đếm tin đã duyệt trong ngày hôm nay
                 approvedToday: sql<number>`
                 count(*) filter (
                     where ${schema.job_postings.status} = 'approved' 
                     and ${schema.job_postings.approved_at} >= date_trunc('day', now())
                 )`,
-                // Đếm tin đã từ chối
                 rejected: sql<number>`count(*) filter (where ${schema.job_postings.status} = 'rejected')`,
             })
             .from(schema.job_postings);
