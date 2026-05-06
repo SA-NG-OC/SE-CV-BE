@@ -110,13 +110,14 @@ export class CompanyMapper {
     }
 
     // ── Raw DB row → CompanyUserCard ──────────────────────────────────────
-    static toUserCard(row: RawUserCard): CompanyUserCard {
+    static toUserCard(row: RawUserCard, isFollowed?: boolean): CompanyUserCard {
         return {
             companyId: row.company_id,
             companyName: row.company_name,
             logoUrl: row.logo_url,
             industry: row.industry,
             activeJobs: row.active_jobs,
+            followed: isFollowed ? isFollowed : false,
         };
     }
 

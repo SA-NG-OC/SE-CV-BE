@@ -17,6 +17,7 @@ import { UpdateCompanyDetailDto } from './dto/update-company-detail.dto';
 import { ChangeCompanyStatusDto } from './dto/change-company-status.dto';
 import { PaginationResponse } from 'src/common/types/pagination-response';
 import { I_FOLLOWED_COMPANY_REPOSITORY, type IFollowedCompanyRepository } from '../follow/repositories/follow-repository.interface';
+import { CompanyUserCard } from './interfaces/company.interface';
 
 @Injectable()
 export class CompanyService {
@@ -181,12 +182,32 @@ export class CompanyService {
             search?: string;
             location?: string;
             scale?: string;
-        }
-    ) {
+        },
+        studentId?: number,
+    ): Promise<PaginationResponse<CompanyUserCard>> {
+
         const { companies, totalItems } =
             await this.companyRepo.getCompanyListForUser(page, limit, filters);
 
-        return new PaginationResponse(companies, page, limit, totalItems);
+        if (!studentId) {
+            return new PaginationResponse(
+                companies.map(c => ({ ...c, followed: false })),
+                page,
+                limit,
+                totalItems,
+            );
+        }
+
+        const followedIds = await this.followRepo.getFollowedCompanyIds(studentId);
+
+        const followedSet = new Set(followedIds);
+
+        const data = companies.map(company => ({
+            ...company,
+            followed: followedSet.has(company.companyId),
+        }));
+
+        return new PaginationResponse(data, page, limit, totalItems);
     }
 
     async changeCompanyStatus(companyId: number, dto: ChangeCompanyStatusDto) {

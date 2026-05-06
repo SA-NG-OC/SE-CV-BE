@@ -432,7 +432,7 @@ export class CompanyRepository implements ICompanyRepository {
         ]);
 
         return {
-            companies: companies.map(CompanyMapper.toUserCard),
+            companies: companies.map((item) => CompanyMapper.toUserCard(item, false)),
             totalItems: Number(totalItems),
         };
     }
@@ -515,7 +515,7 @@ export class CompanyRepository implements ICompanyRepository {
         ]);
 
         return {
-            companies: companies.map(CompanyMapper.toUserCard),
+            companies: companies.map(item => CompanyMapper.toUserCard(item, true)),
             totalItems: Number(totalItems),
         };
     }

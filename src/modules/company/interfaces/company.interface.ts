@@ -66,6 +66,7 @@ export interface CompanyUserCard {
     logoUrl: string | null;
     industry: string | null;
     activeJobs: number;
+    followed: boolean;
 }
 
 export interface CompanyUserListResult {

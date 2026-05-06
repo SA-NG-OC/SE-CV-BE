@@ -46,7 +46,8 @@ export const GetCompanyCardsForUserDocs = () => applyDecorators(
                         companyName: "TechNova Solutions",
                         logoUrl: "https://res.cloudinary.com/deagejli9/image/upload/v1775297599/nest_uploads/lfhhh3dlsvqatwmyibt5.png",
                         industry: "Information Technology",
-                        activeJobs: 0
+                        activeJobs: 0,
+                        followed: true,
                     }
                 ],
                 meta: {

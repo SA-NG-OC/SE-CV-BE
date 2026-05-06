@@ -8,4 +8,5 @@ export interface IFollowedCompanyRepository {
     unfollow(studentId: number, companyId: number): Promise<void>;
     getFollowerUserIdsByCompanyId(companyId: number): Promise<number[]>;
     checkFollowed(userId: number, companyId: number): Promise<boolean>;
+    getFollowedCompanyIds(studentId: number): Promise<number[]>
 }

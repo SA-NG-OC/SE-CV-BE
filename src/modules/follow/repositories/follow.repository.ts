@@ -75,4 +75,15 @@ export class FollowedCompanyRepository
 
         return Boolean(result.rows[0].is_followed);
     }
+
+    async getFollowedCompanyIds(studentId: number): Promise<number[]> {
+        const result = await this.db
+            .select({
+                company_id: schema.followed_companies.company_id,
+            })
+            .from(schema.followed_companies)
+            .where(eq(schema.followed_companies.student_id, studentId));
+
+        return result.map(r => r.company_id);
+    }
 }
