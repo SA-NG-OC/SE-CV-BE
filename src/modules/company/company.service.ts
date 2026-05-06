@@ -69,7 +69,7 @@ export class CompanyService {
         if (!company) throw new NotFoundException('Không tìm thấy công ty.');
         return {
             ...company,
-            follwed: checkFollowed
+            followed: checkFollowed
         };
     }
 

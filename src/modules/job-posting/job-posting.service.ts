@@ -96,10 +96,18 @@ export class JobPostingService {
     jobId: number,
     viewer: RoleName,
     companyId?: number,
+    studentId?: number
   ): Promise<JobPostingResponse> {
     const job = await this.jobPostingRepository.findJobById(jobId, viewer, companyId);
+    let checkSaved: boolean = false;
+    if (studentId) {
+      checkSaved = await this.savedJobsRepository.checkSaved(studentId, jobId);
+    }
     if (!job) {
       throw new NotFoundException('Không tìm thấy tin tuyển dụng.');
+    }
+    if (checkSaved) {
+      job.saved = true;
     }
     return job;
   }

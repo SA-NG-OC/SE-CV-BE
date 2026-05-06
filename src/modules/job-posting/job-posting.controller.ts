@@ -156,7 +156,7 @@ export class JobPostingController {
     @Req() req,
   ): Promise<ResponseSuccess<JobPostingResponse>> {
     const role: RoleName = req.user.roleName;
-
+    const studentId = req.user.studentId;
     const companyId =
       role === RoleName.COMPANY ? req.user.companyId : undefined;
 
@@ -164,6 +164,7 @@ export class JobPostingController {
       jobId,
       role,
       companyId,
+      studentId
     );
 
     return new ResponseSuccess('Lấy thông tin thành công', job);

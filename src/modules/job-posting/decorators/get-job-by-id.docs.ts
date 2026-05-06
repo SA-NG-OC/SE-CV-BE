@@ -48,6 +48,7 @@ export const GetJobByIdDocs = () => applyDecorators(
                     { skillId: 3, skillName: "TypeScript" }
                 ],
                 tag: "Hidden",
+                saved: true,
             }
         },
     }),
