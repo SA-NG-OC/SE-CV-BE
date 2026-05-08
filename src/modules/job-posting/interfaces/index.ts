@@ -71,6 +71,7 @@ export interface JobPostingResponse {
     adminNote: string | null;
     requiredSkills: JobSkillItem[];
     tag: JobTag;
+    saved: boolean;
 }
 
 // Category

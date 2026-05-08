@@ -174,6 +174,7 @@ export class JobPostingMapper {
             requiredSkills: extra.requiredSkills,
             adminNote: domain.adminNote,
             tag,
+            saved: false,
         };
     }
 }
