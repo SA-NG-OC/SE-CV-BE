@@ -11,6 +11,60 @@ export function GetApplicationsPerMonthDocs() {
         }),
         ApiOkResponse({
             description: 'Lấy số lượng application theo tháng thành công',
+            example: {
+                success: true,
+                message: "Lấy số lượng application theo tháng thành công",
+                data: [
+                    {
+                        month: "2025-06",
+                        totalApplications: 0,
+                    },
+                    {
+                        month: "2025-07",
+                        totalApplications: 0,
+                    },
+                    {
+                        month: "2025-08",
+                        totalApplications: 0,
+                    },
+                    {
+                        month: "2025-09",
+                        totalApplications: 0,
+                    },
+                    {
+                        month: "2025-10",
+                        totalApplications: 0,
+                    },
+                    {
+                        month: "2025-11",
+                        totalApplications: 0,
+                    },
+                    {
+                        month: "2025-12",
+                        totalApplications: 0,
+                    },
+                    {
+                        month: "2026-01",
+                        totalApplications: 0,
+                    },
+                    {
+                        month: "2026-02",
+                        totalApplications: 0,
+                    },
+                    {
+                        month: "2026-03",
+                        totalApplications: 0,
+                    },
+                    {
+                        month: "2026-04",
+                        totalApplications: 12,
+                    },
+                    {
+                        month: "2026-05",
+                        totalApplications: 0,
+                    },
+                ],
+            }
         }),
     );
 }

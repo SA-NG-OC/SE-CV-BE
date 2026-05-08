@@ -11,6 +11,40 @@ export function GetApplications7DaysDocs() {
         }),
         ApiOkResponse({
             description: 'Lấy thống kê ứng tuyển 7 ngày thành công',
+            example: {
+                success: true,
+                message: "Lấy thống kê ứng tuyển 7 ngày thành công",
+                data: [
+                    {
+                        date: "2026-05-02",
+                        count: 0,
+                    },
+                    {
+                        date: "2026-05-03",
+                        count: 0,
+                    },
+                    {
+                        date: "2026-05-04",
+                        count: 0,
+                    },
+                    {
+                        date: "2026-05-05",
+                        count: 0,
+                    },
+                    {
+                        date: "2026-05-06",
+                        count: 0,
+                    },
+                    {
+                        date: "2026-05-07",
+                        count: 0,
+                    },
+                    {
+                        date: "2026-05-08",
+                        count: 0,
+                    },
+                ],
+            }
         }),
     );
 }

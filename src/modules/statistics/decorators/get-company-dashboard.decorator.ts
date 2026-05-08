@@ -11,6 +11,16 @@ export function GetCompanyDashboardDocs() {
         }),
         ApiOkResponse({
             description: 'Lấy dashboard công ty thành công',
+            example: {
+                success: true,
+                message: "Lấy thống kê thành công",
+                data: {
+                    totalJobs: 0,
+                    totalApplications: 0,
+                    totalReviews: 0,
+                    totalHired: 0,
+                },
+            }
         }),
     );
 }

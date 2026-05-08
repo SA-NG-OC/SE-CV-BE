@@ -27,7 +27,6 @@ export class StatisticsRepository implements IStatisticsRepository {
                 SELECT COUNT(*)
                 FROM ${schema.job_postings}
                 WHERE company_id = ${companyId}
-                AND date_trunc('month', created_at) = date_trunc('month', CURRENT_DATE)
             ) AS total_jobs,
 
             -- APPLICATIONS
@@ -36,7 +35,7 @@ export class StatisticsRepository implements IStatisticsRepository {
                 FROM ${schema.applications} a
                 JOIN ${schema.job_postings} jp ON a.job_id = jp.job_id
                 WHERE jp.company_id = ${companyId}
-                AND date_trunc('month', a.created_at) = date_trunc('month', CURRENT_DATE)
+                
             ) AS total_applications,
 
             -- REVIEWS
@@ -54,7 +53,7 @@ export class StatisticsRepository implements IStatisticsRepository {
                 JOIN ${schema.job_postings} jp ON a.job_id = jp.job_id
                 WHERE jp.company_id = ${companyId}
                 AND a.status = 'passed'
-                AND date_trunc('month', a.created_at) = date_trunc('month', CURRENT_DATE)
+                
             ) AS total_hired
     `);
 
@@ -239,7 +238,7 @@ export class StatisticsRepository implements IStatisticsRepository {
       TO_CHAR(m.month, 'YYYY-MM') AS month,
       COALESCE(
         ROUND(
-          COUNT(a.application_id) FILTER (WHERE a.status = 'approved')::decimal
+          COUNT(a.application_id) FILTER (WHERE a.status = 'passed')::decimal
           / NULLIF(COUNT(a.application_id), 0) * 100,
           2
         ),

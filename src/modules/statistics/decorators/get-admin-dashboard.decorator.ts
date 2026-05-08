@@ -11,6 +11,16 @@ export function GetAdminDashboardDocs() {
         }),
         ApiOkResponse({
             description: 'Lấy dashboard admin thành công',
+            example: {
+                success: true,
+                message: "Lấy thống kê admin thành công",
+                data: {
+                    totalCompanies: 6,
+                    totalStudents: 10,
+                    totalApplications: 12,
+                    totalJobPostings: 21,
+                },
+            }
         }),
     );
 }
