@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UsePipes, Res, Request, UnauthorizedException, Get, Query, Req } from '@nestjs/common';
+import { Body, Controller, Post, UsePipes, Res, Request, UnauthorizedException, Get, Query, Req, Delete, Param, ParseIntPipe } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation.pipe';
 import { loginSchema } from './dto/login.dto';
@@ -28,6 +28,10 @@ import GoogleAuthDocs from './decorators/google-auth.decorator';
 import GoogleCallbackDocs from './decorators/google-callback.decorator';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import GetMeDocs from './decorators/get-me.decorator';
+import { RolesGuard } from './guards/roles.guard';
+import { Role } from 'src/common/types/role.enum';
+import { Roles } from './decorators/roles.decorator';
+import { CreateAdminDocs, DeleteAdminDocs, GetAllAdminsDocs } from './decorators/admin.decorators';
 
 @Controller('auth')
 @ApiTags('Auth')
@@ -131,7 +135,7 @@ export class AuthController {
     @GoogleAuthDocs()
     @UseGuards(GoogleOAuthGuard)
     async googleAuth() {
-        // Guard tự redirect sang Google, không cần xử lý gì ở đây
+        // Guard tự redirect sang Google
     }
 
     @Get('google/callback')
@@ -147,4 +151,39 @@ export class AuthController {
         );
     }
 
+    @Get('admins')
+    @GetAllAdminsDocs()
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
+    async getAllAdmins() {
+        const data = await this.authService.getAllAdmins();
+        return new ResponseSuccess('Lấy danh sách admin thành công', data);
+    }
+
+    @Post('admins')
+    @CreateAdminDocs()
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
+    async createAdmin(
+        @Body() body: RegisterDto,
+    ) {
+        return await this.authService.createAdmin(
+            body.email,
+            body.password,
+        );
+    }
+
+    @Delete('admins/:userId')
+    @DeleteAdminDocs()
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
+    async deleteAdmin(
+        @Param('userId', ParseIntPipe) userId: number,
+        @Request() req,
+    ) {
+        return await this.authService.deleteAdmin(
+            req.user.userId,
+            userId,
+        );
+    }
 }

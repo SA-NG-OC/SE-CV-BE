@@ -5,7 +5,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { LoginDto } from './dto/login.dto';
 import { DATABASE_CONNECTION } from '../../database/database.module';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, desc } from 'drizzle-orm';
 import { Redis } from 'ioredis';
 import { RegisterDto } from './dto/register.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -444,4 +444,120 @@ export class AuthService {
             refresh_token: refreshToken
         }
     }
+
+    // ADMIN
+    async getAllAdmins(): Promise<
+        {
+            id: number;
+            email: string;
+            roleName: string;
+            createdAt: Date | null;
+            lastLogin: Date | null;
+        }[]
+    > {
+        const admins = await this.db
+            .select({
+                id: schema.users.user_id,
+                email: schema.users.email,
+                roleName: schema.roles.role_name,
+                createdAt: schema.users.created_at,
+                lastLogin: schema.users.last_login,
+            })
+            .from(schema.users)
+            .innerJoin(
+                schema.roles,
+                eq(schema.users.role_id, schema.roles.role_id),
+            )
+            .where(eq(schema.roles.role_name, 'admin'))
+            .orderBy(desc(schema.users.created_at));
+
+        return admins;
+    }
+
+    async createAdmin(
+        email: string,
+        password: string,
+    ): Promise<{ message: string }> {
+        // 1. Kiểm tra email đã tồn tại chưa
+        const [existingUser] = await this.db
+            .select()
+            .from(schema.users)
+            .where(eq(schema.users.email, email));
+
+        if (existingUser) {
+            throw new BadRequestException('Email đã tồn tại');
+        }
+
+        // 2. Lấy role admin
+        const [adminRole] = await this.db
+            .select()
+            .from(schema.roles)
+            .where(eq(schema.roles.role_name, 'admin'));
+
+        if (!adminRole) {
+            throw new NotFoundException('Không tìm thấy role admin');
+        }
+
+        // 3. Hash password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // 4. Tạo admin mới
+        await this.db.insert(schema.users).values({
+            email,
+            password_hash: hashedPassword,
+            role_id: adminRole.role_id,
+            created_at: new Date(),
+        });
+
+        return {
+            message: 'Tạo admin thành công',
+        };
+    }
+
+    async deleteAdmin(
+        currentUserId: number,
+        targetUserId: number,
+    ): Promise<{ message: string }> {
+        // 1. Không cho tự xóa chính mình
+        if (currentUserId === targetUserId) {
+            throw new BadRequestException(
+                'Không thể xóa chính tài khoản của mình',
+            );
+        }
+
+        // 2. Kiểm tra admin tồn tại
+        const [admin] = await this.db
+            .select({
+                userId: schema.users.user_id,
+                roleName: schema.roles.role_name,
+            })
+            .from(schema.users)
+            .innerJoin(
+                schema.roles,
+                eq(schema.users.role_id, schema.roles.role_id),
+            )
+            .where(eq(schema.users.user_id, targetUserId));
+
+        if (!admin) {
+            throw new NotFoundException('Admin không tồn tại');
+        }
+
+        // 3. Kiểm tra đúng role admin
+        if (admin.roleName !== 'admin') {
+            throw new BadRequestException('Người dùng này không phải admin');
+        }
+
+        // 4. Xóa admin
+        await this.db
+            .delete(schema.users)
+            .where(eq(schema.users.user_id, targetUserId));
+
+        return {
+            message: 'Xóa admin thành công',
+        };
+    }
+
+
 }
+
+
