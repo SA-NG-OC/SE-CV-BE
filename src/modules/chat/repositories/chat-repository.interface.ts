@@ -15,6 +15,7 @@ export interface IConversationListRaw {
     is_hidden: boolean;
     is_blocked: boolean;
     last_message_content: string | null;
+    last_message_has_images: boolean;
     last_message_sender_id: number | null;
     last_message_created_at: Date | null;
     partner_id: number;

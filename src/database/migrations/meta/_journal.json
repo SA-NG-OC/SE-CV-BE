@@ -183,6 +183,13 @@
       "when": 1777917916646,
       "tag": "0025_slimy_dagger",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1779589069947,
+      "tag": "0026_sticky_talos",
+      "breakpoints": true
     }
   ]
 }

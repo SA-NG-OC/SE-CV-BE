@@ -10,11 +10,13 @@ export class ChatMapper {
             messageId: raw.message_id,
             conversationId: raw.conversation_id,
             senderId: raw.sender_id,
-            content: raw.content,
+            content: raw.content || null,
+            imageUrls: raw.image_urls ?? [],
             createdAt: raw.created_at,
             isMine: raw.sender_id === requesterId,
         };
     }
+
 
     static toConversationListItemView(raw: {
         conversation_id: number;
@@ -22,6 +24,7 @@ export class ChatMapper {
         created_at: Date | null;
         unread_count: number;
         last_message_content: string | null;
+        last_message_has_images: boolean;
         last_message_sender_id: number | null;
         last_message_created_at: Date | null;
         partner_id: number;
@@ -33,9 +36,10 @@ export class ChatMapper {
             lastMessageAt: raw.last_message_at,
             createdAt: raw.created_at,
             unreadCount: raw.unread_count,
-            lastMessage: raw.last_message_content
+            lastMessage: raw.last_message_content || raw.last_message_has_images
                 ? {
                     content: raw.last_message_content,
+                    hasImages: raw.last_message_has_images,
                     senderId: raw.last_message_sender_id!,
                     createdAt: raw.last_message_created_at!,
                 }

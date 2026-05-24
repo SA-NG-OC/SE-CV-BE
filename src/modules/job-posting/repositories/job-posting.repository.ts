@@ -1,7 +1,26 @@
-import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+    BadRequestException,
+    Inject,
+    Injectable,
+    NotFoundException,
+} from '@nestjs/common';
 import { DATABASE_CONNECTION } from 'src/database/database.module';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { and, count, eq, gt, gte, ilike, inArray, isNull, lt, ne, or, sql, SQL } from 'drizzle-orm';
+import {
+    and,
+    count,
+    eq,
+    gt,
+    gte,
+    ilike,
+    inArray,
+    isNull,
+    lt,
+    ne,
+    or,
+    sql,
+    SQL,
+} from 'drizzle-orm';
 import * as schema from 'src/database/schema';
 
 import { IJobPostingRepository } from './job-posting-repository.interface';
@@ -11,15 +30,11 @@ import { ListJobPostingDto } from '../dto/list-job-posting.dto';
 import { RoleName } from 'src/common/types/role.enum';
 import { PaginationResponse } from 'src/common/types/pagination-response';
 import {
-    JobPostingResponse,
-    StudentJobCard,
-    CompanyJobCard,
-    AdminJobCard,
-    UpdateJobResponse,
     CategoryItem,
     JobSkillItem,
-    ProfileJobCard,
     JobList,
+    ProfileJobCard,
+    UpdateJobResponse,
     JobPostingStats,
     AdminJobStats,
 } from '../interfaces';
@@ -28,7 +43,7 @@ import { JobPostingMapper } from '../domain/job-posting.mapper';
 import { ChangeJobPostingStatusDto } from '../dto/change-job-posting-status.dto';
 import { JobPostingFilterDto } from '../dto/filter-job-card.dto';
 import { JobPostingEntity } from '../domain/job-posting.entity';
-
+import { RawJobPage, RawJobWithMeta } from '../types/job-posting.raw';
 
 @Injectable()
 export class JobPostingRepository implements IJobPostingRepository {
@@ -37,15 +52,8 @@ export class JobPostingRepository implements IJobPostingRepository {
         private readonly db: NodePgDatabase<typeof schema>,
     ) { }
 
-    public async checkCompany(companyId: number) {
-        const [data] = await this.db.select({ id: schema.companies.company_id }).from(schema.companies).where(eq(schema.companies.company_id, companyId));
-        if (!data)
-            throw new NotFoundException('Không tìm thấy công ty');
-        return true;
-    }
-
     // =========================================================================
-    // PRIVATE HELPERS — Fetch dữ liệu phụ (skills, applicant counts)
+    // PRIVATE HELPERS
     // =========================================================================
 
     private async fetchSkillMap(jobIds: number[]): Promise<Map<number, JobSkillItem[]>> {
@@ -89,6 +97,16 @@ export class JobPostingRepository implements IJobPostingRepository {
         return map;
     }
 
+    private async fetchSkillAndCountMaps(
+        jobIds: number[],
+    ): Promise<[Map<number, JobSkillItem[]>, Map<number, number>]> {
+        if (!jobIds.length) return [new Map(), new Map()];
+        return Promise.all([
+            this.fetchSkillMap(jobIds),
+            this.fetchApplicantCountMap(jobIds),
+        ]);
+    }
+
     private async saveSkills(
         tx: Parameters<Parameters<typeof this.db.transaction>[0]>[0],
         jobId: number,
@@ -108,8 +126,17 @@ export class JobPostingRepository implements IJobPostingRepository {
     }
 
     // =========================================================================
-    // LOOKUP QUERIES
+    // LOOKUP
     // =========================================================================
+
+    async checkCompany(companyId: number): Promise<true> {
+        const [data] = await this.db
+            .select({ id: schema.companies.company_id })
+            .from(schema.companies)
+            .where(eq(schema.companies.company_id, companyId));
+        if (!data) throw new NotFoundException('Không tìm thấy công ty');
+        return true;
+    }
 
     async isCompanyActive(companyId: number): Promise<boolean> {
         const [result] = await this.db
@@ -140,14 +167,10 @@ export class JobPostingRepository implements IJobPostingRepository {
     }
 
     // =========================================================================
-    // CREATE
-    // Domain.create() đã validate — repo chỉ lưu xuống DB
+    // WRITES
     // =========================================================================
 
-    async createJobPosting(
-        companyId: number,
-        dto: CreateJobPostingDto,
-    ): Promise<number | null> {
+    async createJobPosting(companyId: number, dto: CreateJobPostingDto): Promise<number> {
         const domain = JobPostingDomain.create(dto, companyId);
 
         return this.db.transaction(async (tx) => {
@@ -161,11 +184,6 @@ export class JobPostingRepository implements IJobPostingRepository {
             return newJob.job_id;
         });
     }
-
-    // =========================================================================
-    // UPDATE
-    // Load domain từ DB → gọi domain.edit() để validate + mutate → lưu lại
-    // =========================================================================
 
     async updateJobPosting(
         jobId: number,
@@ -210,16 +228,73 @@ export class JobPostingRepository implements IJobPostingRepository {
         });
     }
 
+    async changeJobStatus(
+        jobId: number,
+        dto: ChangeJobPostingStatusDto,
+        adminId: number,
+    ): Promise<JobPostingEntity | null> {
+        const [existing] = await this.db
+            .select()
+            .from(schema.job_postings)
+            .where(eq(schema.job_postings.job_id, jobId))
+            .limit(1);
+
+        if (!existing) return null;
+
+        const domain = JobPostingDomain.fromPersistence(existing);
+        domain.changeStatus(dto, adminId);
+
+        const [updated] = await this.db
+            .update(schema.job_postings)
+            .set(domain.toUpdatePersistence())
+            .where(eq(schema.job_postings.job_id, jobId))
+            .returning();
+
+        return updated;
+    }
+
+    async toggleActiveStatus(jobId: number, companyId: number): Promise<void> {
+        const [existing] = await this.db
+            .select({
+                isActive: schema.job_postings.is_active,
+                status: schema.job_postings.status,
+            })
+            .from(schema.job_postings)
+            .where(
+                and(
+                    eq(schema.job_postings.job_id, jobId),
+                    eq(schema.job_postings.company_id, companyId),
+                ),
+            )
+            .limit(1);
+
+        if (!existing) {
+            throw new NotFoundException(
+                'Không tìm thấy bài đăng tuyển dụng hoặc bạn không có quyền chỉnh sửa.',
+            );
+        }
+        if (existing.status !== 'approved') {
+            throw new BadRequestException(
+                'Không thể ẩn/ bỏ ẩn tin tuyển dụng chưa được duyệt hoặc bị hạn chế',
+            );
+        }
+
+        await this.db
+            .update(schema.job_postings)
+            .set({ is_active: !existing.isActive })
+            .where(eq(schema.job_postings.job_id, jobId));
+    }
+
     // =========================================================================
-    // FIND ONE
+    // FIND ONE — trả RawJobWithMeta, KHÔNG gọi mapper
     // =========================================================================
 
-    async findJobById(
+    async findJobDetailById(
         jobId: number,
         viewer: RoleName,
         companyId?: number,
-    ): Promise<JobPostingResponse | null> {
-        const conditions = [eq(schema.job_postings.job_id, jobId)];
+    ): Promise<RawJobWithMeta | null> {
+        const conditions: SQL[] = [eq(schema.job_postings.job_id, jobId)];
 
         if (viewer === RoleName.STUDENT) {
             conditions.push(eq(schema.job_postings.status, 'approved'));
@@ -240,14 +315,11 @@ export class JobPostingRepository implements IJobPostingRepository {
 
         if (!row) return null;
 
-        const domain = JobPostingDomain.fromPersistence(row.job_postings);
-
         const [[{ applicantCount }], skillRows] = await Promise.all([
             this.db
                 .select({ applicantCount: count() })
                 .from(schema.applications)
                 .where(eq(schema.applications.job_id, jobId)),
-
             this.db
                 .select({
                     skillId: schema.job_required_skills.skill_id,
@@ -261,22 +333,27 @@ export class JobPostingRepository implements IJobPostingRepository {
                 .where(eq(schema.job_required_skills.job_id, jobId)),
         ]);
 
-        return JobPostingMapper.toResponse(domain, {
-            applicantCount,
-            requiredSkills: skillRows.map((s) => ({
-                skillId: s.skillId!,
-                skillName: s.skillName,
-            })),
+        const skills: JobSkillItem[] = skillRows.map((s) => ({
+            skillId: s.skillId!,
+            skillName: s.skillName,
+        }));
+
+        return {
+            domain: JobPostingDomain.fromPersistence(row.job_postings),
             companyName: row.companies.company_name,
-            logoUrl: row.companies.logo_url,
-        });
+            logoUrl: row.companies.logo_url ?? null,
+            applicantCount,
+            skills,
+        };
     }
 
-    async findById(jobId: number): Promise<{ companyId: number | null; applicationDeadline: string | null } | null> {
+    async findById(
+        jobId: number,
+    ): Promise<{ companyId: number | null; applicationDeadline: string | null } | null> {
         const [data] = await this.db
             .select({
                 companyId: schema.job_postings.company_id,
-                applicationDeadline: schema.job_postings.application_deadline
+                applicationDeadline: schema.job_postings.application_deadline,
             })
             .from(schema.job_postings)
             .where(eq(schema.job_postings.job_id, jobId));
@@ -284,51 +361,78 @@ export class JobPostingRepository implements IJobPostingRepository {
         return data ?? null;
     }
 
+    // =========================================================================
+    // FIND LIST — ProfileJobCard (mapper đơn giản, không cần extra data)
+    // =========================================================================
+
     async findByCompanyId(
         companyId: number,
         page: number,
         limit: number,
-        roleName: RoleName
+        roleName: RoleName,
     ): Promise<PaginationResponse<ProfileJobCard>> {
-
         const offset = (page - 1) * limit;
-        const condition: SQL[] = [];
-        condition.push(eq(schema.job_postings.company_id, companyId));
+
+        const conditions: SQL[] = [eq(schema.job_postings.company_id, companyId)];
         if (roleName === RoleName.STUDENT) {
-            condition.push(eq(schema.job_postings.status, 'approved'));
-            condition.push(eq(schema.job_postings.is_active, true));
+            conditions.push(eq(schema.job_postings.status, 'approved'));
+            conditions.push(eq(schema.job_postings.is_active, true));
         }
+        const whereClause = and(...conditions);
 
-        const conditions = and(...condition);
-
-        const [raw, totalResult] = await Promise.all([
-            // Query data
+        const [rows, totalResult] = await Promise.all([
             this.db
                 .select()
                 .from(schema.job_postings)
-                .where(conditions)
+                .where(whereClause)
                 .orderBy(sql`${schema.job_postings.created_at} desc`)
                 .limit(limit)
                 .offset(offset),
-
-            // Query total count
             this.db
                 .select({ count: sql<number>`count(*)::int` })
                 .from(schema.job_postings)
-                .where(conditions)
+                .where(whereClause),
         ]);
 
         const totalItems = totalResult[0]?.count ?? 0;
-
-        const domain = raw.map((raw) => JobPostingDomain.fromPersistence(raw));
-        const data = domain.map((item) => JobPostingMapper.toProfileJobCard(item));
+        const data = rows
+            .map((r) => JobPostingDomain.fromPersistence(r))
+            .map((d) => JobPostingMapper.toProfileJobCard(d));
 
         return new PaginationResponse(data, page, limit, totalItems);
     }
 
-    async findAllForAdmin(
-        dto: ListJobPostingDto,
-    ): Promise<PaginationResponse<AdminJobCard>> {
+    async findAllJobList(
+        companyId: number,
+        page: number,
+        limit: number,
+    ): Promise<PaginationResponse<JobList>> {
+        const offset = (page - 1) * limit;
+
+        const [total, rows] = await Promise.all([
+            this.db
+                .select({ total: count() })
+                .from(schema.job_postings)
+                .where(eq(schema.job_postings.company_id, companyId)),
+            this.db
+                .select({
+                    jobId: schema.job_postings.job_id,
+                    jobTitle: schema.job_postings.job_title,
+                })
+                .from(schema.job_postings)
+                .where(eq(schema.job_postings.company_id, companyId))
+                .limit(limit)
+                .offset(offset),
+        ]);
+
+        return new PaginationResponse(rows, page, limit, Number(total[0]?.total ?? 0));
+    }
+
+    // =========================================================================
+    // FIND RAW — Admin / Company / Student / SavedJobs
+    // =========================================================================
+
+    async findRawForAdmin(dto: ListJobPostingDto): Promise<RawJobPage<RawJobWithMeta>> {
         const { page, limit, search, status, city } = dto;
         const offset = (page - 1) * limit;
 
@@ -336,7 +440,6 @@ export class JobPostingRepository implements IJobPostingRepository {
         if (search) conditions.push(ilike(schema.job_postings.job_title, `%${search}%`));
         if (status) conditions.push(eq(schema.job_postings.status, status));
         if (city) conditions.push(ilike(schema.job_postings.city, `%${city}%`));
-
         const whereClause = conditions.length ? and(...conditions) : undefined;
 
         const [rows, [{ total }]] = await Promise.all([
@@ -355,96 +458,67 @@ export class JobPostingRepository implements IJobPostingRepository {
                 .orderBy(sql`${schema.job_postings.created_at} desc`)
                 .limit(limit)
                 .offset(offset),
-
             this.db
                 .select({ total: count() })
                 .from(schema.job_postings)
                 .where(whereClause),
         ]);
 
-        const items = rows.map((r) => {
-            const domain = JobPostingDomain.fromPersistence(r.job);
-            return JobPostingMapper.toAdminCard(domain, {
+        const jobIds = rows.map((r) => r.job.job_id);
+        const [skillMap, countMap] = await this.fetchSkillAndCountMaps(jobIds);
+
+        return {
+            items: rows.map((r) => ({
+                domain: JobPostingDomain.fromPersistence(r.job),
                 companyName: r.company_name,
                 logoUrl: r.logo_url ?? null,
-            });
-        });
-
-        return new PaginationResponse(items, page, limit, Number(total));
+                applicantCount: countMap.get(r.job.job_id) ?? 0,
+                skills: skillMap.get(r.job.job_id) ?? [],
+            })),
+            total: Number(total),
+            page,
+            limit,
+        };
     }
 
-    // =========================================================================
-    // FIND ALL — COMPANY
-    // =========================================================================
-
-    async findAllJobList(companyId: number, page: number, limit: number): Promise<PaginationResponse<JobList>> {
-        const offset = (page - 1) * limit;
-        const [total, rows] = await Promise.all([
-            this.db.select({ total: count() })
-                .from(schema.job_postings)
-                .where(eq(schema.job_postings.company_id, companyId)),
-
-            this.db
-                .select({
-                    jobId: schema.job_postings.job_id,
-                    jobTitle: schema.job_postings.job_title,
-                })
-                .from(schema.job_postings)
-                .where(eq(schema.job_postings.company_id, companyId))
-                .limit(limit)
-                .offset(offset),
-        ]);
-
-        const totalResult = Number(total[0]?.total ?? 0);
-        return new PaginationResponse(rows, page, limit, totalResult);
-
-    }
-
-    async findAllForCompany(
+    async findRawForCompany(
         companyId: number,
         dto: JobPostingFilterDto,
-    ): Promise<PaginationResponse<CompanyJobCard>> {
+    ): Promise<RawJobPage<RawJobWithMeta>> {
         const { page, limit, search, tag, city } = dto;
         const offset = (page - 1) * limit;
 
         const conditions: SQL[] = [eq(schema.job_postings.company_id, companyId)];
 
-        if (search) {
-            conditions.push(ilike(schema.job_postings.job_title, `%${search}%`));
-        }
-        if (city) {
-            conditions.push(ilike(schema.job_postings.city, `%${city}%`));
-        }
+        if (search) conditions.push(ilike(schema.job_postings.job_title, `%${search}%`));
+        if (city) conditions.push(ilike(schema.job_postings.city, `%${city}%`));
 
         if (tag) {
             switch (tag) {
                 case 'Pending':
                     conditions.push(ne(schema.job_postings.status, 'approved'));
                     break;
-
                 case 'Hidden':
                     conditions.push(
                         eq(schema.job_postings.status, 'approved'),
-                        eq(schema.job_postings.is_active, false)
+                        eq(schema.job_postings.is_active, false),
                     );
                     break;
-
                 case 'Closed':
                     conditions.push(
                         eq(schema.job_postings.status, 'approved'),
                         eq(schema.job_postings.is_active, true),
-                        lt(schema.job_postings.application_deadline, sql`now()`)
+                        lt(schema.job_postings.application_deadline, sql`now()`),
                     );
                     break;
-
                 case 'Active':
                     conditions.push(
                         eq(schema.job_postings.status, 'approved'),
                         eq(schema.job_postings.is_active, true),
                         or(
                             gt(schema.job_postings.application_deadline, sql`now()`),
-                            isNull(schema.job_postings.application_deadline)
-                        ) as SQL
+                            isNull(schema.job_postings.application_deadline),
+                        ) as SQL,
                     );
                     break;
             }
@@ -468,7 +542,6 @@ export class JobPostingRepository implements IJobPostingRepository {
                 .orderBy(sql`${schema.job_postings.created_at} desc`)
                 .limit(limit)
                 .offset(offset),
-
             this.db
                 .select({ total: count() })
                 .from(schema.job_postings)
@@ -476,49 +549,33 @@ export class JobPostingRepository implements IJobPostingRepository {
         ]);
 
         const jobIds = rows.map((r) => r.job.job_id);
+        const [skillMap, countMap] = await this.fetchSkillAndCountMaps(jobIds);
 
-
-        let skillMap = new Map<number, JobSkillItem[]>();
-        let countMap = new Map<number, number>();
-
-        if (jobIds.length > 0) {
-            const [sMap, cMap] = await Promise.all([
-                this.fetchSkillMap(jobIds),
-                this.fetchApplicantCountMap(jobIds),
-            ]);
-            skillMap = sMap;
-            countMap = cMap;
-        }
-
-        const items = rows.map((r) => {
-            const domain = JobPostingDomain.fromPersistence(r.job);
-            return JobPostingMapper.toCompanyCard(domain, {
+        return {
+            items: rows.map((r) => ({
+                domain: JobPostingDomain.fromPersistence(r.job),
                 companyName: r.company_name,
                 logoUrl: r.logo_url ?? null,
-                skills: skillMap.get(r.job.job_id) ?? [],
                 applicantCount: countMap.get(r.job.job_id) ?? 0,
-            });
-        });
-
-        return new PaginationResponse(items, page, limit, Number(total));
+                skills: skillMap.get(r.job.job_id) ?? [],
+            })),
+            total: Number(total),
+            page,
+            limit,
+        };
     }
 
-    // =========================================================================
-    // FIND ALL — STUDENT
-    // =========================================================================
-
-    async findAllForStudent(
-        dto: ListJobPostingDto,
-    ): Promise<PaginationResponse<StudentJobCard>> {
+    async findRawForStudent(dto: ListJobPostingDto): Promise<RawJobPage<RawJobWithMeta>> {
         const { page, limit, search, city } = dto;
         const offset = (page - 1) * limit;
 
-        const conditions = [eq(schema.job_postings.status, 'approved')];
-        conditions.push(eq(schema.job_postings.is_active, true));
-        conditions.push(gte(schema.job_postings.application_deadline, sql`CURRENT_DATE`));
+        const conditions: SQL[] = [
+            eq(schema.job_postings.status, 'approved'),
+            eq(schema.job_postings.is_active, true),
+            gte(schema.job_postings.application_deadline, sql`CURRENT_DATE`),
+        ];
         if (search) conditions.push(ilike(schema.job_postings.job_title, `%${search}%`));
         if (city) conditions.push(ilike(schema.job_postings.city, `%${city}%`));
-
         const whereClause = and(...conditions);
 
         const [rows, [{ total }]] = await Promise.all([
@@ -537,7 +594,6 @@ export class JobPostingRepository implements IJobPostingRepository {
                 .orderBy(sql`${schema.job_postings.created_at} desc`)
                 .limit(limit)
                 .offset(offset),
-
             this.db
                 .select({ total: count() })
                 .from(schema.job_postings)
@@ -545,47 +601,32 @@ export class JobPostingRepository implements IJobPostingRepository {
         ]);
 
         const jobIds = rows.map((r) => r.job.job_id);
-        const [skillMap, countMap] = await Promise.all([
-            this.fetchSkillMap(jobIds),
-            this.fetchApplicantCountMap(jobIds),
-        ]);
+        const [skillMap, countMap] = await this.fetchSkillAndCountMaps(jobIds);
 
-        const items = rows.map((r) => {
-            const domain = JobPostingDomain.fromPersistence(r.job);
-            return JobPostingMapper.toStudentCard(domain, {
+        return {
+            items: rows.map((r) => ({
+                domain: JobPostingDomain.fromPersistence(r.job),
                 companyName: r.company_name,
                 logoUrl: r.logo_url ?? null,
-                skills: skillMap.get(r.job.job_id) ?? [],
                 applicantCount: countMap.get(r.job.job_id) ?? 0,
-            });
-        });
-
-        return new PaginationResponse(items, page, limit, Number(total));
+                skills: skillMap.get(r.job.job_id) ?? [],
+            })),
+            total: Number(total),
+            page,
+            limit,
+        };
     }
 
-    async findSavedJobsForStudent(
+    async findRawSavedJobs(
         studentId: number,
         dto: ListJobPostingDto,
-    ): Promise<PaginationResponse<StudentJobCard>> {
+    ): Promise<RawJobPage<RawJobWithMeta>> {
         const { page, limit, search, city } = dto;
         const offset = (page - 1) * limit;
 
-        const conditions: SQL[] = [
-            eq(schema.saved_jobs.student_id, studentId),
-        ];
-
-        if (search) {
-            conditions.push(
-                ilike(schema.job_postings.job_title, `%${search}%`)
-            );
-        }
-
-        if (city) {
-            conditions.push(
-                ilike(schema.job_postings.city, `%${city}%`)
-            );
-        }
-
+        const conditions: SQL[] = [eq(schema.saved_jobs.student_id, studentId)];
+        if (search) conditions.push(ilike(schema.job_postings.job_title, `%${search}%`));
+        if (city) conditions.push(ilike(schema.job_postings.city, `%${city}%`));
         const whereClause = and(...conditions);
 
         const [rows, [{ total }]] = await Promise.all([
@@ -608,7 +649,6 @@ export class JobPostingRepository implements IJobPostingRepository {
                 .orderBy(sql`${schema.saved_jobs.created_at} desc`)
                 .limit(limit)
                 .offset(offset),
-
             this.db
                 .select({ total: count() })
                 .from(schema.saved_jobs)
@@ -620,76 +660,25 @@ export class JobPostingRepository implements IJobPostingRepository {
         ]);
 
         const jobIds = rows.map((r) => r.job.job_id);
+        const [skillMap, countMap] = await this.fetchSkillAndCountMaps(jobIds);
 
-        const [skillMap, countMap] = await Promise.all([
-            this.fetchSkillMap(jobIds),
-            this.fetchApplicantCountMap(jobIds),
-        ]);
-
-        const items = rows.map((r) => {
-            const domain = JobPostingDomain.fromPersistence(r.job);
-
-            return JobPostingMapper.toStudentCard(domain, {
+        return {
+            items: rows.map((r) => ({
+                domain: JobPostingDomain.fromPersistence(r.job),
                 companyName: r.company_name,
                 logoUrl: r.logo_url ?? null,
-                skills: skillMap.get(r.job.job_id) ?? [],
                 applicantCount: countMap.get(r.job.job_id) ?? 0,
-                saved: true
-            });
-        });
-
-        return new PaginationResponse(items, page, limit, Number(total));
+                skills: skillMap.get(r.job.job_id) ?? [],
+            })),
+            total: Number(total),
+            page,
+            limit,
+        };
     }
 
-    async changeJobStatus(
-        jobId: number,
-        dto: ChangeJobPostingStatusDto,
-        adminId: number,
-    ): Promise<JobPostingEntity | null> {
-        const [existing] = await this.db
-            .select()
-            .from(schema.job_postings)
-            .where(eq(schema.job_postings.job_id, jobId))
-            .limit(1);
-
-        if (!existing) return null;
-        const domain = JobPostingDomain.fromPersistence(existing);
-        domain.changeStatus(dto, adminId);
-
-        const [updated] = await this.db
-            .update(schema.job_postings)
-            .set(domain.toUpdatePersistence())
-            .where(eq(schema.job_postings.job_id, jobId))
-            .returning();
-
-        return updated;
-    }
-
-    async toggleActiveStatus(jobId: number, companyId: number): Promise<void> {
-        const [existing] = await this.db
-            .select({ isActive: schema.job_postings.is_active, status: schema.job_postings.status })
-            .from(schema.job_postings)
-            .where(
-                and(
-                    eq(schema.job_postings.job_id, jobId),
-                    eq(schema.job_postings.company_id, companyId),
-                )
-            )
-            .limit(1);
-
-        if (!existing) {
-            throw new NotFoundException('Không tìm thấy bài đăng tuyển dụng hoặc bạn không có quyền chỉnh sửa.');
-        }
-        if (existing.status != 'approved') {
-            throw new BadRequestException('Không thể ẩn/ bỏ ẩn tin tuyển dụng chưa được duyệt hoặc bị hạn chế');
-        }
-        await this.db
-            .update(schema.job_postings)
-            .set({
-                is_active: !existing.isActive,
-            })
-            .where(eq(schema.job_postings.job_id, jobId));
-    }
+    // =========================================================================
+    // STATS
+    // =========================================================================
 
     async getJobStatsByCompanyId(companyId: number): Promise<JobPostingStats> {
         const [result] = await this.db
@@ -697,20 +686,18 @@ export class JobPostingRepository implements IJobPostingRepository {
                 total: sql<number>`count(*)`,
                 active: sql<number>`
                     count(*) filter (
-                        where ${schema.job_postings.status} = 'approved' 
+                        where ${schema.job_postings.status} = 'approved'
                         and (
-                        ${schema.job_postings.application_deadline} is null 
-                        or ${schema.job_postings.application_deadline} >= current_date
+                            ${schema.job_postings.application_deadline} is null
+                            or ${schema.job_postings.application_deadline} >= current_date
                         )
                     )`,
-
                 hidden: sql<number>`
                     count(*) filter (where ${schema.job_postings.is_active} = false)
                 `,
-
                 closed: sql<number>`
                     count(*) filter (
-                        where ${schema.job_postings.status} = 'approved' 
+                        where ${schema.job_postings.status} = 'approved'
                         and ${schema.job_postings.application_deadline} < current_date
                     )`,
             })
@@ -731,10 +718,10 @@ export class JobPostingRepository implements IJobPostingRepository {
                 total: count(),
                 pending: sql<number>`count(*) filter (where ${schema.job_postings.status} = 'pending')`,
                 approvedToday: sql<number>`
-                count(*) filter (
-                    where ${schema.job_postings.status} = 'approved' 
-                    and ${schema.job_postings.approved_at} >= date_trunc('day', now())
-                )`,
+                    count(*) filter (
+                        where ${schema.job_postings.status} = 'approved'
+                        and ${schema.job_postings.approved_at} >= date_trunc('day', now())
+                    )`,
                 rejected: sql<number>`count(*) filter (where ${schema.job_postings.status} = 'rejected')`,
             })
             .from(schema.job_postings);

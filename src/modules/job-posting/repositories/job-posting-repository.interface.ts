@@ -1,62 +1,73 @@
-import { PaginationResponse } from 'src/common/types/pagination-response';
+// repositories/job-posting-repository.interface.ts
+
+import { JobPostingDomain } from '../domain/job-posting.domain';
+import { JobPostingEntity } from '../domain/job-posting.entity';
+import {
+    CategoryItem,
+    JobSkillItem,
+    JobPostingStats,
+    AdminJobStats,
+    UpdateJobResponse,
+    JobList,
+    ProfileJobCard,
+} from '../interfaces';
 import { CreateJobPostingDto } from '../dto/create-job-posting.dto';
-import { ListJobPostingDto } from '../dto/list-job-posting.dto';
 import { UpdateJobPostingDto } from '../dto/update-job-posting.dto';
-import { AdminJobCard, AdminJobStats, CategoryItem, CompanyJobCard, JobList, JobPostingResponse, JobPostingStats, JobSkillItem, ProfileJobCard, StudentJobCard, UpdateJobResponse } from '../interfaces';
 import { ChangeJobPostingStatusDto } from '../dto/change-job-posting-status.dto';
+import { ListJobPostingDto } from '../dto/list-job-posting.dto';
 import { JobPostingFilterDto } from '../dto/filter-job-card.dto';
 import { RoleName } from 'src/common/types/role.enum';
-import { JobPostingEntity } from '../domain/job-posting.entity';
+import { PaginationResponse } from 'src/common/types/pagination-response';
+import { RawJobWithMeta, RawJobPage } from '../types/job-posting.raw';
 
 export interface IJobPostingRepository {
-    checkCompany(companyId: number): Promise<boolean>
+    // ── Lookup ──────────────────────────────────────────────────────────────
+    checkCompany(companyId: number): Promise<true>;
+    isCompanyActive(companyId: number): Promise<boolean>;
+    getJobCategories(): Promise<CategoryItem[]>;
+    getJobSkills(): Promise<JobSkillItem[]>;
 
-    createJobPosting(
-        companyId: number,
-        dto: CreateJobPostingDto,
-    ): Promise<number | null>;
-
+    // ── Writes ──────────────────────────────────────────────────────────────
+    createJobPosting(companyId: number, dto: CreateJobPostingDto): Promise<number>;
     updateJobPosting(
         jobId: number,
         companyId: number,
         dto: UpdateJobPostingDto,
     ): Promise<UpdateJobResponse | null>;
-
-    isCompanyActive(companyId: number): Promise<boolean>;
-
-    getJobCategories(): Promise<CategoryItem[]>;
-
-    getJobSkills(): Promise<JobSkillItem[]>
-
-    findJobById(
+    changeJobStatus(
         jobId: number,
-        viewer: 'student' | 'company' | 'admin',
-        companyId?: number,
-    ): Promise<JobPostingResponse | null>;
+        dto: ChangeJobPostingStatusDto,
+        adminId: number,
+    ): Promise<JobPostingEntity | null>;
+    toggleActiveStatus(jobId: number, companyId: number): Promise<void>;
 
-    findById(jobId: number): Promise<{ companyId: number | null; applicationDeadline: string | null } | null>;
+    // ── Single read — trả domain thuần, service lo mapper ───────────────────
+    findJobDetailById(
+        jobId: number,
+        viewer: RoleName,
+        companyId?: number,
+    ): Promise<RawJobWithMeta | null>;
+
+    findById(
+        jobId: number,
+    ): Promise<{ companyId: number | null; applicationDeadline: string | null } | null>;
+
+    // ── List reads — trả RawJobPage<RawJobWithMeta> ──────────────────────────
+    findByCompanyId(
+        companyId: number,
+        page: number,
+        limit: number,
+        roleName: RoleName,
+    ): Promise<PaginationResponse<ProfileJobCard>>;   // ProfileJobCard nhẹ, mapper đơn giản → giữ nguyên ở repo cũng OK, hoặc kéo lên service
 
     findAllJobList(companyId: number, page: number, limit: number): Promise<PaginationResponse<JobList>>;
 
-    findAllForAdmin(dto: ListJobPostingDto): Promise<PaginationResponse<AdminJobCard>>;
+    findRawForAdmin(dto: ListJobPostingDto): Promise<RawJobPage<RawJobWithMeta>>;
+    findRawForCompany(companyId: number, dto: JobPostingFilterDto): Promise<RawJobPage<RawJobWithMeta>>;
+    findRawForStudent(dto: ListJobPostingDto): Promise<RawJobPage<RawJobWithMeta>>;
+    findRawSavedJobs(studentId: number, dto: ListJobPostingDto): Promise<RawJobPage<RawJobWithMeta>>;
 
-    findAllForCompany(companyId: number, dto: JobPostingFilterDto): Promise<PaginationResponse<CompanyJobCard>>;
-
-    findAllForStudent(dto: ListJobPostingDto): Promise<PaginationResponse<StudentJobCard>>;
-
-    findSavedJobsForStudent(
-        studentId: number,
-        dto: ListJobPostingDto,
-    ): Promise<PaginationResponse<StudentJobCard>>
-
-    findByCompanyId(companyId: number, page: number, limit: number, roleName: RoleName): Promise<PaginationResponse<ProfileJobCard>>;
-
-    changeJobStatus(jobId: number, dto: ChangeJobPostingStatusDto, adminId: number): Promise<JobPostingEntity | null>;
-
-    getJobStatsByCompanyId(companyId: number): Promise<JobPostingStats>
-
-    getAdminJobStats(): Promise<AdminJobStats>
-
-    toggleActiveStatus(jobId: number, companyId: number): Promise<void>
-
+    // ── Stats ────────────────────────────────────────────────────────────────
+    getJobStatsByCompanyId(companyId: number): Promise<JobPostingStats>;
+    getAdminJobStats(): Promise<AdminJobStats>;
 }

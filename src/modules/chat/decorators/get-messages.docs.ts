@@ -35,6 +35,9 @@ export const GetMessagesDocs = () =>
                             conversationId: 1,
                             senderId: 100,
                             content: "Xin chào, tôi quan tâm vị trí Backend Developer",
+                            imageUrls: [
+                                "https://res.cloudinary.com/deagejli9/image/upload/v1779589299/nest_uploads/viyztnyjl0mjzorbz5sb.png"
+                            ],
                             createdAt: "2026-05-04T07:04:37.380Z",
                             isMine: true
                         },
@@ -43,6 +46,9 @@ export const GetMessagesDocs = () =>
                             conversationId: 1,
                             senderId: 100,
                             content: "Xin chào, tôi quan tâm vị trí Backend Developer",
+                            imageUrls: [
+                                "https://res.cloudinary.com/deagejli9/image/upload/v1779589299/nest_uploads/viyztnyjl0mjzorbz5sb.png"
+                            ],
                             createdAt: "2026-05-04T07:05:37.864Z",
                             isMine: true
                         },
@@ -51,6 +57,9 @@ export const GetMessagesDocs = () =>
                             conversationId: 1,
                             senderId: 100,
                             content: "Xin chào, tôi quan tâm vị trí Backend Developer",
+                            imageUrls: [
+                                "https://res.cloudinary.com/deagejli9/image/upload/v1779589299/nest_uploads/viyztnyjl0mjzorbz5sb.png"
+                            ],
                             createdAt: "2026-05-06T02:04:58.814Z",
                             isMine: true
                         }

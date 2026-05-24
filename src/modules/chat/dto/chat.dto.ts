@@ -28,10 +28,20 @@ export const sendMessageSchema = z.object({
 
     content: z
         .string()
-        .min(1, { message: 'Nội dung không được để trống' })
         .max(5000, { message: 'Nội dung tối đa 5000 ký tự' })
+        .optional()
         .openapi({ example: 'Xin chào, tôi quan tâm vị trí Backend Developer' }),
-});
+
+    image_urls: z
+        .array(z.string().url({ message: 'URL ảnh không hợp lệ' }))
+        .max(10, { message: 'Tối đa 10 ảnh' })
+        .optional()
+        .openapi({ example: ['https://res.cloudinary.com/abc/image/upload/v1/sample.jpg'] }),
+}).refine(
+    (data) => data.content || (data.image_urls && data.image_urls.length > 0),
+    { message: 'Tin nhắn phải có nội dung hoặc ít nhất 1 ảnh' }
+);
+
 export class SendMessageDto extends createZodDto(sendMessageSchema) { }
 
 export const wsMessageSchema = sendMessageSchema;

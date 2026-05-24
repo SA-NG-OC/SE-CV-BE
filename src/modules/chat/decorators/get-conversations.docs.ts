@@ -25,6 +25,7 @@ export const GetConversationsDocs = () =>
                             unreadCount: 0,
                             lastMessage: {
                                 content: "Xin chào, tôi quan tâm vị trí Backend Developer",
+                                hasImages: null,
                                 senderId: 100,
                                 createdAt: "2026-05-06 02:04:58.814"
                             },

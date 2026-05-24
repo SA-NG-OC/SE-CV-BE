@@ -88,10 +88,14 @@ export class ChatService {
   async sendMessage(
     conversationId: number,
     senderId: number,
-    content: string,
+    content: string | undefined,
+    imageUrls: string[] = [],
   ): Promise<{ message: MessageView; recipientUserIds: number[] }> {
-    const trimmed = content.trim();
-    if (!trimmed) throw new ForbiddenException('Nội dung tin nhắn không được để trống');
+    const trimmed = content?.trim() ?? null;
+
+    if (!trimmed && imageUrls.length === 0) {
+      throw new ForbiddenException('Tin nhắn phải có nội dung hoặc ít nhất 1 ảnh');
+    }
 
     const { isMember, isBlocked, recipientIds } = await this.chatRepo.validateSendContext(
       conversationId,
@@ -101,11 +105,11 @@ export class ChatService {
     if (!isMember) throw new ForbiddenException('Bạn không thuộc cuộc trò chuyện này');
     if (isBlocked) throw new ForbiddenException('Không thể gửi tin nhắn vì cuộc trò chuyện đã bị chặn');
 
-
     const saved = await this.chatRepo.createMessageAndUpdateConversation({
       conversation_id: conversationId,
       sender_id: senderId,
       content: trimmed,
+      image_urls: imageUrls.length > 0 ? imageUrls : null,
       created_at: new Date(),
       updated_at: new Date(),
     });
@@ -186,7 +190,7 @@ export class ChatService {
   }
 
   // =========================================================================
-  // HIDE — chỉ ảnh hưởng người gọi, không ảnh hưởng bên kia
+  // HIDE — chỉ ảnh hưởng người gọi, không cần biết targetUserId
   // =========================================================================
 
   async setHidden(userId: number, dto: SetHiddenDto): Promise<ParticipantStatusView> {
@@ -201,15 +205,30 @@ export class ChatService {
 
   // =========================================================================
   // BLOCK
+  // Trả về thêm targetUserId để gateway biết emit 'you_were_blocked' cho ai
   // =========================================================================
 
-  async setBlocked(userId: number, dto: SetBlockedDto): Promise<ParticipantStatusView> {
+  async setBlocked(
+    userId: number,
+    dto: SetBlockedDto,
+  ): Promise<{ result: ParticipantStatusView; targetUserId: number }> {
     const participant = await this.chatRepo.findParticipant(dto.conversationId, userId);
     if (!participant) {
       throw new ForbiddenException('Bạn không thuộc cuộc trò chuyện này');
     }
 
+    // Lấy tất cả participants → người còn lại chính là targetUserId
+    const allUserIds = await this.chatRepo.getParticipantUserIds(dto.conversationId);
+    const targetUserId = allUserIds.find((id) => id !== userId);
+    if (!targetUserId) {
+      throw new NotFoundException('Không tìm thấy người dùng trong cuộc trò chuyện');
+    }
+
     const updated = await this.chatRepo.setBlocked(dto.conversationId, userId, dto.blocked);
-    return ChatMapper.toParticipantStatusView(updated!);
+
+    return {
+      result: ChatMapper.toParticipantStatusView(updated!),
+      targetUserId,
+    };
   }
 }

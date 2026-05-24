@@ -11,6 +11,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { JwtService } from "@nestjs/jwt";
 import { ChatService } from "./chat.service";
+import { MessageView } from "./types";
 
 interface JwtPayload {
     sub: number;
@@ -33,40 +34,110 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     constructor(
         private readonly jwtService: JwtService,
-        private readonly chatService: ChatService
+        private readonly chatService: ChatService,
     ) { }
 
-    // HELPER
-    private extractToken(client: Socket): string | null {
-        const auth = client.handshake.auth?.token as string | undefined;
-        if (!auth) {
-            return null;
-        }
-        return auth.startsWith('Bear ') ? auth.split(' ')[1] : auth;
-    }
-
-    private getPayload(client: Socket): JwtPayload | null {
-        try {
-            const token = this.extractToken(client);
-            if (!token) {
-                return null;
-            }
-            return this.jwtService.verify<JwtPayload>(token);
-        }
-        catch {
-            return null;
-        }
-    }
+    // =========================================================================
+    // ROOM HELPERS
+    // =========================================================================
 
     private userRoom(userId: number) {
-        return `chat: user_${userId}`;
+        return `chat:user_${userId}`;
     }
 
     private conversationRoom(conversationId: number) {
         return `chat:conv_${conversationId}`;
     }
 
-    // CONNECTION   
+    // =========================================================================
+    // AUTH HELPERS
+    // =========================================================================
+
+    private extractToken(client: Socket): string | null {
+        const auth = client.handshake.auth?.token as string | undefined;
+        if (!auth) return null;
+        return auth.startsWith('Bearer ') ? auth.split(' ')[1] : auth;
+    }
+
+    private getPayload(client: Socket): JwtPayload | null {
+        try {
+            const token = this.extractToken(client);
+            if (!token) return null;
+            return this.jwtService.verify<JwtPayload>(token);
+        } catch {
+            return null;
+        }
+    }
+
+    // =========================================================================
+    // BROADCAST — chỉ được gọi từ Controller sau khi DB xong
+    // Gateway không tự gọi Service ở đây, tránh duplicate logic
+    // =========================================================================
+
+    broadcastMessage(
+        senderId: number,
+        recipientUserIds: number[],
+        conversationId: number,
+        message: MessageView,
+    ) {
+        // 1. Gửi xác nhận cho người gửi qua userRoom của họ
+        this.server
+            .to(this.userRoom(senderId))
+            .emit('message_sent', message);
+
+        // 2. Gửi tin nhắn mới cho những người nhận qua userRoom của họ
+        for (const recipientId of recipientUserIds) {
+            this.server
+                .to(this.userRoom(recipientId))
+                .emit('new_message', message);
+        }
+
+        // ĐÃ XÓA: Gửi vào conversationRoom để tránh lỗi client nhận đúp tin nhắn
+    }
+
+    broadcastReadReceipt(
+        userId: number,
+        conversationId: number,
+        lastReadMessageId: number,
+    ) {
+        this.server
+            .to(this.conversationRoom(conversationId))
+            .emit('read_receipt', {
+                userId,
+                conversationId,
+                lastReadMessageId,
+            });
+    }
+
+    broadcastBlocked(
+        actorId: number,
+        targetUserId: number,
+        conversationId: number,
+        blocked: boolean,
+        result: any,
+    ) {
+        this.server
+            .to(this.userRoom(actorId))
+            .emit('blocked_updated', result);
+
+        this.server
+            .to(this.userRoom(targetUserId))
+            .emit(blocked ? 'you_were_blocked' : 'you_were_unblocked', {
+                conversationId,
+                blockedBy: actorId,
+            });
+    }
+
+    broadcastHidden(userId: number, result: any) {
+        this.server
+            .to(this.userRoom(userId))
+            .emit('hidden_updated', result);
+    }
+
+    // =========================================================================
+    // CONNECTION
+    // =========================================================================
+
     handleConnection(client: Socket) {
         const payload = this.getPayload(client);
         if (!payload) {
@@ -89,19 +160,22 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         this.logger.log(`[Chat] Socket disconnected: ${client.id}`);
     }
 
-    //CONVERSATION
+    // =========================================================================
+    // CONVERSATION
+    // =========================================================================
+
     @SubscribeMessage('join_conversation')
     async handleJoinConversation(
         @MessageBody() payload: { conversationId: number },
         @ConnectedSocket() client: Socket,
     ) {
-        const userId = client.data.userId;
+        const userId: number = client.data.userId;
         const { conversationId } = payload;
 
         const allowed = await this.chatService['chatRepo'].isParticipant(conversationId, userId);
-
         if (!allowed) {
-            client.emit('error', { message: 'Forbideen' });
+            client.emit('error', { message: 'Forbidden' });
+            return;
         }
 
         client.join(this.conversationRoom(conversationId));
@@ -116,10 +190,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         client.leave(this.conversationRoom(payload.conversationId));
     }
 
-    //SEND MESSAGE
+    // =========================================================================
+    // SEND MESSAGE — chỉ cho text thuần, không có file
+    // Gửi kèm ảnh → dùng POST /chat/message để upload Cloudinary trước
+    // =========================================================================
+
     @SubscribeMessage('send_message')
     async handleSendMessage(
-        @MessageBody() payload: { conversationId: number; content: string },
+        @MessageBody() payload: { conversationId: number; content?: string },
         @ConnectedSocket() client: Socket,
     ) {
         const senderId: number = client.data.userId;
@@ -128,25 +206,19 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 payload.conversationId,
                 senderId,
                 payload.content,
+                [],
             );
 
-            client.emit('message_sent', message);
-
-            for (const recipientId of recipientUserIds) {
-                this.server
-                    .to(this.userRoom(recipientId))
-                    .emit('new_message', message);
-            }
-
-            this.server
-                .to(this.conversationRoom(payload.conversationId))
-                .emit('new_message', message);
+            this.broadcastMessage(senderId, recipientUserIds, payload.conversationId, message);
         } catch (err: any) {
             client.emit('error', { message: err.message });
         }
     }
 
-    // TYPING INDICATOR
+    // =========================================================================
+    // TYPING INDICATOR — pure real-time, không cần DB
+    // =========================================================================
+
     @SubscribeMessage('typing_start')
     handleTypingStart(
         @MessageBody() payload: { conversationId: number },
@@ -160,67 +232,18 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @SubscribeMessage('typing_stop')
     handleTypingStop(
         @MessageBody() payload: { conversationId: number },
-        @ConnectedSocket() client: Socket
+        @ConnectedSocket() client: Socket,
     ) {
         client
             .to(this.conversationRoom(payload.conversationId))
             .emit('user_typing', { userId: client.data.userId, isTyping: false });
     }
 
-    // MARK READ
-    @SubscribeMessage('mark_read')
-    async handleMarkRead(
-        @MessageBody() payload: { conversationId: number; messageId: number },
-        @ConnectedSocket() client: Socket,
-    ) {
-        const userId: number = client.data.userId;
-        try {
-            await this.chatService.markRead(userId, {
-                conversationId: payload.conversationId,
-                messageId: payload.messageId,
-            });
-
-            this.server
-                .to(this.conversationRoom(payload.conversationId))
-                .emit('read_receipt', {
-                    userId,
-                    conversationId: payload.conversationId,
-                    lastReadMessageId: payload.messageId,
-                });
-        } catch (err: any) {
-            client.emit('error', { message: err.message });
-        }
-    }
+    // =========================================================================
+    // UTILITY
+    // =========================================================================
 
     sendToUser(userId: number, event: string, data: any) {
         this.server.to(this.userRoom(userId)).emit(event, data);
     }
-
-    // BLOCK/ HIDE
-    @SubscribeMessage('set_hidden')
-    async handleSetHidden(
-        @MessageBody() payload: { conversationId: number; hidden: boolean },
-        @ConnectedSocket() client: Socket,
-    ) {
-        try {
-            const result = await this.chatService.setHidden(client.data.userId, payload);
-            client.emit('hidden_updated', result);
-        } catch (err: any) {
-            client.emit('error', { message: err.message });
-        }
-    }
-
-    @SubscribeMessage('set_blocked')
-    async handleSetBlocked(
-        @MessageBody() payload: { conversationId: number; blocked: boolean },
-        @ConnectedSocket() client: Socket,
-    ) {
-        try {
-            const result = await this.chatService.setBlocked(client.data.userId, payload);
-            client.emit('blocked_updated', result);
-        } catch (err: any) {
-            client.emit('error', { message: err.message });
-        }
-    }
-
 }

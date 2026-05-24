@@ -2,7 +2,8 @@ export interface MessageView {
     messageId: number;
     conversationId: number;
     senderId: number;
-    content: string;
+    content: string | null;
+    imageUrls: string[];
     createdAt: Date;
     isMine: boolean;
 }
@@ -13,7 +14,8 @@ export interface ConversationListItemView {
     createdAt: Date | null;
     unreadCount: number;
     lastMessage: {
-        content: string;
+        content: string | null;
+        hasImages: boolean;
         senderId: number;
         createdAt: Date;
     } | null;

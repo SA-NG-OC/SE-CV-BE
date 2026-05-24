@@ -12,7 +12,8 @@ export interface MessageProps {
     id: number;
     conversationId: number;
     senderId: number;
-    content: string;
+    content: string | null;
+    imageUrls: string[];
     createdAt: Date;
     updatedAt: Date | null;
 }

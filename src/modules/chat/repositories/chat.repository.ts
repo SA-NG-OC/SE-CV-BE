@@ -365,6 +365,13 @@ export class ChatRepository implements IChatRepository {
          ))
     `.as('unread_count');
 
+        const last_message_has_images = sql<boolean>`
+    (SELECT (array_length(m.image_urls, 1) > 0)
+     FROM ${schema.messages} m
+     WHERE m.conversation_id = ${schema.conversations.conversation_id}
+     ORDER BY m.message_id DESC LIMIT 1)
+`.as('last_message_has_images');
+
         const baseConditions = [eq(schema.conversation_participants.user_id, userId)];
 
         // ── STUDENT VIEW ──────────────────────────────────────────────────────
@@ -391,6 +398,7 @@ export class ChatRepository implements IChatRepository {
                     is_hidden: schema.conversation_participants.is_hidden,
                     is_blocked: schema.conversation_participants.is_blocked,
                     last_message_content,
+                    last_message_has_images,
                     last_message_sender_id,
                     last_message_created_at,
                     unread_count,
@@ -435,6 +443,7 @@ export class ChatRepository implements IChatRepository {
                 is_hidden: schema.conversation_participants.is_hidden,
                 is_blocked: schema.conversation_participants.is_blocked,
                 last_message_content,
+                last_message_has_images,
                 last_message_sender_id,
                 last_message_created_at,
                 unread_count,

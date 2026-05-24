@@ -22,6 +22,7 @@ import { EmbeddingQueueService } from '../recommendations/embedding/embedding-qu
 import { I_COMPANY_REPOSITORY } from '../company/company.tokens';
 import { type ICompanyRepository } from '../company/repositories/company-repository.interface';
 import { I_SAVED_JOB_REPOSITORY, type ISavedJobRepository } from '../saved-jobs/repositories/saved-jobs-repository.interface';
+import { JobPostingMapper } from './domain/job-posting.mapper';
 
 @Injectable()
 export class JobPostingService {
@@ -96,20 +97,24 @@ export class JobPostingService {
     jobId: number,
     viewer: RoleName,
     companyId?: number,
-    studentId?: number
+    studentId?: number,
   ): Promise<JobPostingResponse> {
-    const job = await this.jobPostingRepository.findJobById(jobId, viewer, companyId);
-    let checkSaved: boolean = false;
-    if (studentId) {
-      checkSaved = await this.savedJobsRepository.checkSaved(studentId, jobId);
-    }
-    if (!job) {
-      throw new NotFoundException('Không tìm thấy tin tuyển dụng.');
-    }
-    if (checkSaved) {
-      job.saved = true;
-    }
-    return job;
+    const raw = await this.jobPostingRepository.findJobDetailById(jobId, viewer, companyId);
+    if (!raw) throw new NotFoundException('Không tìm thấy tin tuyển dụng.');
+
+    const saved = studentId
+      ? await this.savedJobsRepository.checkSaved(studentId, jobId)
+      : false;
+
+    // Mapper được gọi ở đây, không phải trong repo
+    const response = JobPostingMapper.toResponse(raw.domain, {
+      applicantCount: raw.applicantCount,
+      requiredSkills: raw.skills,
+      companyName: raw.companyName,
+      logoUrl: raw.logoUrl,
+    });
+
+    return { ...response, saved };
   }
 
   async listProfileJobCard(companyId: number, page: number, limit: number, roleName: RoleName): Promise<PaginationResponse<ProfileJobCard>> {
@@ -126,55 +131,61 @@ export class JobPostingService {
     dto: ListJobPostingDto,
     companyId?: number,
     studentId?: number,
-  ): Promise<
-    PaginationResponse<AdminJobCard> |
-    PaginationResponse<CompanyJobCard> |
-    PaginationResponse<StudentJobCard>
-  > {
+  ): Promise<PaginationResponse<AdminJobCard | CompanyJobCard | StudentJobCard>> {
 
     if (role === RoleName.ADMIN) {
-      const data = await this.jobPostingRepository.findAllForAdmin(dto);
-      return data;
+      const raw = await this.jobPostingRepository.findRawForAdmin(dto);
+      const items = raw.items.map(r =>
+        JobPostingMapper.toAdminCard(r.domain, { companyName: r.companyName, logoUrl: r.logoUrl })
+      );
+      return new PaginationResponse(items, raw.page, raw.limit, raw.total);
     }
 
-    // STUDENT — bỏ qua filter status dù FE có truyền lên
-    const [data, savedJobIds] = await Promise.all([
-      this.jobPostingRepository.findAllForStudent(dto),
+    // Student
+    const [raw, savedJobIds] = await Promise.all([
+      this.jobPostingRepository.findRawForStudent(dto),
       this.savedJobsRepository.getJobSaved(studentId!),
     ]);
-
     const savedSet = new Set(savedJobIds);
 
-    data.data = data.data.map((job) => ({
-      ...job,
-      saved: savedSet.has(job.jobId),
-    }));
-
-    return data;
-  }
-
-  async getSavedJobsForStudent(
-    studentId: number,
-    dto: ListJobPostingDto,
-  ) {
-    const data = await this.jobPostingRepository.findSavedJobsForStudent(
-      studentId,
-      dto,
+    const items = raw.items.map(r =>
+      JobPostingMapper.toStudentCard(r.domain, {
+        companyName: r.companyName,
+        logoUrl: r.logoUrl,
+        skills: r.skills,
+        applicantCount: r.applicantCount,
+        saved: savedSet.has(r.domain.jobId),
+      })
     );
-    return data;
+    return new PaginationResponse(items, raw.page, raw.limit, raw.total);
   }
 
-  async getJobCardCompany(
-    dto: JobPostingFilterDto,
-    companyId?: number,
-  ) {
+  async getSavedJobsForStudent(studentId: number, dto: ListJobPostingDto) {
+    const raw = await this.jobPostingRepository.findRawSavedJobs(studentId, dto);
+    const items = raw.items.map(r =>
+      JobPostingMapper.toStudentCard(r.domain, {
+        companyName: r.companyName,
+        logoUrl: r.logoUrl,
+        skills: r.skills,
+        applicantCount: r.applicantCount,
+        saved: true,
+      })
+    );
+    return new PaginationResponse(items, raw.page, raw.limit, raw.total);
+  }
+
+  async getJobCardCompany(dto: JobPostingFilterDto, companyId?: number) {
     if (!companyId) throw new ForbiddenException('Không xác định được công ty.');
-    const data = await this.jobPostingRepository.findAllForCompany(companyId, dto);
-    return data;
-  }
-
-  async toggleActiveStatus(jobId: number, companyId: number) {
-    await this.jobPostingRepository.toggleActiveStatus(jobId, companyId);
+    const raw = await this.jobPostingRepository.findRawForCompany(companyId, dto);
+    const items = raw.items.map(r =>
+      JobPostingMapper.toCompanyCard(r.domain, {
+        companyName: r.companyName,
+        logoUrl: r.logoUrl,
+        skills: r.skills,
+        applicantCount: r.applicantCount,
+      })
+    );
+    return new PaginationResponse(items, raw.page, raw.limit, raw.total);
   }
 
   async changeJobStatus(
@@ -224,5 +235,9 @@ export class JobPostingService {
     } catch (error) {
       throw error;
     }
+  }
+
+  async toggleActiveStatus(jobId: number, companyId: number) {
+    await this.jobPostingRepository.toggleActiveStatus(jobId, companyId);
   }
 }
