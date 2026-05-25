@@ -267,6 +267,11 @@ export class ChatRepository implements IChatRepository {
                 .set({ last_message_at: saved.created_at })
                 .where(eq(schema.conversations.conversation_id, data.conversation_id));
 
+            await tx
+                .update(schema.conversation_participants)
+                .set({ is_hidden: true })
+                .where(eq(schema.conversation_participants.user_id, data.sender_id));
+
             return saved;
         });
     }

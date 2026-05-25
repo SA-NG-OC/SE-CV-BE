@@ -13,6 +13,8 @@ export interface ConversationListItemView {
     lastMessageAt: Date | null;
     createdAt: Date | null;
     unreadCount: number;
+    isHidden: boolean;
+    isBlocked: boolean;
     lastMessage: {
         content: string | null;
         hasImages: boolean;

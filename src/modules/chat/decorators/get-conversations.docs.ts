@@ -23,6 +23,8 @@ export const GetConversationsDocs = () =>
                             lastMessageAt: "2026-05-06T02:04:58.814Z",
                             createdAt: "2026-05-04T07:04:32.103Z",
                             unreadCount: 0,
+                            isHidden: true,
+                            isBlocked: false,
                             lastMessage: {
                                 content: "Xin chào, tôi quan tâm vị trí Backend Developer",
                                 hasImages: null,

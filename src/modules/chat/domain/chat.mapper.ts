@@ -27,6 +27,8 @@ export class ChatMapper {
         last_message_has_images: boolean;
         last_message_sender_id: number | null;
         last_message_created_at: Date | null;
+        is_hidden: boolean,
+        is_blocked: boolean,
         partner_id: number;
         partner_name: string;
         partner_avatar: string | null;
@@ -36,6 +38,8 @@ export class ChatMapper {
             lastMessageAt: raw.last_message_at,
             createdAt: raw.created_at,
             unreadCount: raw.unread_count,
+            isHidden: raw.is_hidden,
+            isBlocked: raw.is_blocked,
             lastMessage: raw.last_message_content || raw.last_message_has_images
                 ? {
                     content: raw.last_message_content,
