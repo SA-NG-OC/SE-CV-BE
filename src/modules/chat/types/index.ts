@@ -15,6 +15,7 @@ export interface ConversationListItemView {
     unreadCount: number;
     isHidden: boolean;
     isBlocked: boolean;
+    isBlockedByPartner: boolean;
     lastMessage: {
         content: string | null;
         hasImages: boolean;

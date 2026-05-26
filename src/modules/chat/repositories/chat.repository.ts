@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { eq, and, lt, desc, sql, ilike, count } from 'drizzle-orm';
+import { eq, and, lt, desc, sql, ilike, count, aliasedTable } from 'drizzle-orm';
 import * as schema from '../../../database/schema';
 import { DATABASE_CONNECTION } from 'src/database/database.module';
 import { ConversationEntity, ConversationParticipantEntity, MessageEntity } from '../domain/chat.entity';
@@ -74,7 +74,6 @@ export class ChatRepository implements IChatRepository {
             recipientIds: rows.map((r) => r.user_id).filter((id) => id !== senderId),
         };
     }
-
     // =========================================================================
     // CONVERSATION
     // =========================================================================
@@ -269,7 +268,7 @@ export class ChatRepository implements IChatRepository {
 
             await tx
                 .update(schema.conversation_participants)
-                .set({ is_hidden: true })
+                .set({ is_hidden: false })
                 .where(eq(schema.conversation_participants.user_id, data.sender_id));
 
             return saved;
@@ -338,9 +337,14 @@ export class ChatRepository implements IChatRepository {
         userId: number,
         role: 'student' | 'company',
         query: { page: number; limit: number; search?: string },
-    ): Promise<{ rows: IConversationListRaw[]; total: number }> {
+    ): Promise<{ rows: any[]; total: number }> {
         const { page, limit, search } = query;
         const offset = (page - 1) * limit;
+
+        const partnerParticipants = aliasedTable(
+            schema.conversation_participants,
+            'partner_participants'
+        );
 
         const last_message_content = sql<string>`
       (SELECT m.content FROM ${schema.messages} m
@@ -371,11 +375,11 @@ export class ChatRepository implements IChatRepository {
     `.as('unread_count');
 
         const last_message_has_images = sql<boolean>`
-    (SELECT (array_length(m.image_urls, 1) > 0)
-     FROM ${schema.messages} m
-     WHERE m.conversation_id = ${schema.conversations.conversation_id}
-     ORDER BY m.message_id DESC LIMIT 1)
-`.as('last_message_has_images');
+        (SELECT (array_length(m.image_urls, 1) > 0)
+         FROM ${schema.messages} m
+         WHERE m.conversation_id = ${schema.conversations.conversation_id}
+         ORDER BY m.message_id DESC LIMIT 1)
+    `.as('last_message_has_images');
 
         const baseConditions = [eq(schema.conversation_participants.user_id, userId)];
 
@@ -402,6 +406,9 @@ export class ChatRepository implements IChatRepository {
                     created_at: schema.conversations.created_at,
                     is_hidden: schema.conversation_participants.is_hidden,
                     is_blocked: schema.conversation_participants.is_blocked,
+
+                    is_blocked_by_partner: partnerParticipants.is_blocked,
+
                     last_message_content,
                     last_message_has_images,
                     last_message_sender_id,
@@ -417,6 +424,13 @@ export class ChatRepository implements IChatRepository {
                     eq(schema.conversation_participants.conversation_id, schema.conversations.conversation_id),
                 )
                 .innerJoin(schema.companies, eq(schema.companies.company_id, schema.conversations.company_id))
+                .leftJoin(
+                    partnerParticipants,
+                    and(
+                        eq(partnerParticipants.conversation_id, schema.conversations.conversation_id),
+                        sql`${partnerParticipants.user_id} <> ${userId}`
+                    )
+                )
                 .where(where)
                 .orderBy(desc(schema.conversations.last_message_at))
                 .limit(limit)
@@ -447,6 +461,9 @@ export class ChatRepository implements IChatRepository {
                 created_at: schema.conversations.created_at,
                 is_hidden: schema.conversation_participants.is_hidden,
                 is_blocked: schema.conversation_participants.is_blocked,
+
+                is_blocked_by_partner: partnerParticipants.is_blocked,
+
                 last_message_content,
                 last_message_has_images,
                 last_message_sender_id,
@@ -462,6 +479,14 @@ export class ChatRepository implements IChatRepository {
                 eq(schema.conversation_participants.conversation_id, schema.conversations.conversation_id),
             )
             .innerJoin(schema.students, eq(schema.students.student_id, schema.conversations.student_id))
+
+            .leftJoin(
+                partnerParticipants,
+                and(
+                    eq(partnerParticipants.conversation_id, schema.conversations.conversation_id),
+                    sql`${partnerParticipants.user_id} <> ${userId}`
+                )
+            )
             .where(where)
             .orderBy(desc(schema.conversations.last_message_at))
             .limit(limit)

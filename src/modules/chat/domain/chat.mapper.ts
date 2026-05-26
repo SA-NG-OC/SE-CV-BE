@@ -29,6 +29,7 @@ export class ChatMapper {
         last_message_created_at: Date | null;
         is_hidden: boolean,
         is_blocked: boolean,
+        is_blocked_by_partner: boolean,
         partner_id: number;
         partner_name: string;
         partner_avatar: string | null;
@@ -40,6 +41,7 @@ export class ChatMapper {
             unreadCount: raw.unread_count,
             isHidden: raw.is_hidden,
             isBlocked: raw.is_blocked,
+            isBlockedByPartner: raw.is_blocked_by_partner,
             lastMessage: raw.last_message_content || raw.last_message_has_images
                 ? {
                     content: raw.last_message_content,
