@@ -8,6 +8,7 @@ export interface JobRecommendationResponse {
     salaryMin: number;
     salaryMax: number;
     salaryType: string;
+    saved: boolean;
     isSalaryNegotiable: boolean;
     postedAt: string;
 

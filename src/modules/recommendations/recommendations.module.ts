@@ -12,9 +12,10 @@ import { EmbeddingQueueService } from "./embedding/embedding-queue.service";
 import { BullModule } from '@nestjs/bullmq';
 import { RECOMMENDATION_REPOSITORY } from "./repositories/recommendation-repository.interface";
 import { EMBEDDING_REPOSITORY } from "./embedding/repositories/embedding-repository.interface";
+import { SavedJobsModule } from "../saved-jobs/saved-jobs.module";
 
 @Module({
-  imports: [CommonModule, BullModule.registerQueue({
+  imports: [CommonModule, SavedJobsModule, BullModule.registerQueue({
     name: 'embedding',
   })],
   controllers: [RecommendationsController],

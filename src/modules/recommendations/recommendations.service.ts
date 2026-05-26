@@ -7,6 +7,7 @@ import { JobRecommendationResponse, StudentRecommendationResponse } from "./type
 import { JobRecommendationMapper } from "./mapper/job-recommendation.mapper";
 import { StudentRecommendationMapper } from "./mapper/student-recommendation.mapper";
 import { type IRecommendationRepository, RECOMMENDATION_REPOSITORY } from "./repositories/recommendation-repository.interface";
+import { I_SAVED_JOB_REPOSITORY, type ISavedJobRepository } from "../saved-jobs/repositories/saved-jobs-repository.interface";
 
 @Injectable()
 export class RecommendationsService {
@@ -15,7 +16,9 @@ export class RecommendationsService {
     private readonly recRepo: IRecommendationRepository,
     private readonly ruleScorer: RuleBasedScorer,
     private readonly embeddingScorer: EmbeddingScorer,
-    private readonly merger: HybridMerger
+    private readonly merger: HybridMerger,
+    @Inject(I_SAVED_JOB_REPOSITORY)
+    private readonly savedJobsRepository: ISavedJobRepository,
   ) { }
 
   async getJobRecommendationsForStudent(
@@ -24,25 +27,36 @@ export class RecommendationsService {
   ): Promise<JobRecommendationResponse[]> {
     const { limit = 10, alpha = 0.6 } = dto;
 
-    const [student, vectorResults] = await Promise.all([
+    const [student, vectorResults, savedJobIds] = await Promise.all([
       this.recRepo.getStudentProfile(studentId),
       this.embeddingScorer.scoreJobsForStudent(studentId, limit * 3),
+      this.savedJobsRepository.getJobSaved(studentId),
     ]);
 
-    if (!student) throw new NotFoundException("Không tìm thấy thông tin sinh viên");
-    if (vectorResults.length === 0) return [];
+    if (!student) {
+      throw new NotFoundException("Không tìm thấy thông tin sinh viên");
+    }
+
+    if (vectorResults.length === 0) {
+      return [];
+    }
+
+    const savedSet = new Set(savedJobIds);
 
     const candidateJobIds = vectorResults.map((v) => v.id);
+
     const jobs = await this.recRepo.getActiveJobsWithSkillsByIds(candidateJobIds);
 
-    if (jobs.length === 0) return [];
+    if (jobs.length === 0) {
+      return [];
+    }
 
     const ruleResults = this.ruleScorer.scoreJobsForStudent({
       student: {
         ...student,
-        skill_ids: student.skill_ids
+        skill_ids: student.skill_ids,
       },
-      jobs
+      jobs,
     });
 
     const merged = this.merger.merge(ruleResults, vectorResults, {
@@ -64,6 +78,7 @@ export class RecommendationsService {
           vector_score: Math.round(m.vector_score * 100),
           final_score: Math.round(m.final_score * 100),
           match_reasons: m.reasons,
+          saved: savedSet.has(m.id),
         };
       });
 

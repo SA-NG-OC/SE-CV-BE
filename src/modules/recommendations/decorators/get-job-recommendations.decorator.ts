@@ -53,6 +53,7 @@ export const GetJobRecommendationsDocs = () =>
                         salaryMin: 12000000,
                         salaryMax: 20000000,
                         salaryType: 'monthly',
+                        saved: false,
                         isSalaryNegotiable: true,
                         postedAt: 'Hôm nay',
                         skills: [

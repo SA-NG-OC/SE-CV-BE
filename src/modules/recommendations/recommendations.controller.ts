@@ -7,6 +7,7 @@ import { Role } from "src/common/types/role.enum";
 import ResponseSuccess from "src/common/types/response-success";
 import { GetJobRecommendationsDocs } from "./decorators/get-job-recommendations.decorator";
 import { GetStudentRecommendationsDocs } from "./decorators/get-student-recommendations.decorator";
+import { RolesGuard } from "../auth/guards/roles.guard";
 
 @Controller("recommendations")
 @UseGuards(JwtAuthGuard)
@@ -15,6 +16,7 @@ export class RecommendationsController {
 
   @Get("jobs")
   @GetJobRecommendationsDocs()
+  @UseGuards(RolesGuard)
   @Roles(Role.STUDENT)
   async getJobsForStudent(
     @Query() dto: GetJobRecommendationsDto,
