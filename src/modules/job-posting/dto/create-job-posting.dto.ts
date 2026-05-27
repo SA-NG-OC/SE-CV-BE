@@ -62,7 +62,7 @@ const BaseJobPostingSchema = z.object({
     benefits: z.string().optional(),
 
     experienceLevel: z
-        .enum(['FRESHER', 'JUNIOR', 'MIDDLE', 'SENIOR', 'LEAD', 'MANAGER'])
+        .enum(['FRESHER', 'JUNIOR', 'MIDDLE', 'SENIOR', 'LEAD', 'MANAGER', 'INTERN'])
         .optional(),
 
     positionLevel: z

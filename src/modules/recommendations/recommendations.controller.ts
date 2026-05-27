@@ -28,6 +28,7 @@ export class RecommendationsController {
 
   @Get("students")
   @GetStudentRecommendationsDocs()
+  @UseGuards(RolesGuard)
   @Roles(Role.COMPANY)
   async getStudentsForJob(@Query() dto: GetStudentRecommendationsDto) {
     const data = await this.service.getStudentRecommendationsForJob(dto);

@@ -135,6 +135,20 @@ export class StudentRepository implements IStudentRepository {
         return result;
     }
 
+    async getJobPreference(userId: number) {
+        const [student] = await this.db
+            .select({
+                desired_salary_min: schema.students.desired_salary_min,
+                desired_salary_max: schema.students.desired_salary_max,
+                desired_location: schema.students.desired_location,
+            })
+            .from(schema.students)
+            .where(eq(schema.students.user_id, userId))
+            .limit(1);
+
+        return student;
+    }
+
     async findStudentWithMajor(studentId: number): Promise<StudentWithMajorRaw | null> {
         const [row] = await this.db
             .select({

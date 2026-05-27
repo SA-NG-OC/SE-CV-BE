@@ -38,7 +38,9 @@ export interface IStudentRepository {
 
   findStudentProfileByUserId(userId: number): Promise<StudentProfileRaw | null>;
 
-  findRawById2(studentId: number): Promise<StudentRaw | null>
+  findRawById2(studentId: number): Promise<StudentRaw | null>;
+
+  getJobPreference(userId: number);
 
   updateFields(userId: number, fields: Partial<Record<string, unknown>>): Promise<void>;
 

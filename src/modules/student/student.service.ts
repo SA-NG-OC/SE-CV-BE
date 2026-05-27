@@ -128,6 +128,20 @@ export class StudentService {
     return StudentMapper.toStudentProfile(raw);
   }
 
+  async getJobPreference(userId: number) {
+    const student = await this.repo.getJobPreference(userId);
+
+    if (!student) {
+      throw new NotFoundException('Không tìm thấy sinh viên');
+    }
+
+    return {
+      desiredSalaryMin: student.desired_salary_min,
+      desiredSalaryMax: student.desired_salary_max,
+      desiredLocation: student.desired_location,
+    };
+  }
+
   // =========================================================================
   // UPDATE — business logic ở service, repo chỉ persist
   // =========================================================================

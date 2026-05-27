@@ -24,6 +24,7 @@ import UpdateAvatarDocs from './decorators/update-avatar.decorator';
 import DeleteResumeDocs from './decorators/delete-resume.decorator';
 import { ToggleActiveDto } from './dto/toggle-active.dto';
 import ToggleStudentActiveDocs from './decorators/update-student-active.docs';
+import GetJobPreferenceDocs from './decorators/get-job-preference.decorator';
 
 @Controller('student')
 export class StudentController {
@@ -85,6 +86,25 @@ export class StudentController {
     const data = await this.studentsService.getMyProfile(studentId);
     if (!data) throw new NotFoundException('Không tìm thấy profile');
     return new ResponseSuccess('Lấy profile thành công', data);
+  }
+
+  @Get('job-preference')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @GetJobPreferenceDocs()
+  @Roles(Role.STUDENT)
+  async getJobPreference(@Req() req: any) {
+    const userId = req.user.userId;
+
+    const data = await this.studentsService.getJobPreference(userId);
+
+    if (!data) {
+      throw new NotFoundException('Không tìm thấy thông tin job preference');
+    }
+
+    return new ResponseSuccess(
+      'Lấy thông tin job preference thành công',
+      data,
+    );
   }
 
   @Patch('me/job-status')
