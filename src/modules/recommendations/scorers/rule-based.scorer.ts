@@ -43,10 +43,10 @@ export interface StudentScoringContext {
 @Injectable()
 export class RuleBasedScorer {
     private readonly WEIGHTS = {
-        skill: 0.50,
-        salary: 0.25,
-        location: 0.15,
-        gpa: 0.10,
+        skill: 0.4,
+        salary: 0.2,
+        location: 0.35,
+        gpa: 0.05,
     }
 
     scoreJobsForStudent(ctx: JobScoringContext): ScoreResult[] {

@@ -330,6 +330,10 @@ export class StudentRepository implements IStudentRepository {
                 current_year: schema.students.current_year,
                 gpa: schema.students.gpa,
                 is_open_to_work: sql<boolean>`coalesce(${schema.students.is_open_to_work}, false)`,
+                email_student: schema.students.email_student,
+                phone: schema.students.phone,
+                student_code: schema.students.student_code,
+                student_status: schema.students.student_status,
                 skills: skillsSub.skills,
                 resumes: resumesSub.resumes,
             })
@@ -338,7 +342,6 @@ export class StudentRepository implements IStudentRepository {
             .leftJoin(resumesSub, eq(schema.students.student_id, resumesSub.student_id))
             .where(eq(schema.students.user_id, userId))
             .limit(1);
-
         return row ?? null;
     }
 

@@ -12,6 +12,10 @@ export interface StudentProfile {
     currentYear: number | null;
     gpa: string | number | null;
     isOpenToWork: boolean;
+    email: string | null;
+    phone: string | null;
+    studentCode: string;
+    studentStatus: string;
     skills: StudentSkillItem[];
     resumes: StudentResumeItem[];
 }

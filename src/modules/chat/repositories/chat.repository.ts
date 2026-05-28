@@ -284,10 +284,10 @@ export class ChatRepository implements IChatRepository {
             .select()
             .from(schema.messages)
             .where(and(...conditions))
-            .orderBy(desc(schema.messages.message_id))
+            .orderBy(desc(schema.messages.created_at))
             .limit(limit);
 
-        return rows.reverse();
+        return rows;
     }
 
     async findMessageById(messageId: number): Promise<MessageEntity | null> {
@@ -315,10 +315,17 @@ export class ChatRepository implements IChatRepository {
         const conditions = [
             eq(schema.messages.conversation_id, conversationId),
             sql`${schema.messages.sender_id} <> ${userId}`,
-            ...(lastReadId
-                ? [sql`${schema.messages.message_id} > ${lastReadId}`]
-                : []),
         ];
+
+        if (lastReadId) {
+            conditions.push(
+                sql`${schema.messages.created_at} > (
+                SELECT m_read.created_at 
+                FROM ${schema.messages} m_read 
+                WHERE m_read.message_id = ${lastReadId}
+            )`
+            );
+        }
 
         const [{ cnt }] = await this.db
             .select({ cnt: sql<number>`COUNT(*)::int` })
@@ -346,40 +353,49 @@ export class ChatRepository implements IChatRepository {
             'partner_participants'
         );
 
+        // 1. Định nghĩa các câu lệnh SQL phụ (Subqueries) dựa trên m.created_at DESC
         const last_message_content = sql<string>`
-      (SELECT m.content FROM ${schema.messages} m
-       WHERE m.conversation_id = ${schema.conversations.conversation_id}
-       ORDER BY m.message_id DESC LIMIT 1)
+        (SELECT m.content FROM ${schema.messages} m
+         WHERE m.conversation_id = ${schema.conversations.conversation_id}
+         ORDER BY m.created_at DESC LIMIT 1)
     `.as('last_message_content');
 
         const last_message_sender_id = sql<number>`
-      (SELECT m.sender_id FROM ${schema.messages} m
-       WHERE m.conversation_id = ${schema.conversations.conversation_id}
-       ORDER BY m.message_id DESC LIMIT 1)
+        (SELECT m.sender_id FROM ${schema.messages} m
+         WHERE m.conversation_id = ${schema.conversations.conversation_id}
+         ORDER BY m.created_at DESC LIMIT 1)
     `.as('last_message_sender_id');
 
         const last_message_created_at = sql<Date>`
-      (SELECT m.created_at FROM ${schema.messages} m
-       WHERE m.conversation_id = ${schema.conversations.conversation_id}
-       ORDER BY m.message_id DESC LIMIT 1)
+        (SELECT m.created_at FROM ${schema.messages} m
+         WHERE m.conversation_id = ${schema.conversations.conversation_id}
+         ORDER BY m.created_at DESC LIMIT 1)
     `.as('last_message_created_at');
-
-        const unread_count = sql<number>`
-      (SELECT COUNT(*)::int FROM ${schema.messages} m2
-       WHERE m2.conversation_id = ${schema.conversations.conversation_id}
-         AND m2.sender_id <> ${userId}
-         AND (
-           ${schema.conversation_participants.last_read_message_id} IS NULL
-           OR m2.message_id > ${schema.conversation_participants.last_read_message_id}
-         ))
-    `.as('unread_count');
 
         const last_message_has_images = sql<boolean>`
         (SELECT (array_length(m.image_urls, 1) > 0)
          FROM ${schema.messages} m
          WHERE m.conversation_id = ${schema.conversations.conversation_id}
-         ORDER BY m.message_id DESC LIMIT 1)
+         ORDER BY m.created_at DESC LIMIT 1)
     `.as('last_message_has_images');
+
+        // Đếm số tin nhắn chưa đọc dựa trên m2.created_at của chính userId này
+        const unread_count = sql<number>`
+        (SELECT COUNT(*)::int FROM ${schema.messages} m2
+         INNER JOIN ${schema.conversation_participants} cp 
+           ON cp.conversation_id = m2.conversation_id
+         WHERE m2.conversation_id = ${schema.conversations.conversation_id}
+           AND cp.user_id = ${userId}
+           AND m2.sender_id <> ${userId}
+           AND (
+             cp.last_read_message_id IS NULL
+             OR m2.created_at > (
+               SELECT m_read.created_at 
+               FROM ${schema.messages} m_read 
+               WHERE m_read.message_id = cp.last_read_message_id
+             )
+           ))
+    `.as('unread_count');
 
         const baseConditions = [eq(schema.conversation_participants.user_id, userId)];
 
@@ -406,9 +422,7 @@ export class ChatRepository implements IChatRepository {
                     created_at: schema.conversations.created_at,
                     is_hidden: schema.conversation_participants.is_hidden,
                     is_blocked: schema.conversation_participants.is_blocked,
-
                     is_blocked_by_partner: partnerParticipants.is_blocked,
-
                     last_message_content,
                     last_message_has_images,
                     last_message_sender_id,
@@ -461,9 +475,7 @@ export class ChatRepository implements IChatRepository {
                 created_at: schema.conversations.created_at,
                 is_hidden: schema.conversation_participants.is_hidden,
                 is_blocked: schema.conversation_participants.is_blocked,
-
                 is_blocked_by_partner: partnerParticipants.is_blocked,
-
                 last_message_content,
                 last_message_has_images,
                 last_message_sender_id,
@@ -479,7 +491,6 @@ export class ChatRepository implements IChatRepository {
                 eq(schema.conversation_participants.conversation_id, schema.conversations.conversation_id),
             )
             .innerJoin(schema.students, eq(schema.students.student_id, schema.conversations.student_id))
-
             .leftJoin(
                 partnerParticipants,
                 and(

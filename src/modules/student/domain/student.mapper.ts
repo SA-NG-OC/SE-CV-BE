@@ -123,6 +123,10 @@ export class StudentMapper {
             currentYear: raw.current_year,
             gpa: raw.gpa,
             isOpenToWork: raw.is_open_to_work,
+            email: raw.email_student,
+            phone: raw.phone,
+            studentCode: raw.student_code,
+            studentStatus: raw.student_status,
             skills,
             resumes,
         };

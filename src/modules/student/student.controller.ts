@@ -82,7 +82,7 @@ export class StudentController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.STUDENT)
   async getMe(@Req() req: any) {
-    const studentId = req.user.studentId;
+    const studentId = req.user.userId;
     const data = await this.studentsService.getMyProfile(studentId);
     if (!data) throw new NotFoundException('Không tìm thấy profile');
     return new ResponseSuccess('Lấy profile thành công', data);

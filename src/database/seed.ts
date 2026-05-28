@@ -599,7 +599,7 @@ async function main() {
             salary_max: 22000000,
             salary_type: 'monthly',
             is_salary_negotiable: false,
-            city: 'TP.HCM',
+            city: 'Hà Nội',
             application_deadline: '2027-07-31',
             status: 'approved',
             is_active: true,
@@ -642,7 +642,7 @@ async function main() {
             salary_max: 25000000,
             salary_type: 'monthly',
             is_salary_negotiable: true,
-            city: 'TP.HCM',
+            city: 'Hà Nội',
             application_deadline: '2027-09-30',
             status: 'pending',
             is_active: false,
@@ -728,7 +728,7 @@ async function main() {
             salary_max: 25000000,
             salary_type: 'monthly',
             is_salary_negotiable: false,
-            city: 'TP.HCM',
+            city: 'Hà Nội',
             application_deadline: '2027-09-15',
             status: 'approved',
             is_active: true,
@@ -751,7 +751,7 @@ async function main() {
             salary_max: 45000000,
             salary_type: 'monthly',
             is_salary_negotiable: true,
-            city: 'TP.HCM',
+            city: 'Hà Nội',
             application_deadline: '2027-08-31',
             status: 'approved',
             is_active: true,
@@ -795,7 +795,7 @@ async function main() {
             salary_max: 35000000,
             salary_type: 'monthly',
             is_salary_negotiable: true,
-            city: 'TP.HCM',
+            city: 'Hà Nội',
             application_deadline: '2027-10-31',
             status: 'approved',
             is_active: true,
@@ -837,7 +837,7 @@ async function main() {
             salary_max: 40000000,
             salary_type: 'monthly',
             is_salary_negotiable: false,
-            city: 'TP.HCM',
+            city: 'Hà Nội',
             application_deadline: '2027-09-15',
             status: 'approved',
             is_active: true,
@@ -881,7 +881,7 @@ async function main() {
             salary_max: 45000000,
             salary_type: 'monthly',
             is_salary_negotiable: true,
-            city: 'TP.HCM',
+            city: 'Hà Nội',
             application_deadline: '2027-10-15',
             status: 'approved',
             is_active: true,
@@ -925,7 +925,7 @@ async function main() {
             salary_max: 20000000,
             salary_type: 'monthly',
             is_salary_negotiable: true,
-            city: 'TP.HCM',
+            city: 'Hà Nội',
             application_deadline: '2027-08-31',
             status: 'pending',
             is_active: false,
@@ -998,7 +998,7 @@ async function main() {
             cv_url: UIT_LOGO,
             cover_letter: 'Kính chào Tech Solutions Vietnam, tôi là Nguyễn Văn A, sinh viên tốt nghiệp ngành CNTT. Với kinh nghiệm 2 năm với React và Node.js, tôi rất tự tin có thể đóng góp ngay từ đầu vào team Frontend của quý công ty.',
             status: 'submitted',
-            created_at: new Date('2026-04-10'),
+            created_at: new Date('2026-05-20'),
         },
         // Ứng tuyển Backend Developer tại Tech Solutions Vietnam — interviewing
         {
@@ -1007,7 +1007,7 @@ async function main() {
             cv_url: UIT_LOGO,
             cover_letter: 'Tôi muốn ứng tuyển vị trí Backend Developer (Node.js) tại Tech Solutions Vietnam. Tôi có kinh nghiệm xây dựng REST API và GraphQL, đồng thời thành thạo PostgreSQL và MongoDB.',
             status: 'interviewing',
-            created_at: new Date('2026-03-15'),
+            created_at: new Date('2026-05-21'),
         },
         // Ứng tuyển Full-stack tại Tiki — passed
         {
@@ -1016,7 +1016,7 @@ async function main() {
             cv_url: UIT_LOGO,
             cover_letter: 'Tôi rất hứng thú với vị trí Software Engineer (Full-stack) tại Tiki. Với kỹ năng React và Node.js, tôi tin mình có thể đóng góp vào các sản phẩm e-commerce phục vụ hàng triệu người dùng.',
             status: 'passed',
-            created_at: new Date('2026-02-20'),
+            created_at: new Date('2026-05-22'),
         },
         // Ứng tuyển Backend Engineer tại VNG — interviewing
         {
@@ -1025,7 +1025,7 @@ async function main() {
             cv_url: UIT_LOGO,
             cover_letter: 'Tôi muốn ứng tuyển vị trí Backend Engineer tại VNG. Dù background chính là Full-stack, tôi rất đam mê backend và distributed systems. Sản phẩm Zalo là nguồn cảm hứng lớn để tôi phát triển.',
             status: 'interviewing',
-            created_at: new Date('2026-03-01'),
+            created_at: new Date('2026-05-23'),
         },
         // Ứng tuyển Backend Golang tại MoMo — submitted
         {
@@ -1034,7 +1034,7 @@ async function main() {
             cv_url: UIT_LOGO,
             cover_letter: 'Tôi rất quan tâm đến vị trí Backend Engineer tại MoMo. Tôi đang học Golang và có nền tảng vững về backend. Tôi tin rằng môi trường Fintech sẽ giúp tôi phát triển nhanh hơn.',
             status: 'submitted',
-            created_at: new Date('2026-05-01'),
+            created_at: new Date('2026-05-24'),
         },
         // Ứng tuyển DevOps tại Tech Solutions Vietnam — rejected
         {
@@ -1043,7 +1043,7 @@ async function main() {
             cv_url: UIT_LOGO,
             cover_letter: 'Tôi muốn thử sức với vị trí DevOps tại Tech Solutions Vietnam. Tôi đã có kinh nghiệm cơ bản với Docker và đang học Kubernetes.',
             status: 'rejected',
-            created_at: new Date('2026-01-10'),
+            created_at: new Date('2026-05-25'),
         },
         // Ứng tuyển Data Analyst tại Tiki — submitted
         {
@@ -1052,7 +1052,7 @@ async function main() {
             cv_url: UIT_LOGO,
             cover_letter: 'Tôi ứng tuyển vị trí Data Analyst tại Tiki. Dù thế mạnh chính là lập trình, tôi cũng có kiến thức SQL và Python phân tích dữ liệu từ các dự án cá nhân.',
             status: 'submitted',
-            created_at: new Date('2026-05-15'),
+            created_at: new Date('2026-05-27'),
         },
 
         // ===== DỮ LIỆU NỀN: các student khác (để bảng không trống) =====
@@ -1063,7 +1063,7 @@ async function main() {
             cv_url: UIT_LOGO,
             cover_letter: 'Với kinh nghiệm Python và Data Engineering, tôi tin mình phù hợp với vị trí này tại FPT.',
             status: 'submitted',
-            created_at: new Date('2026-05-01'),
+            created_at: new Date('2026-05-28'),
         },
         // Lê Văn C → FPT Flutter
         {
@@ -1072,7 +1072,7 @@ async function main() {
             cv_url: UIT_LOGO,
             cover_letter: 'Tôi đang học Flutter và muốn thực tập tại FPT Software.',
             status: 'rejected',
-            created_at: new Date('2026-01-05'),
+            created_at: new Date('2026-04-23'),
         },
         // Hoàng Văn E → VNG Backend
         {
@@ -1081,7 +1081,7 @@ async function main() {
             cv_url: UIT_LOGO,
             cover_letter: 'Tôi có kinh nghiệm backend và muốn tham gia team VNG.',
             status: 'submitted',
-            created_at: new Date('2026-05-10'),
+            created_at: new Date('2026-02-10'),
         },
         // Đỗ Thị J → MoMo Backend Golang
         {

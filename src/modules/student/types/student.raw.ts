@@ -56,6 +56,10 @@ export type StudentProfileRaw = {
     current_year: number | null;
     gpa: string | number | null;
     is_open_to_work: boolean;
+    email_student: string | null;
+    phone: string | null;
+    student_code: string;
+    student_status: string;
     skills: any[];
     resumes: any[];
 };
