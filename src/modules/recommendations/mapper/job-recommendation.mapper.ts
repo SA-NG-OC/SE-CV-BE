@@ -14,7 +14,7 @@ export class JobRecommendationMapper {
             salaryMin: job.salary_min,
             salaryMax: job.salary_max,
             salaryType: job.salary_type,
-            saved: false,
+            saved: job.saved,
             isSalaryNegotiable: job.is_salary_negotiable,
             postedAt: toRelativeTime(new Date(job.created_at)),
             skills: (job.skills ?? []).map((s: any) => ({
