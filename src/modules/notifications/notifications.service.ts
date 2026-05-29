@@ -17,7 +17,7 @@ export class NotificationsService {
 
     async createAndNotify(data: CreateNotificationDto) {
         const notification = await this.repo.create(data);
-        this.gateway.sendToUser(data.user_id, 'new_notification', notification);
+        this.gateway.sendToUser(data.user_id, 'notification', notification);
 
         return notification;
     }
@@ -34,7 +34,7 @@ export class NotificationsService {
 
         const saved = await this.repo.createMany(notifications);
 
-        this.gateway.sendToUsers(userIds, 'new_notification', {
+        this.gateway.sendToUsers(userIds, 'notification', {
             ...data,
             created_at: new Date().toISOString(),
         });
@@ -70,6 +70,10 @@ export class NotificationsService {
     async getUnreadCount(userId: number) {
         const [data] = await this.repo.getUnreadCount(userId);
         return data;
+    }
+
+    async getCompanyUserId(companyId: number) {
+        return await this.repo.getCompanyUserId(companyId);
     }
 
     async markAsRead(userId: number, dto: MarkReadDto) {

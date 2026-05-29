@@ -31,6 +31,13 @@ export class NotificationsRepository implements INotificationsRepository {
         return adminId;
     }
 
+    async getCompanyUserId(companyId: number): Promise<number> {
+        const [company] = await this.db.select({ id: schema.companies.user_id })
+            .from(schema.companies)
+            .where(eq(schema.companies.company_id, companyId));
+        return company.id;
+    }
+
     // notifications.repository.ts
     async createMany(data: any[]) {
         return await this.db.insert(schema.notifications).values(data).returning();

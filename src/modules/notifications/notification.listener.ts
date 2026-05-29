@@ -26,7 +26,7 @@ export class NotificationsListener {
 
     @OnEvent('company.statusChanged')
     async handleCompanyStatusChanged(payload: any) {
-        const { userId, companyName, newStatus } = payload;
+        const { companyId, companyName, newStatus } = payload;
         let message = '';
         if (newStatus === 'APPROVED') {
             message = `Công ty "${companyName}" của bạn đã được phê duyệt. Bạn có thể bắt đầu đăng tuyển dụng và quản lý công ty.`;
@@ -35,6 +35,7 @@ export class NotificationsListener {
         } else {
             message = `Trạng thái công ty "${companyName}" của bạn đã thay đổi thành ${newStatus}. Vui lòng kiểm tra chi tiết trong phần quản lý công ty.`;
         }
+        const userId = await this.notificationsService.getCompanyUserId(companyId);
         await this.notificationsService.createAndNotify({
             user_id: userId,
             title: 'Cập nhật trạng thái công ty',

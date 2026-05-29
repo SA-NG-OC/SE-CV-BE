@@ -9,6 +9,7 @@ import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import {
     and,
     count,
+    desc,
     eq,
     gt,
     gte,
@@ -455,7 +456,10 @@ export class JobPostingRepository implements IJobPostingRepository {
                     eq(schema.job_postings.company_id, schema.companies.company_id),
                 )
                 .where(whereClause)
-                .orderBy(sql`${schema.job_postings.created_at} desc`)
+                .orderBy(
+                    desc(schema.job_postings.created_at),
+                    desc(schema.job_postings.job_id),
+                )
                 .limit(limit)
                 .offset(offset),
             this.db
@@ -539,7 +543,10 @@ export class JobPostingRepository implements IJobPostingRepository {
                     eq(schema.job_postings.company_id, schema.companies.company_id),
                 )
                 .where(whereClause)
-                .orderBy(sql`${schema.job_postings.created_at} desc`)
+                .orderBy(
+                    desc(schema.job_postings.created_at),
+                    desc(schema.job_postings.job_id),
+                )
                 .limit(limit)
                 .offset(offset),
             this.db
@@ -591,7 +598,10 @@ export class JobPostingRepository implements IJobPostingRepository {
                     eq(schema.job_postings.company_id, schema.companies.company_id),
                 )
                 .where(whereClause)
-                .orderBy(sql`${schema.job_postings.created_at} desc`)
+                .orderBy(
+                    desc(schema.job_postings.created_at),
+                    desc(schema.job_postings.job_id),
+                )
                 .limit(limit)
                 .offset(offset),
             this.db
@@ -646,7 +656,10 @@ export class JobPostingRepository implements IJobPostingRepository {
                     eq(schema.job_postings.company_id, schema.companies.company_id),
                 )
                 .where(whereClause)
-                .orderBy(sql`${schema.saved_jobs.created_at} desc`)
+                .orderBy(
+                    desc(schema.saved_jobs.created_at),
+                    desc(schema.saved_jobs.job_id),
+                )
                 .limit(limit)
                 .offset(offset),
             this.db
@@ -693,7 +706,10 @@ export class JobPostingRepository implements IJobPostingRepository {
                         )
                     )`,
                 hidden: sql<number>`
-                    count(*) filter (where ${schema.job_postings.is_active} = false)
+                    count(*) filter (
+                        where ${schema.job_postings.is_active} = false
+                        and ${schema.job_postings.status} = 'approved'
+                    )
                 `,
                 closed: sql<number>`
                     count(*) filter (

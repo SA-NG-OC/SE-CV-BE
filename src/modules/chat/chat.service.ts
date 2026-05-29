@@ -39,6 +39,7 @@ export class ChatService {
         student_id: studentId,
         last_message_at: new Date(),
         created_at: new Date(),
+        updated_at: new Date(),
       });
       isNew = true;
     }

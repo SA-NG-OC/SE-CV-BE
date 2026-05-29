@@ -228,7 +228,7 @@ export class CompanyService {
             this.eventEmitter.emit('company.statusChanged', {
                 email: result.email,
                 companyName: result.adminNote,
-                userId: companyId,
+                companyId: companyId,
                 newStatus: dto.status,
                 note: dto.admin_note,
             });

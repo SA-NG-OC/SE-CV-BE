@@ -13,6 +13,62 @@ const db = drizzle(pool, { schema });
 
 const UIT_LOGO = 'https://www.uit.edu.vn/media/Logo_UIT_In_bab5fa33d5.jpg';
 
+// ─── Public PDF links (unique, stable, real) ─────────────────────────────────
+// student_resumes — 12 CVs
+const CV_NVA_FULLSTACK =
+    'https://www.orimi.com/pdf-test.pdf';
+const CV_NVA_BACKEND =
+    'https://pdfobject.com/pdf/sample.pdf';
+const CV_NVA_FRONTEND =
+    'https://www.orimi.com/pdf-test.pdf';
+const CV_TTB_AI =
+    'https://pdfobject.com/pdf/sample.pdf';
+const CV_LVC_MOBILE =
+    'https://css4.pub/2015/usenix/example.pdf';
+const CV_PTD_BA =
+    'https://pdfobject.com/pdf/sample.pdf';
+const CV_HVE_DEVOPS =
+    'https://pdfobject.com/pdf/sample.pdf';
+const CV_NTF_FRONTEND =
+    'https://www.rd.usda.gov/sites/default/files/pdf-sample_0.pdf';
+const CV_DVG_BACKEND =
+    'https://www.rd.usda.gov/sites/default/files/pdf-sample_0.pdf';
+const CV_VTH_INTERN =
+    'https://freetestdata.com/wp-content/uploads/2021/09/Free_Test_Data_100KB_PDF.pdf';
+const CV_BVI_DATA =
+    'https://www.soundczech.cz/temp/lorem-ipsum.pdf';
+const CV_DTJ_SWE =
+    'https://unec.edu.az/application/uploads/2014/12/pdf-sample.pdf';
+
+// applications — 13 đơn
+const APP_100_CV =
+    'https://unec.edu.az/application/uploads/2014/12/pdf-sample.pdf';
+const APP_101_CV =
+    'https://www.soundczech.cz/temp/lorem-ipsum.pdf';
+const APP_102_CV =
+    'https://www.orimi.com/pdf-test.pdf';
+const APP_103_CV =
+    'https://pdfobject.com/pdf/sample.pdf';
+const APP_104_CV =
+    'https://www.cs.cmu.edu/~quake-papers/painless-conjugate-gradient.pdf';
+const APP_105_CV =
+    'https://css4.pub/2015/usenix/example.pdf';
+const APP_106_CV =
+    'https://pdfobject.com/pdf/sample.pdf';
+const APP_107_CV =
+    'https://www.rd.usda.gov/sites/default/files/pdf-sample_0.pdf';
+const APP_108_CV =
+    'https://freetestdata.com/wp-content/uploads/2021/09/Free_Test_Data_100KB_PDF.pdf';
+const APP_109_CV =
+    'https://www.soundczech.cz/temp/lorem-ipsum.pdf';
+const APP_110_CV =
+    'https://www.soundczech.cz/temp/lorem-ipsum.pdf';
+const APP_111_CV =
+    'https://pdfobject.com/pdf/sample.pdf';
+const APP_112_CV =
+    'https://www.bls.gov/cps/aa2010/cpsaat11.pdf';
+// ─────────────────────────────────────────────────────────────────────────────
+
 async function main() {
     console.log('🚀 Đang bắt đầu quá trình Seeding...');
 
@@ -93,6 +149,7 @@ async function main() {
         { category_id: 102, category_name: 'DevOps & Cloud' },
         { category_id: 103, category_name: 'Mobile Development' },
         { category_id: 104, category_name: 'UI/UX Design' },
+        { category_id: 105, category_name: 'Khác' },
     ]);
 
     // 5. USERS
@@ -509,19 +566,19 @@ async function main() {
     // 7.1 STUDENT RESUMES
     console.log('📦 Thêm Student Resumes...');
     await db.insert(schema.student_resumes).values([
-        { student_id: 100, resume_name: 'CV Nguyễn Văn A - Full-stack 2026', cv_url: UIT_LOGO, is_default: true },
-        { student_id: 101, resume_name: 'CV Trần Thị B - AI Engineer 2026', cv_url: UIT_LOGO, is_default: true },
-        { student_id: 102, resume_name: 'CV Lê Văn C - Mobile Dev', cv_url: UIT_LOGO, is_default: true },
-        { student_id: 103, resume_name: 'CV Phạm Thị D - BA/Data Analyst', cv_url: UIT_LOGO, is_default: true },
-        { student_id: 104, resume_name: 'CV Hoàng Văn E - DevOps', cv_url: UIT_LOGO, is_default: true },
-        { student_id: 105, resume_name: 'CV Ngô Thị F - Frontend', cv_url: UIT_LOGO, is_default: true },
-        { student_id: 106, resume_name: 'CV Đinh Văn G - Backend Java', cv_url: UIT_LOGO, is_default: true },
-        { student_id: 107, resume_name: 'CV Vũ Thị H - Intern', cv_url: UIT_LOGO, is_default: true },
-        { student_id: 108, resume_name: 'CV Bùi Văn I - Data Analyst', cv_url: UIT_LOGO, is_default: true },
-        { student_id: 109, resume_name: 'CV Đỗ Thị J - Software Engineer', cv_url: UIT_LOGO, is_default: true },
-        // CV phụ
-        { student_id: 100, resume_name: 'CV Nguyễn Văn A - Backend Focus', cv_url: UIT_LOGO, is_default: false },
-        { student_id: 100, resume_name: 'CV Nguyễn Văn A - Frontend Specialist', cv_url: UIT_LOGO, is_default: false },
+        { student_id: 100, resume_name: 'CV Nguyễn Văn A - Full-stack 2026', cv_url: CV_NVA_FULLSTACK, is_default: true },
+        { student_id: 101, resume_name: 'CV Trần Thị B - AI Engineer 2026', cv_url: CV_TTB_AI, is_default: true },
+        { student_id: 102, resume_name: 'CV Lê Văn C - Mobile Dev', cv_url: CV_LVC_MOBILE, is_default: true },
+        { student_id: 103, resume_name: 'CV Phạm Thị D - BA/Data Analyst', cv_url: CV_PTD_BA, is_default: true },
+        { student_id: 104, resume_name: 'CV Hoàng Văn E - DevOps', cv_url: CV_HVE_DEVOPS, is_default: true },
+        { student_id: 105, resume_name: 'CV Ngô Thị F - Frontend', cv_url: CV_NTF_FRONTEND, is_default: true },
+        { student_id: 106, resume_name: 'CV Đinh Văn G - Backend Java', cv_url: CV_DVG_BACKEND, is_default: true },
+        { student_id: 107, resume_name: 'CV Vũ Thị H - Intern', cv_url: CV_VTH_INTERN, is_default: true },
+        { student_id: 108, resume_name: 'CV Bùi Văn I - Data Analyst', cv_url: CV_BVI_DATA, is_default: true },
+        { student_id: 109, resume_name: 'CV Đỗ Thị J - Software Engineer', cv_url: CV_DTJ_SWE, is_default: true },
+        // CV phụ của Nguyễn Văn A
+        { student_id: 100, resume_name: 'CV Nguyễn Văn A - Backend Focus', cv_url: CV_NVA_BACKEND, is_default: false },
+        { student_id: 100, resume_name: 'CV Nguyễn Văn A - Frontend Specialist', cv_url: CV_NVA_FRONTEND, is_default: false },
     ]);
 
     // 8. STUDENT SKILLS
@@ -984,128 +1041,111 @@ async function main() {
     ]);
 
     // 11. APPLICATIONS
-    // Tất cả đơn ứng tuyển từ phía student đều là student_id: 100 (nguyenvana@student.edu.vn)
-    // Tất cả thay đổi trạng thái từ phía company đều là user_id: 2000 (company@test.com)
-    // → Đơn ứng tuyển vào job của company 100 (Tech Solutions) được xử lý bởi company@test.com
-    // → Đơn ứng tuyển vào job của các công ty khác vẫn do company đó xử lý (đây là dữ liệu nền)
     console.log('📦 Thêm Applications...');
     await db.insert(schema.applications).values([
         // ===== TÀI KHOẢN CHÍNH: student_id 100 (nguyenvana@student.edu.vn) =====
-        // Ứng tuyển Frontend Developer tại Tech Solutions Vietnam — submitted
         {
             application_id: 100,
             job_id: 100, student_id: 100,
-            cv_url: UIT_LOGO,
+            cv_url: APP_100_CV,
             cover_letter: 'Kính chào Tech Solutions Vietnam, tôi là Nguyễn Văn A, sinh viên tốt nghiệp ngành CNTT. Với kinh nghiệm 2 năm với React và Node.js, tôi rất tự tin có thể đóng góp ngay từ đầu vào team Frontend của quý công ty.',
             status: 'submitted',
             created_at: new Date('2026-05-20'),
         },
-        // Ứng tuyển Backend Developer tại Tech Solutions Vietnam — interviewing
         {
             application_id: 101,
             job_id: 101, student_id: 100,
-            cv_url: UIT_LOGO,
+            cv_url: APP_101_CV,
             cover_letter: 'Tôi muốn ứng tuyển vị trí Backend Developer (Node.js) tại Tech Solutions Vietnam. Tôi có kinh nghiệm xây dựng REST API và GraphQL, đồng thời thành thạo PostgreSQL và MongoDB.',
             status: 'interviewing',
             created_at: new Date('2026-05-21'),
         },
-        // Ứng tuyển Full-stack tại Tiki — passed
         {
             application_id: 102,
             job_id: 110, student_id: 100,
-            cv_url: UIT_LOGO,
+            cv_url: APP_102_CV,
             cover_letter: 'Tôi rất hứng thú với vị trí Software Engineer (Full-stack) tại Tiki. Với kỹ năng React và Node.js, tôi tin mình có thể đóng góp vào các sản phẩm e-commerce phục vụ hàng triệu người dùng.',
             status: 'passed',
             created_at: new Date('2026-05-22'),
         },
-        // Ứng tuyển Backend Engineer tại VNG — interviewing
         {
             application_id: 103,
             job_id: 108, student_id: 100,
-            cv_url: UIT_LOGO,
+            cv_url: APP_103_CV,
             cover_letter: 'Tôi muốn ứng tuyển vị trí Backend Engineer tại VNG. Dù background chính là Full-stack, tôi rất đam mê backend và distributed systems. Sản phẩm Zalo là nguồn cảm hứng lớn để tôi phát triển.',
             status: 'interviewing',
             created_at: new Date('2026-05-23'),
         },
-        // Ứng tuyển Backend Golang tại MoMo — submitted
         {
             application_id: 104,
             job_id: 113, student_id: 100,
-            cv_url: UIT_LOGO,
+            cv_url: APP_104_CV,
             cover_letter: 'Tôi rất quan tâm đến vị trí Backend Engineer tại MoMo. Tôi đang học Golang và có nền tảng vững về backend. Tôi tin rằng môi trường Fintech sẽ giúp tôi phát triển nhanh hơn.',
             status: 'submitted',
             created_at: new Date('2026-05-24'),
         },
-        // Ứng tuyển DevOps tại Tech Solutions Vietnam — rejected
         {
             application_id: 105,
             job_id: 104, student_id: 100,
-            cv_url: UIT_LOGO,
+            cv_url: APP_105_CV,
             cover_letter: 'Tôi muốn thử sức với vị trí DevOps tại Tech Solutions Vietnam. Tôi đã có kinh nghiệm cơ bản với Docker và đang học Kubernetes.',
             status: 'rejected',
             created_at: new Date('2026-05-25'),
         },
-        // Ứng tuyển Data Analyst tại Tiki — submitted
         {
             application_id: 106,
             job_id: 111, student_id: 100,
-            cv_url: UIT_LOGO,
+            cv_url: APP_106_CV,
             cover_letter: 'Tôi ứng tuyển vị trí Data Analyst tại Tiki. Dù thế mạnh chính là lập trình, tôi cũng có kiến thức SQL và Python phân tích dữ liệu từ các dự án cá nhân.',
             status: 'submitted',
             created_at: new Date('2026-05-27'),
         },
 
-        // ===== DỮ LIỆU NỀN: các student khác (để bảng không trống) =====
-        // Trần Thị B → FPT Data Engineer
+        // ===== DỮ LIỆU NỀN: các student khác =====
         {
             application_id: 107,
             job_id: 106, student_id: 101,
-            cv_url: UIT_LOGO,
+            cv_url: APP_107_CV,
             cover_letter: 'Với kinh nghiệm Python và Data Engineering, tôi tin mình phù hợp với vị trí này tại FPT.',
             status: 'submitted',
             created_at: new Date('2026-05-28'),
         },
-        // Lê Văn C → FPT Flutter
         {
             application_id: 108,
             job_id: 107, student_id: 102,
-            cv_url: UIT_LOGO,
+            cv_url: APP_108_CV,
             cover_letter: 'Tôi đang học Flutter và muốn thực tập tại FPT Software.',
             status: 'rejected',
             created_at: new Date('2026-04-23'),
         },
-        // Hoàng Văn E → VNG Backend
         {
             application_id: 109,
             job_id: 108, student_id: 104,
-            cv_url: UIT_LOGO,
+            cv_url: APP_109_CV,
             cover_letter: 'Tôi có kinh nghiệm backend và muốn tham gia team VNG.',
             status: 'submitted',
             created_at: new Date('2026-02-10'),
         },
-        // Đỗ Thị J → MoMo Backend Golang
         {
             application_id: 110,
             job_id: 113, student_id: 109,
-            cv_url: UIT_LOGO,
+            cv_url: APP_110_CV,
             cover_letter: 'Tôi quan tâm đến Fintech và muốn đóng góp cho hệ thống thanh toán của MoMo.',
             status: 'passed',
             created_at: new Date('2026-02-20'),
         },
-        // Bùi Văn I → Tiki Data Analyst
         {
             application_id: 111,
             job_id: 111, student_id: 108,
-            cv_url: UIT_LOGO,
+            cv_url: APP_111_CV,
             cover_letter: 'Tôi thành thạo SQL và Python cho data analysis, đã có kinh nghiệm thực tế với Power BI.',
             status: 'passed',
             created_at: new Date('2026-03-01'),
         },
-        // Phạm Thị D → Tiki Data Analyst
         {
             application_id: 112,
             job_id: 111, student_id: 103,
-            cv_url: UIT_LOGO,
+            cv_url: APP_112_CV,
             cover_letter: 'Với kỹ năng phân tích dữ liệu và SQL nâng cao, tôi phù hợp với vị trí Data Analyst tại Tiki.',
             status: 'interviewing',
             created_at: new Date('2026-04-25'),
@@ -1113,62 +1153,42 @@ async function main() {
     ]);
 
     // 11.1 APPLICATION STATUS HISTORY
-    // changed_by phía company: nếu là job của Tech Solutions (company_id 100) → user_id 2000
     console.log('📦 Thêm Application Status History...');
     await db.insert(schema.application_status_history).values([
-        // App 101 (Nguyễn Văn A → Tech Solutions Backend): submitted → interviewing (bởi company@test.com)
         { application_id: 101, old_status: 'submitted', new_status: 'interviewing', changed_by: 2000, created_at: new Date('2026-03-28') },
-
-        // App 102 (Nguyễn Văn A → Tiki Full-stack): submitted → interviewing → passed
         { application_id: 102, old_status: 'submitted', new_status: 'interviewing', changed_by: 2002, created_at: new Date('2026-03-05') },
         { application_id: 102, old_status: 'interviewing', new_status: 'passed', changed_by: 2002, created_at: new Date('2026-03-20') },
-
-        // App 103 (Nguyễn Văn A → VNG Backend): submitted → interviewing
         { application_id: 103, old_status: 'submitted', new_status: 'interviewing', changed_by: 2001, created_at: new Date('2026-03-18') },
-
-        // App 105 (Nguyễn Văn A → Tech Solutions DevOps): submitted → rejected (bởi company@test.com)
         { application_id: 105, old_status: 'submitted', new_status: 'rejected', changed_by: 2000, created_at: new Date('2026-01-25') },
-
-        // App 108 (Lê Văn C → FPT Flutter): submitted → rejected
         { application_id: 108, old_status: 'submitted', new_status: 'rejected', changed_by: 1100, created_at: new Date('2026-02-01') },
-
-        // App 110 (Đỗ Thị J → MoMo): submitted → interviewing → passed
         { application_id: 110, old_status: 'submitted', new_status: 'interviewing', changed_by: 2003, created_at: new Date('2026-03-05') },
         { application_id: 110, old_status: 'interviewing', new_status: 'passed', changed_by: 2003, created_at: new Date('2026-03-25') },
-
-        // App 111 (Bùi Văn I → Tiki Data): submitted → interviewing → passed
         { application_id: 111, old_status: 'submitted', new_status: 'interviewing', changed_by: 2002, created_at: new Date('2026-03-15') },
         { application_id: 111, old_status: 'interviewing', new_status: 'passed', changed_by: 2002, created_at: new Date('2026-04-02') },
-
-        // App 112 (Phạm Thị D → Tiki Data): submitted → interviewing
         { application_id: 112, old_status: 'submitted', new_status: 'interviewing', changed_by: 2002, created_at: new Date('2026-05-08') },
     ]);
 
-    // 12. SAVED JOBS — tập trung vào student_id: 100
+    // 12. SAVED JOBS
     console.log('📦 Thêm Saved Jobs...');
     await db.insert(schema.saved_jobs).values([
-        // student_id 100 (nguyenvana) lưu nhiều job
-        { student_id: 100, job_id: 108 },  // VNG Backend
-        { student_id: 100, job_id: 113 },  // MoMo Backend Golang
-        { student_id: 100, job_id: 110 },  // Tiki Full-stack
-        { student_id: 100, job_id: 109 },  // VNG ML
-        { student_id: 100, job_id: 114 },  // MoMo Data Scientist
-        // Các student khác (dữ liệu nền)
+        { student_id: 100, job_id: 108 },
+        { student_id: 100, job_id: 113 },
+        { student_id: 100, job_id: 110 },
+        { student_id: 100, job_id: 109 },
+        { student_id: 100, job_id: 114 },
         { student_id: 101, job_id: 109 },
         { student_id: 103, job_id: 114 },
         { student_id: 104, job_id: 104 },
         { student_id: 108, job_id: 111 },
     ]);
 
-    // 13. FOLLOWED COMPANIES — tập trung vào student_id: 100
+    // 13. FOLLOWED COMPANIES
     console.log('📦 Thêm Followed Companies...');
     await db.insert(schema.followed_companies).values([
-        // student_id 100 (nguyenvana) follow nhiều công ty
-        { student_id: 100, company_id: 102 }, // VNG
-        { student_id: 100, company_id: 103 }, // Tiki
-        { student_id: 100, company_id: 104 }, // MoMo
-        { student_id: 100, company_id: 101 }, // FPT
-        // Các student khác (dữ liệu nền)
+        { student_id: 100, company_id: 102 },
+        { student_id: 100, company_id: 103 },
+        { student_id: 100, company_id: 104 },
+        { student_id: 100, company_id: 101 },
         { student_id: 101, company_id: 101 },
         { student_id: 101, company_id: 102 },
         { student_id: 104, company_id: 101 },
@@ -1177,10 +1197,9 @@ async function main() {
         { student_id: 109, company_id: 102 },
     ]);
 
-    // 14. JOB VIEWS — tập trung vào student_id: 100
+    // 14. JOB VIEWS
     console.log('📦 Thêm Job Views...');
     await db.insert(schema.job_views).values([
-        // student_id 100 xem nhiều job
         { job_id: 100, student_id: 100, ip_address: '192.168.1.1', viewed_at: new Date('2026-04-08') },
         { job_id: 101, student_id: 100, ip_address: '192.168.1.1', viewed_at: new Date('2026-03-12') },
         { job_id: 108, student_id: 100, ip_address: '192.168.1.1', viewed_at: new Date('2026-05-20') },
@@ -1189,21 +1208,17 @@ async function main() {
         { job_id: 109, student_id: 100, ip_address: '192.168.1.1', viewed_at: new Date('2026-05-24') },
         { job_id: 104, student_id: 100, ip_address: '192.168.1.1', viewed_at: new Date('2026-01-08') },
         { job_id: 111, student_id: 100, ip_address: '192.168.1.1', viewed_at: new Date('2026-05-15') },
-        // Các student khác (dữ liệu nền)
         { job_id: 109, student_id: 101, ip_address: '192.168.1.2', viewed_at: new Date('2026-05-19') },
         { job_id: 108, student_id: 104, ip_address: '192.168.1.4', viewed_at: new Date('2026-05-24') },
         { job_id: 111, student_id: 108, ip_address: '192.168.1.8', viewed_at: new Date('2026-05-25') },
-        // Anonymous views
         { job_id: 100, student_id: null, ip_address: '14.225.10.1', viewed_at: new Date('2026-05-26') },
         { job_id: 105, student_id: null, ip_address: '14.225.10.2', viewed_at: new Date('2026-05-27') },
         { job_id: 108, student_id: null, ip_address: '14.225.10.3', viewed_at: new Date('2026-05-27') },
     ]);
 
     // 15. COMMENTS
-    // Tất cả review của student đều từ student_id: 100 (nguyenvana@student.edu.vn)
     console.log('📦 Thêm Comments...');
     await db.insert(schema.comments).values([
-        // Nguyễn Văn A review các công ty
         {
             student_id: 100, company_id: 100, rating: 5,
             content: 'Tech Solutions Vietnam có môi trường làm việc rất thoải mái và chuyên nghiệp. Team thân thiện, mentor nhiệt tình. Rất phù hợp cho fresh grad muốn phát triển kỹ năng Full-stack!',
@@ -1220,7 +1235,6 @@ async function main() {
             student_id: 100, company_id: 104, rating: 4,
             content: 'MoMo có tech stack hiện đại và bài toán Fintech rất thú vị. Đội ngũ chuyên nghiệp, văn phòng Bình Thạnh đẹp. Lương cạnh tranh, chế độ tốt. Recommend cho ai thích Fintech!',
         },
-        // Các student khác review (dữ liệu nền)
         {
             student_id: 101, company_id: 101, rating: 4,
             content: 'FPT Software đào tạo rất bài bản, phù hợp với sinh viên mới ra trường muốn học hỏi.',
@@ -1236,46 +1250,38 @@ async function main() {
     ]);
 
     // 16. JOB INVITATIONS
-    // Tất cả lời mời gửi đến student đều dành cho student_id: 100 (nguyenvana@student.edu.vn)
-    // Lời mời từ Tech Solutions (company_id 100) được gửi bởi user_id 2000 (company@test.com)
     console.log('📦 Thêm Job Invitations...');
     await db.insert(schema.job_invitations).values([
-        // Tech Solutions Vietnam (company@test.com) mời Nguyễn Văn A vào job DevOps — accepted
         {
             invitation_id: 100,
             job_id: 104, student_id: 100,
             message: 'Chào Nguyễn Văn A, chúng tôi đã xem hồ sơ của bạn và rất ấn tượng với kinh nghiệm Full-stack. Tech Solutions Vietnam muốn mời bạn cân nhắc vị trí DevOps Engineer của chúng tôi. Đây là cơ hội tốt để bạn mở rộng kỹ năng sang infrastructure!',
             status: 'accepted',
         },
-        // VNG mời Nguyễn Văn A vào Backend Engineer — accepted (đã nộp đơn)
         {
             invitation_id: 101,
             job_id: 108, student_id: 100,
             message: 'Chào Nguyễn Văn A, VNG Corporation đã xem xét hồ sơ của bạn và thấy rất phù hợp với vị trí Backend Engineer. Chúng tôi muốn mời bạn ứng tuyển chính thức. Hệ thống Zalo sẽ là môi trường tuyệt vời để bạn phát triển!',
             status: 'accepted',
         },
-        // Tiki mời Nguyễn Văn A vào Full-stack — accepted (đã nộp đơn)
         {
             invitation_id: 102,
             job_id: 110, student_id: 100,
             message: 'Hi Văn A, Tiki muốn mời bạn ứng tuyển vị trí Software Engineer (Full-stack). Profile React + Node.js của bạn rất phù hợp với stack của chúng tôi. Join Tiki để cùng xây dựng nền tảng e-commerce số 1 Việt Nam nhé!',
             status: 'accepted',
         },
-        // MoMo mời Nguyễn Văn A vào Backend Golang — pending
         {
             invitation_id: 103,
             job_id: 113, student_id: 100,
             message: 'Xin chào Nguyễn Văn A, MoMo đang tìm kiếm Backend Engineer tài năng. Chúng tôi thấy bạn có nền tảng backend vững chắc và tinh thần học hỏi tốt. Dù bạn chưa có kinh nghiệm Golang, chúng tôi sẵn sàng đào tạo nếu bạn có đam mê!',
             status: 'pending',
         },
-        // Tech Solutions Vietnam (company@test.com) mời Nguyễn Văn A vào Full-stack job mới — pending
         {
             invitation_id: 104,
             job_id: 103, student_id: 100,
             message: 'Chào Văn A, ngoài vị trí Frontend bạn đã ứng tuyển, chúng tôi cũng mở vị trí Full-stack Developer mới. Với kinh nghiệm của bạn, chúng tôi nghĩ bạn sẽ fit tốt hơn với role này. Bạn có muốn cân nhắc không?',
             status: 'pending',
         },
-        // FPT mời Nguyễn Văn A vào Java Developer — rejected (từ chối vì không phù hợp)
         {
             invitation_id: 105,
             job_id: 105, student_id: 100,
@@ -1285,275 +1291,80 @@ async function main() {
     ]);
 
     // 17. CONVERSATIONS & MESSAGES
-    // Conversation chính: Tech Solutions Vietnam (company@test.com / user_id 2000) ↔ Nguyễn Văn A (user_id 100)
     console.log('📦 Thêm Conversations & Messages...');
     await db.insert(schema.conversations).values([
-        // CHÍNH: Tech Solutions Vietnam ↔ Nguyễn Văn A
-        {
-            conversation_id: 100,
-            company_id: 100, student_id: 100,
-            last_message_at: new Date('2026-05-26T15:30:00'),
-        },
-        // VNG ↔ Nguyễn Văn A
-        {
-            conversation_id: 101,
-            company_id: 102, student_id: 100,
-            last_message_at: new Date('2026-05-25T10:00:00'),
-        },
-        // Tiki ↔ Nguyễn Văn A
-        {
-            conversation_id: 102,
-            company_id: 103, student_id: 100,
-            last_message_at: new Date('2026-05-24T14:00:00'),
-        },
-        // MoMo ↔ Nguyễn Văn A
-        {
-            conversation_id: 103,
-            company_id: 104, student_id: 100,
-            last_message_at: new Date('2026-05-20T09:00:00'),
-        },
+        { conversation_id: 100, company_id: 100, student_id: 100, last_message_at: new Date('2026-05-26T15:30:00') },
+        { conversation_id: 101, company_id: 102, student_id: 100, last_message_at: new Date('2026-05-25T10:00:00') },
+        { conversation_id: 102, company_id: 103, student_id: 100, last_message_at: new Date('2026-05-24T14:00:00') },
+        { conversation_id: 103, company_id: 104, student_id: 100, last_message_at: new Date('2026-05-20T09:00:00') },
     ]);
 
     await db.insert(schema.conversation_participants).values([
-        // Conv 100: Tech Solutions (user_id 2000) ↔ Nguyễn Văn A (user_id 100)
         { conversation_id: 100, user_id: 2000, is_hidden: false, is_blocked: false },
         { conversation_id: 100, user_id: 100, is_hidden: false, is_blocked: false, last_read_message_id: 105 },
-        // Conv 101: VNG (user_id 2001) ↔ Nguyễn Văn A (user_id 100)
         { conversation_id: 101, user_id: 2001, is_hidden: false, is_blocked: false },
         { conversation_id: 101, user_id: 100, is_hidden: false, is_blocked: false, last_read_message_id: 108 },
-        // Conv 102: Tiki (user_id 2002) ↔ Nguyễn Văn A (user_id 100)
         { conversation_id: 102, user_id: 2002, is_hidden: false, is_blocked: false },
         { conversation_id: 102, user_id: 100, is_hidden: false, is_blocked: false },
-        // Conv 103: MoMo (user_id 2003) ↔ Nguyễn Văn A (user_id 100)
         { conversation_id: 103, user_id: 2003, is_hidden: false, is_blocked: false },
         { conversation_id: 103, user_id: 100, is_hidden: false, is_blocked: false },
     ]);
 
     await db.insert(schema.messages).values([
-        // ===== Conv 100: Tech Solutions (2000) ↔ Nguyễn Văn A (100) — LUỒNG CHÍNH =====
-        {
-            message_id: 100,
-            conversation_id: 100, sender_id: 2000,
-            content: 'Chào Nguyễn Văn A, cảm ơn bạn đã ứng tuyển vị trí Frontend Developer tại Tech Solutions Vietnam! Chúng tôi đã xem CV của bạn và rất ấn tượng. Bạn có thể cho chúng tôi biết thêm về dự án React lớn nhất bạn từng thực hiện không?',
-            created_at: new Date('2026-04-12T09:00:00'),
-        },
-        {
-            message_id: 101,
-            conversation_id: 100, sender_id: 100,
-            content: 'Chào anh/chị, cảm ơn đã liên hệ! Dự án lớn nhất của em là hệ thống quản lý kho hàng real-time cho một doanh nghiệp vừa, sử dụng React + Redux Toolkit ở frontend, Node.js + Socket.io ở backend. Hệ thống xử lý được ~500 giao dịch/phút. Em có thể gửi demo link nếu anh/chị muốn xem.',
-            created_at: new Date('2026-04-12T10:30:00'),
-        },
-        {
-            message_id: 102,
-            conversation_id: 100, sender_id: 2000,
-            content: 'Nghe rất ấn tượng! Vui lòng gửi link demo và GitHub repo nhé. Chúng tôi muốn review code trước khi schedule phỏng vấn kỹ thuật. Dự kiến phỏng vấn vào tuần tới, bạn có thể tham gia không?',
-            created_at: new Date('2026-04-13T08:00:00'),
-        },
-        {
-            message_id: 103,
-            conversation_id: 100, sender_id: 100,
-            content: 'Dạ, em xin gửi link: Demo: https://warehouse-demo.vercel.app | GitHub: https://github.com/nguyenvana/warehouse-app. Em hoàn toàn available tuần tới, anh/chị có thể arrange lịch bất kỳ ngày nào từ thứ 2 đến thứ 6 nhé!',
-            created_at: new Date('2026-04-13T09:15:00'),
-        },
-        {
-            message_id: 104,
-            conversation_id: 100, sender_id: 2000,
-            content: 'Cảm ơn bạn! Chúng tôi đã review code và rất đánh giá cao cách bạn tổ chức component và quản lý state. Chúng tôi muốn mời bạn phỏng vấn kỹ thuật vào thứ Tư 22/04 lúc 10h00 tại văn phòng (123 Nguyễn Huệ, Q1). Bạn xác nhận được không?',
-            created_at: new Date('2026-04-15T14:00:00'),
-        },
-        {
-            message_id: 105,
-            conversation_id: 100, sender_id: 100,
-            content: 'Dạ em xác nhận tham gia phỏng vấn vào thứ Tư 22/04 lúc 10h00 ạ. Anh/chị có thể cho em biết vòng phỏng vấn sẽ bao gồm những gì để em chuẩn bị tốt hơn không?',
-            created_at: new Date('2026-04-15T15:00:00'),
-        },
-        {
-            message_id: 106,
-            conversation_id: 100, sender_id: 2000,
-            content: 'Phỏng vấn gồm 2 phần: (1) Technical ~60 phút — coding, system design cơ bản, hỏi về React/Node.js; (2) Culture fit với Team Lead ~30 phút. Bạn nhớ mang laptop nhé. Chúc bạn phỏng vấn tốt!',
-            created_at: new Date('2026-04-16T09:00:00'),
-        },
-        {
-            message_id: 107,
-            conversation_id: 100, sender_id: 2000,
-            content: 'Chào Văn A, sau khi phỏng vấn, team chúng tôi đánh giá rất tích cực về bạn! Chúng tôi muốn offer bạn vị trí Backend Developer (Node.js) với mức lương 18 triệu VNĐ/tháng, review sau 3 tháng. Bạn có thể cho chúng tôi biết suy nghĩ trong vòng 3 ngày không?',
-            created_at: new Date('2026-05-26T15:30:00'),
-        },
+        // ===== Conv 100: Tech Solutions (2000) ↔ Nguyễn Văn A (100) =====
+        { message_id: 100, conversation_id: 100, sender_id: 2000, content: 'Chào Nguyễn Văn A, cảm ơn bạn đã ứng tuyển vị trí Frontend Developer tại Tech Solutions Vietnam! Chúng tôi đã xem CV của bạn và rất ấn tượng. Bạn có thể cho chúng tôi biết thêm về dự án React lớn nhất bạn từng thực hiện không?', created_at: new Date('2026-04-12T09:00:00') },
+        { message_id: 101, conversation_id: 100, sender_id: 100, content: 'Chào anh/chị, cảm ơn đã liên hệ! Dự án lớn nhất của em là hệ thống quản lý kho hàng real-time cho một doanh nghiệp vừa, sử dụng React + Redux Toolkit ở frontend, Node.js + Socket.io ở backend. Hệ thống xử lý được ~500 giao dịch/phút. Em có thể gửi demo link nếu anh/chị muốn xem.', created_at: new Date('2026-04-12T10:30:00') },
+        { message_id: 102, conversation_id: 100, sender_id: 2000, content: 'Nghe rất ấn tượng! Vui lòng gửi link demo và GitHub repo nhé. Chúng tôi muốn review code trước khi schedule phỏng vấn kỹ thuật. Dự kiến phỏng vấn vào tuần tới, bạn có thể tham gia không?', created_at: new Date('2026-04-13T08:00:00') },
+        { message_id: 103, conversation_id: 100, sender_id: 100, content: 'Dạ, em xin gửi link: Demo: https://warehouse-demo.vercel.app | GitHub: https://github.com/nguyenvana/warehouse-app. Em hoàn toàn available tuần tới, anh/chị có thể arrange lịch bất kỳ ngày nào từ thứ 2 đến thứ 6 nhé!', created_at: new Date('2026-04-13T09:15:00') },
+        { message_id: 104, conversation_id: 100, sender_id: 2000, content: 'Cảm ơn bạn! Chúng tôi đã review code và rất đánh giá cao cách bạn tổ chức component và quản lý state. Chúng tôi muốn mời bạn phỏng vấn kỹ thuật vào thứ Tư 22/04 lúc 10h00 tại văn phòng (123 Nguyễn Huệ, Q1). Bạn xác nhận được không?', created_at: new Date('2026-04-15T14:00:00') },
+        { message_id: 105, conversation_id: 100, sender_id: 100, content: 'Dạ em xác nhận tham gia phỏng vấn vào thứ Tư 22/04 lúc 10h00 ạ. Anh/chị có thể cho em biết vòng phỏng vấn sẽ bao gồm những gì để em chuẩn bị tốt hơn không?', created_at: new Date('2026-04-15T15:00:00') },
+        { message_id: 106, conversation_id: 100, sender_id: 2000, content: 'Phỏng vấn gồm 2 phần: (1) Technical ~60 phút — coding, system design cơ bản, hỏi về React/Node.js; (2) Culture fit với Team Lead ~30 phút. Bạn nhớ mang laptop nhé. Chúc bạn phỏng vấn tốt!', created_at: new Date('2026-04-16T09:00:00') },
+        { message_id: 107, conversation_id: 100, sender_id: 2000, content: 'Chào Văn A, sau khi phỏng vấn, team chúng tôi đánh giá rất tích cực về bạn! Chúng tôi muốn offer bạn vị trí Backend Developer (Node.js) với mức lương 18 triệu VNĐ/tháng, review sau 3 tháng. Bạn có thể cho chúng tôi biết suy nghĩ trong vòng 3 ngày không?', created_at: new Date('2026-05-26T15:30:00') },
 
         // ===== Conv 101: VNG (2001) ↔ Nguyễn Văn A (100) =====
-        {
-            message_id: 108,
-            conversation_id: 101, sender_id: 2001,
-            content: 'Chào Nguyễn Văn A, VNG đã nhận được đơn ứng tuyển Backend Engineer của bạn. Chúng tôi muốn mời bạn tham gia vòng test online trước. Link test sẽ được gửi vào email trong 24h tới.',
-            created_at: new Date('2026-03-05T10:00:00'),
-        },
-        {
-            message_id: 109,
-            conversation_id: 101, sender_id: 100,
-            content: 'Cảm ơn VNG đã liên hệ! Em rất hào hứng với cơ hội này. Em sẽ chú ý email và hoàn thành bài test đúng hạn ạ.',
-            created_at: new Date('2026-03-05T11:00:00'),
-        },
-        {
-            message_id: 110,
-            conversation_id: 101, sender_id: 2001,
-            content: 'Bạn đã hoàn thành bài test rất tốt! Chúng tôi muốn mời bạn lên phỏng vấn onsite tại văn phòng VNG (182 Lê Đại Hành, Q11) vào thứ Năm 19/03 lúc 14h. Phỏng vấn gồm technical round với 2 senior engineer và system design round.',
-            created_at: new Date('2026-03-15T09:00:00'),
-        },
-        {
-            message_id: 111,
-            conversation_id: 101, sender_id: 100,
-            content: 'Dạ em xác nhận ạ! Em sẽ có mặt lúc 14h thứ Năm 19/03. Cảm ơn VNG rất nhiều vì cơ hội tuyệt vời này!',
-            created_at: new Date('2026-03-15T10:00:00'),
-        },
+        { message_id: 108, conversation_id: 101, sender_id: 2001, content: 'Chào Nguyễn Văn A, VNG đã nhận được đơn ứng tuyển Backend Engineer của bạn. Chúng tôi muốn mời bạn tham gia vòng test online trước. Link test sẽ được gửi vào email trong 24h tới.', created_at: new Date('2026-03-05T10:00:00') },
+        { message_id: 109, conversation_id: 101, sender_id: 100, content: 'Cảm ơn VNG đã liên hệ! Em rất hào hứng với cơ hội này. Em sẽ chú ý email và hoàn thành bài test đúng hạn ạ.', created_at: new Date('2026-03-05T11:00:00') },
+        { message_id: 110, conversation_id: 101, sender_id: 2001, content: 'Bạn đã hoàn thành bài test rất tốt! Chúng tôi muốn mời bạn lên phỏng vấn onsite tại văn phòng VNG (182 Lê Đại Hành, Q11) vào thứ Năm 19/03 lúc 14h. Phỏng vấn gồm technical round với 2 senior engineer và system design round.', created_at: new Date('2026-03-15T09:00:00') },
+        { message_id: 111, conversation_id: 101, sender_id: 100, content: 'Dạ em xác nhận ạ! Em sẽ có mặt lúc 14h thứ Năm 19/03. Cảm ơn VNG rất nhiều vì cơ hội tuyệt vời này!', created_at: new Date('2026-03-15T10:00:00') },
 
         // ===== Conv 102: Tiki (2002) ↔ Nguyễn Văn A (100) =====
-        {
-            message_id: 112,
-            conversation_id: 102, sender_id: 2002,
-            content: 'Hi Văn A! Tiki đã xem xét hồ sơ và muốn thông báo bạn đã pass vòng CV screening. Chúc mừng! Bước tiếp theo là vòng technical interview. Bạn available vào tuần tới không?',
-            created_at: new Date('2026-02-25T08:00:00'),
-        },
-        {
-            message_id: 113,
-            conversation_id: 102, sender_id: 100,
-            content: 'Cảm ơn Tiki! Em rất vui khi biết mình pass vòng CV. Em hoàn toàn available tuần tới, anh/chị cứ arrange lịch nhé ạ.',
-            created_at: new Date('2026-02-25T09:00:00'),
-        },
-        {
-            message_id: 114,
-            conversation_id: 102, sender_id: 2002,
-            content: 'Tuyệt! Chúng tôi đã cân nhắc kỹ và muốn offer bạn vị trí Software Engineer với mức 22 triệu/tháng, kèm stock options sau 1 năm. Thời gian bắt đầu linh hoạt. Bạn có muốn thảo luận thêm không?',
-            created_at: new Date('2026-05-24T14:00:00'),
-        },
+        { message_id: 112, conversation_id: 102, sender_id: 2002, content: 'Hi Văn A! Tiki đã xem xét hồ sơ và muốn thông báo bạn đã pass vòng CV screening. Chúc mừng! Bước tiếp theo là vòng technical interview. Bạn available vào tuần tới không?', created_at: new Date('2026-02-25T08:00:00') },
+        { message_id: 113, conversation_id: 102, sender_id: 100, content: 'Cảm ơn Tiki! Em rất vui khi biết mình pass vòng CV. Em hoàn toàn available tuần tới, anh/chị cứ arrange lịch nhé ạ.', created_at: new Date('2026-02-25T09:00:00') },
+        { message_id: 114, conversation_id: 102, sender_id: 2002, content: 'Tuyệt! Chúng tôi đã cân nhắc kỹ và muốn offer bạn vị trí Software Engineer với mức 22 triệu/tháng, kèm stock options sau 1 năm. Thời gian bắt đầu linh hoạt. Bạn có muốn thảo luận thêm không?', created_at: new Date('2026-05-24T14:00:00') },
 
         // ===== Conv 103: MoMo (2003) ↔ Nguyễn Văn A (100) =====
-        {
-            message_id: 115,
-            conversation_id: 103, sender_id: 2003,
-            content: 'Chào Nguyễn Văn A, MoMo đã nhận đơn ứng tuyển Backend Engineer Golang của bạn. Dù bạn chưa có nhiều kinh nghiệm Golang, chúng tôi thấy nền tảng backend của bạn rất tốt. Bạn có thể chia sẻ về kinh nghiệm làm việc với RESTful API và database của mình không?',
-            created_at: new Date('2026-05-05T09:00:00'),
-        },
-        {
-            message_id: 116,
-            conversation_id: 103, sender_id: 100,
-            content: 'Cảm ơn MoMo đã xem xét đơn của em! Em đã xây dựng nhiều REST API với Node.js, có kinh nghiệm với PostgreSQL và MongoDB. Em cũng tự học Golang được 2 tháng và đã build một số CLI tools. Em rất hứng thú với bài toán payment system của MoMo!',
-            created_at: new Date('2026-05-05T10:30:00'),
-        },
-        {
-            message_id: 117,
-            conversation_id: 103, sender_id: 2003,
-            content: 'Cảm ơn bạn đã chia sẻ! Tinh thần tự học Golang rất đáng khích lệ. Chúng tôi sẽ review và liên hệ lại trong 1 tuần tới nhé.',
-            created_at: new Date('2026-05-20T09:00:00'),
-        },
+        { message_id: 115, conversation_id: 103, sender_id: 2003, content: 'Chào Nguyễn Văn A, MoMo đã nhận đơn ứng tuyển Backend Engineer Golang của bạn. Dù bạn chưa có nhiều kinh nghiệm Golang, chúng tôi thấy nền tảng backend của bạn rất tốt. Bạn có thể chia sẻ về kinh nghiệm làm việc với RESTful API và database của mình không?', created_at: new Date('2026-05-05T09:00:00') },
+        { message_id: 116, conversation_id: 103, sender_id: 100, content: 'Cảm ơn MoMo đã xem xét đơn của em! Em đã xây dựng nhiều REST API với Node.js, có kinh nghiệm với PostgreSQL và MongoDB. Em cũng tự học Golang được 2 tháng và đã build một số CLI tools. Em rất hứng thú với bài toán payment system của MoMo!', created_at: new Date('2026-05-05T10:30:00') },
+        { message_id: 117, conversation_id: 103, sender_id: 2003, content: 'Cảm ơn bạn đã chia sẻ! Tinh thần tự học Golang rất đáng khích lệ. Chúng tôi sẽ review và liên hệ lại trong 1 tuần tới nhé.', created_at: new Date('2026-05-20T09:00:00') },
     ]);
 
-    // 18. NOTIFICATIONS — tập trung vào user_id: 100 (student), 2000 (company), 1000 (admin)
+    // 18. NOTIFICATIONS
     console.log('📦 Thêm Notifications...');
     await db.insert(schema.notifications).values([
         // ===== Thông báo cho Nguyễn Văn A (user_id: 100) =====
-        {
-            user_id: 100, type: 'application_status',
-            title: 'Tech Solutions Vietnam mời bạn phỏng vấn!',
-            message: 'Đơn ứng tuyển Backend Developer (Node.js) của bạn đã được chuyển sang trạng thái Phỏng vấn. Kiểm tra tin nhắn để biết thêm chi tiết!',
-            link: '/applications/101', is_read: true,
-        },
-        {
-            user_id: 100, type: 'application_status',
-            title: 'Chúc mừng! Bạn đã pass phỏng vấn tại Tiki!',
-            message: 'Tiki Corporation xác nhận bạn đã vượt qua tất cả các vòng phỏng vấn cho vị trí Software Engineer. Tiki sẽ sớm gửi offer letter cho bạn!',
-            link: '/applications/102', is_read: true,
-        },
-        {
-            user_id: 100, type: 'application_status',
-            title: 'Cập nhật đơn ứng tuyển DevOps',
-            message: 'Đơn ứng tuyển vị trí DevOps Engineer tại Tech Solutions Vietnam chưa phù hợp lần này. Đừng nản lòng, hãy thử các vị trí phù hợp hơn!',
-            link: '/applications/105', is_read: true,
-        },
-        {
-            user_id: 100, type: 'job_invitation',
-            title: 'VNG gửi lời mời ứng tuyển',
-            message: 'VNG Corporation mời bạn ứng tuyển vị trí Backend Engineer (Go/Python). Đây là cơ hội tuyệt vời để làm việc với hệ thống triệu người dùng!',
-            link: '/invitations/101', is_read: true,
-        },
-        {
-            user_id: 100, type: 'job_invitation',
-            title: 'MoMo gửi lời mời ứng tuyển',
-            message: 'MoMo (M_Service) mời bạn ứng tuyển vị trí Backend Engineer Golang. Xem chi tiết và phản hồi ngay!',
-            link: '/invitations/103', is_read: false,
-        },
-        {
-            user_id: 100, type: 'new_message',
-            title: 'Tech Solutions Vietnam gửi offer!',
-            message: 'Bạn có tin nhắn quan trọng từ Tech Solutions Vietnam về offer thư. Đừng bỏ lỡ!',
-            link: '/conversations/100', is_read: false,
-        },
-        {
-            user_id: 100, type: 'new_message',
-            title: 'Tiki gửi tin nhắn mới',
-            message: 'Tiki Corporation vừa gửi thông tin về offer lương. Kiểm tra ngay!',
-            link: '/conversations/102', is_read: false,
-        },
-        {
-            user_id: 100, type: 'job_recommendation',
-            title: 'Có 5 việc làm mới phù hợp với bạn',
-            message: 'Dựa trên kỹ năng React và Node.js của bạn, hệ thống tìm thấy 5 vị trí Full-stack/Backend mới từ các công ty hàng đầu. Xem ngay!',
-            link: '/jobs?skills=react,nodejs', is_read: false,
-        },
+        { user_id: 100, type: 'application_status', title: 'Tech Solutions Vietnam mời bạn phỏng vấn!', message: 'Đơn ứng tuyển Backend Developer (Node.js) của bạn đã được chuyển sang trạng thái Phỏng vấn. Kiểm tra tin nhắn để biết thêm chi tiết!', link: '/applications/101', is_read: true },
+        { user_id: 100, type: 'application_status', title: 'Chúc mừng! Bạn đã pass phỏng vấn tại Tiki!', message: 'Tiki Corporation xác nhận bạn đã vượt qua tất cả các vòng phỏng vấn cho vị trí Software Engineer. Tiki sẽ sớm gửi offer letter cho bạn!', link: '/applications/102', is_read: true },
+        { user_id: 100, type: 'application_status', title: 'Cập nhật đơn ứng tuyển DevOps', message: 'Đơn ứng tuyển vị trí DevOps Engineer tại Tech Solutions Vietnam chưa phù hợp lần này. Đừng nản lòng, hãy thử các vị trí phù hợp hơn!', link: '/applications/105', is_read: true },
+        { user_id: 100, type: 'job_invitation', title: 'VNG gửi lời mời ứng tuyển', message: 'VNG Corporation mời bạn ứng tuyển vị trí Backend Engineer (Go/Python). Đây là cơ hội tuyệt vời để làm việc với hệ thống triệu người dùng!', link: '/invitations/101', is_read: true },
+        { user_id: 100, type: 'job_invitation', title: 'MoMo gửi lời mời ứng tuyển', message: 'MoMo (M_Service) mời bạn ứng tuyển vị trí Backend Engineer Golang. Xem chi tiết và phản hồi ngay!', link: '/invitations/103', is_read: false },
+        { user_id: 100, type: 'new_message', title: 'Tech Solutions Vietnam gửi offer!', message: 'Bạn có tin nhắn quan trọng từ Tech Solutions Vietnam về offer thư. Đừng bỏ lỡ!', link: '/conversations/100', is_read: false },
+        { user_id: 100, type: 'new_message', title: 'Tiki gửi tin nhắn mới', message: 'Tiki Corporation vừa gửi thông tin về offer lương. Kiểm tra ngay!', link: '/conversations/102', is_read: false },
+        { user_id: 100, type: 'job_recommendation', title: 'Có 5 việc làm mới phù hợp với bạn', message: 'Dựa trên kỹ năng React và Node.js của bạn, hệ thống tìm thấy 5 vị trí Full-stack/Backend mới từ các công ty hàng đầu. Xem ngay!', link: '/jobs?skills=react,nodejs', is_read: false },
 
         // ===== Thông báo cho company@test.com (user_id: 2000) =====
-        {
-            user_id: 2000, type: 'job_approved',
-            title: 'Tin "Frontend Developer (React)" đã được duyệt',
-            message: 'Admin đã duyệt tin tuyển dụng Frontend Developer (React). Tin đang được hiển thị và đã nhận được 15 đơn ứng tuyển!',
-            link: '/company/jobs/100', is_read: true,
-        },
-        {
-            user_id: 2000, type: 'job_approved',
-            title: 'Tin "Backend Developer (Node.js)" đã được duyệt',
-            message: 'Tin tuyển dụng Backend Developer (Node.js) đã được admin duyệt và đang hiển thị trên hệ thống.',
-            link: '/company/jobs/101', is_read: true,
-        },
-        {
-            user_id: 2000, type: 'system',
-            title: 'Tin "UI/UX Designer" bị từ chối duyệt',
-            message: 'Admin đã từ chối tin tuyển dụng UI/UX Designer. Lý do: Mô tả công việc chưa đủ chi tiết. Vui lòng chỉnh sửa và gửi lại.',
-            link: '/company/jobs/102', is_read: false,
-        },
-        {
-            user_id: 2000, type: 'new_message',
-            title: 'Nguyễn Văn A phản hồi offer thư',
-            message: 'Ứng viên Nguyễn Văn A vừa gửi phản hồi về offer. Kiểm tra ngay để không bỏ lỡ!',
-            link: '/conversations/100', is_read: false,
-        },
-        {
-            user_id: 2000, type: 'application_status',
-            title: 'Có 7 đơn ứng tuyển mới hôm nay',
-            message: 'Tin tuyển dụng Frontend Developer nhận được 7 đơn ứng tuyển mới trong 24h qua. Xem và xử lý ngay!',
-            link: '/company/applications', is_read: false,
-        },
+        { user_id: 2000, type: 'job_approved', title: 'Tin "Frontend Developer (React)" đã được duyệt', message: 'Admin đã duyệt tin tuyển dụng Frontend Developer (React). Tin đang được hiển thị và đã nhận được 15 đơn ứng tuyển!', link: '/company/jobs/100', is_read: true },
+        { user_id: 2000, type: 'job_approved', title: 'Tin "Backend Developer (Node.js)" đã được duyệt', message: 'Tin tuyển dụng Backend Developer (Node.js) đã được admin duyệt và đang hiển thị trên hệ thống.', link: '/company/jobs/101', is_read: true },
+        { user_id: 2000, type: 'system', title: 'Tin "UI/UX Designer" bị từ chối duyệt', message: 'Admin đã từ chối tin tuyển dụng UI/UX Designer. Lý do: Mô tả công việc chưa đủ chi tiết. Vui lòng chỉnh sửa và gửi lại.', link: '/company/jobs/102', is_read: false },
+        { user_id: 2000, type: 'new_message', title: 'Nguyễn Văn A phản hồi offer thư', message: 'Ứng viên Nguyễn Văn A vừa gửi phản hồi về offer. Kiểm tra ngay để không bỏ lỡ!', link: '/conversations/100', is_read: false },
+        { user_id: 2000, type: 'application_status', title: 'Có 7 đơn ứng tuyển mới hôm nay', message: 'Tin tuyển dụng Frontend Developer nhận được 7 đơn ứng tuyển mới trong 24h qua. Xem và xử lý ngay!', link: '/company/applications', is_read: false },
 
         // ===== Thông báo cho admin@test.com (user_id: 1000) =====
-        {
-            user_id: 1000, type: 'system',
-            title: 'Startup XYZ chờ duyệt hồ sơ công ty',
-            message: 'Công ty Startup XYZ đã đăng ký và đang chờ admin duyệt. Vui lòng xem xét hồ sơ.',
-            link: '/admin/companies/105', is_read: false,
-        },
-        {
-            user_id: 1000, type: 'system',
-            title: 'Có 2 tin tuyển dụng mới chờ duyệt',
-            message: 'FPT Software và Tiki Corporation vừa đăng tin tuyển dụng mới, đang chờ admin phê duyệt.',
-            link: '/admin/jobs?status=pending', is_read: false,
-        },
-        {
-            user_id: 1000, type: 'system',
-            title: 'Báo cáo hệ thống tuần 22/2026',
-            message: 'Tổng kết tuần: 18 đơn ứng tuyển mới, 3 công ty mới đăng ký, 5 tin tuyển dụng cần duyệt. Xem báo cáo chi tiết.',
-            link: '/admin/statistics', is_read: true,
-        },
+        { user_id: 1000, type: 'system', title: 'Startup XYZ chờ duyệt hồ sơ công ty', message: 'Công ty Startup XYZ đã đăng ký và đang chờ admin duyệt. Vui lòng xem xét hồ sơ.', link: '/admin/companies/105', is_read: false },
+        { user_id: 1000, type: 'system', title: 'Có 2 tin tuyển dụng mới chờ duyệt', message: 'FPT Software và Tiki Corporation vừa đăng tin tuyển dụng mới, đang chờ admin phê duyệt.', link: '/admin/jobs?status=pending', is_read: false },
+        { user_id: 1000, type: 'system', title: 'Báo cáo hệ thống tuần 22/2026', message: 'Tổng kết tuần: 18 đơn ứng tuyển mới, 3 công ty mới đăng ký, 5 tin tuyển dụng cần duyệt. Xem báo cáo chi tiết.', link: '/admin/statistics', is_read: true },
     ]);
 
-    // 19. SEARCH HISTORY — tập trung vào student_id: 100
+    // 19. SEARCH HISTORY
     console.log('📦 Thêm Search History...');
     await db.insert(schema.search_history).values([
         { student_id: 100, search_query: 'frontend developer react hcm', filters: { city: 'TP.HCM', experience_level: 'Junior' }, results_count: 5 },
@@ -1561,18 +1372,16 @@ async function main() {
         { student_id: 100, search_query: 'backend engineer golang fintech', filters: { city: 'TP.HCM' }, results_count: 3 },
         { student_id: 100, search_query: 'software engineer product company', filters: { salary_min: 18000000 }, results_count: 6 },
         { student_id: 100, search_query: 'devops engineer docker kubernetes', filters: { experience_level: 'Junior' }, results_count: 4 },
-        // Dữ liệu nền
         { student_id: 101, search_query: 'machine learning engineer', filters: { city: 'TP.HCM' }, results_count: 3 },
         { student_id: 109, search_query: 'backend engineer golang senior', filters: { salary_min: 20000000 }, results_count: 4 },
     ]);
 
-    // 20. SAVED SEARCHES — tập trung vào student_id: 100
+    // 20. SAVED SEARCHES
     console.log('📦 Thêm Saved Searches...');
     await db.insert(schema.saved_searches).values([
         { student_id: 100, search_name: 'React/Node Jobs HCM', search_query: 'react nodejs developer', filters: { city: 'TP.HCM' }, is_alert_enabled: true },
         { student_id: 100, search_name: 'Backend Engineer Junior', search_query: 'backend engineer junior', filters: { salary_min: 15000000, experience_level: 'Junior' }, is_alert_enabled: true },
         { student_id: 100, search_name: 'Full-stack Product Company', search_query: 'full-stack software engineer', filters: { city: 'TP.HCM', salary_min: 18000000 }, is_alert_enabled: false },
-        // Dữ liệu nền
         { student_id: 101, search_name: 'AI/ML Opportunities', search_query: 'machine learning ai engineer', filters: { salary_min: 20000000 }, is_alert_enabled: true },
     ]);
 

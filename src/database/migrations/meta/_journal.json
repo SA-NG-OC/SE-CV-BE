@@ -190,6 +190,20 @@
       "when": 1779589069947,
       "tag": "0026_sticky_talos",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1780040288908,
+      "tag": "0027_add_triggers",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1780045082997,
+      "tag": "0028_happy_gamma_corps",
+      "breakpoints": true
     }
   ]
 }

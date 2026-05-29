@@ -582,6 +582,7 @@ export const conversations = pgTable(
             .references(() => students.student_id, { onDelete: "cascade" }),
         last_message_at: timestamp("last_message_at").defaultNow(),
         created_at: timestamp("created_at").defaultNow(),
+        updated_at: timestamp('updated_at').defaultNow(),
     },
     (t) => [
         uniqueIndex("uq_conversation_company_student").on(t.company_id, t.student_id),

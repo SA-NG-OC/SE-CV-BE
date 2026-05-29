@@ -5,6 +5,8 @@ export interface INotificationsRepository {
 
     getAdminId(): Promise<number[]>;
 
+    getCompanyUserId(companyId: number): Promise<number>
+
     createMany(data: any[]): Promise<any[]>;
 
     findByUserId(userId: number, page: number, limit: number): Promise<PaginationResponse<any>>;
