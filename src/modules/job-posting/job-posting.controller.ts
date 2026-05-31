@@ -20,7 +20,7 @@ import { RolesGuard } from 'src/modules/auth/guards/roles.guard';
 import { Roles } from 'src/modules/auth/decorators/roles.decorator';
 import { Role, RoleName } from 'src/common/types/role.enum';
 import { CreateJobPostingDto } from './dto/create-job-posting.dto';
-import { JobSkillItem, CategoryItem, UpdateJobResponse, JobPostingResponse } from './interfaces';
+import { JobSkillItem, CategoryItem, UpdateJobResponse, JobPostingResponse } from './types';
 import ResponseSuccess from 'src/common/types/response-success';
 import { UpdateJobPostingDto } from './dto/update-job-posting.dto';
 import { ListJobPostingDto } from './dto/list-job-posting.dto';

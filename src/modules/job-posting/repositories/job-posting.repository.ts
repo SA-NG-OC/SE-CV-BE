@@ -9,7 +9,6 @@ import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import {
     and,
     count,
-    desc,
     eq,
     gt,
     gte,
@@ -38,7 +37,7 @@ import {
     UpdateJobResponse,
     JobPostingStats,
     AdminJobStats,
-} from '../interfaces';
+} from '../types';
 import { JobPostingDomain, JobPostingDomainError } from '../domain/job-posting.domain';
 import { JobPostingMapper } from '../domain/job-posting.mapper';
 import { ChangeJobPostingStatusDto } from '../dto/change-job-posting-status.dto';
@@ -371,7 +370,7 @@ export class JobPostingRepository implements IJobPostingRepository {
         page: number,
         limit: number,
         roleName: RoleName,
-    ): Promise<PaginationResponse<ProfileJobCard>> {
+    ): Promise<RawJobPage<RawJobWithMeta>> {
         const offset = (page - 1) * limit;
 
         const conditions: SQL[] = [eq(schema.job_postings.company_id, companyId)];
@@ -383,8 +382,16 @@ export class JobPostingRepository implements IJobPostingRepository {
 
         const [rows, totalResult] = await Promise.all([
             this.db
-                .select()
+                .select({
+                    job: schema.job_postings,
+                    company_name: schema.companies.company_name,
+                    logo_url: schema.companies.logo_url,
+                })
                 .from(schema.job_postings)
+                .innerJoin(
+                    schema.companies,
+                    eq(schema.job_postings.company_id, schema.companies.company_id),
+                )
                 .where(whereClause)
                 .orderBy(sql`${schema.job_postings.created_at} desc`)
                 .limit(limit)
@@ -396,11 +403,19 @@ export class JobPostingRepository implements IJobPostingRepository {
         ]);
 
         const totalItems = totalResult[0]?.count ?? 0;
-        const data = rows
-            .map((r) => JobPostingDomain.fromPersistence(r))
-            .map((d) => JobPostingMapper.toProfileJobCard(d));
 
-        return new PaginationResponse(data, page, limit, totalItems);
+        return {
+            items: rows.map((r) => ({
+                domain: JobPostingDomain.fromPersistence(r.job),
+                companyName: r.company_name,
+                logoUrl: r.logo_url ?? null,
+                applicantCount: 0,
+                skills: [],
+            })),
+            total: totalItems,
+            page,
+            limit,
+        };
     }
 
     async findAllJobList(
@@ -431,6 +446,7 @@ export class JobPostingRepository implements IJobPostingRepository {
 
     // =========================================================================
     // FIND RAW — Admin / Company / Student / SavedJobs
+    // Tất cả đều trả RawJobPage<RawJobWithMeta> — service lo mapper
     // =========================================================================
 
     async findRawForAdmin(dto: ListJobPostingDto): Promise<RawJobPage<RawJobWithMeta>> {
@@ -456,10 +472,7 @@ export class JobPostingRepository implements IJobPostingRepository {
                     eq(schema.job_postings.company_id, schema.companies.company_id),
                 )
                 .where(whereClause)
-                .orderBy(
-                    desc(schema.job_postings.created_at),
-                    desc(schema.job_postings.job_id),
-                )
+                .orderBy(sql`${schema.job_postings.created_at} desc`, sql`${schema.job_postings.job_id} desc`)
                 .limit(limit)
                 .offset(offset),
             this.db
@@ -543,10 +556,7 @@ export class JobPostingRepository implements IJobPostingRepository {
                     eq(schema.job_postings.company_id, schema.companies.company_id),
                 )
                 .where(whereClause)
-                .orderBy(
-                    desc(schema.job_postings.created_at),
-                    desc(schema.job_postings.job_id),
-                )
+                .orderBy(sql`${schema.job_postings.created_at} desc`, sql`${schema.job_postings.job_id} desc`)
                 .limit(limit)
                 .offset(offset),
             this.db
@@ -598,10 +608,7 @@ export class JobPostingRepository implements IJobPostingRepository {
                     eq(schema.job_postings.company_id, schema.companies.company_id),
                 )
                 .where(whereClause)
-                .orderBy(
-                    desc(schema.job_postings.created_at),
-                    desc(schema.job_postings.job_id),
-                )
+                .orderBy(sql`${schema.job_postings.created_at} desc`, sql`${schema.job_postings.job_id} desc`)
                 .limit(limit)
                 .offset(offset),
             this.db
@@ -656,10 +663,7 @@ export class JobPostingRepository implements IJobPostingRepository {
                     eq(schema.job_postings.company_id, schema.companies.company_id),
                 )
                 .where(whereClause)
-                .orderBy(
-                    desc(schema.saved_jobs.created_at),
-                    desc(schema.saved_jobs.job_id),
-                )
+                .orderBy(sql`${schema.saved_jobs.created_at} desc`, sql`${schema.job_postings.job_id} desc`)
                 .limit(limit)
                 .offset(offset),
             this.db
@@ -706,10 +710,7 @@ export class JobPostingRepository implements IJobPostingRepository {
                         )
                     )`,
                 hidden: sql<number>`
-                    count(*) filter (
-                        where ${schema.job_postings.is_active} = false
-                        and ${schema.job_postings.status} = 'approved'
-                    )
+                    count(*) filter (where ${schema.job_postings.is_active} = false)
                 `,
                 closed: sql<number>`
                     count(*) filter (

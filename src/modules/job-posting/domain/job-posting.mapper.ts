@@ -1,8 +1,40 @@
+// job-posting.mapper.ts
 import { toRelativeTime } from "src/utils/relative-time.util";
-import { AdminJobCard, CompanyJobCard, JobPostingResponse, JobSkillItem, JobTag, ProfileJobCard, StudentJobCard } from "../interfaces";
+import {
+    AdminJobCard,
+    CompanyJobCard,
+    JobPostingResponse,
+    JobSkillItem,
+    JobTag,
+    ProfileJobCard,
+    StudentJobCard,
+} from "../types";
 import { JobPostingDomain } from "./job-posting.domain";
+import { RawJobWithMeta } from "../types/job-posting.raw";
 
 export class JobPostingMapper {
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    private static resolveTag(domain: JobPostingDomain): CompanyJobCard['tag'] {
+        if (domain.status !== 'approved') return 'Pending';
+        if (!domain.isActive) return 'Hidden';
+        if (domain.applicationDeadline && new Date(domain.applicationDeadline) < new Date()) {
+            return 'Closed';
+        }
+        return 'Active';
+    }
+
+    private static resolveJobTag(domain: JobPostingDomain): JobTag {
+        if (domain.status !== 'approved') return JobTag.PENDING;
+        if (!domain.isActive) return JobTag.HIDDEN;
+        if (domain.applicationDeadline && new Date(domain.applicationDeadline) < new Date()) {
+            return JobTag.CLOSED;
+        }
+        return JobTag.ACTIVE;
+    }
+
+    // ── Mappers ──────────────────────────────────────────────────────────────
 
     static toProfileJobCard(domain: JobPostingDomain): ProfileJobCard {
         return {
@@ -15,8 +47,8 @@ export class JobPostingMapper {
             salaryMax: domain.salaryMax,
             salaryType: domain.salaryType,
             isSalaryNegotiable: domain.isSalaryNegotiable,
-            applicationDeadline: domain.applicationDeadline
-        }
+            applicationDeadline: domain.applicationDeadline,
+        };
     }
 
     static toStudentCard(
@@ -27,7 +59,7 @@ export class JobPostingMapper {
             skills: JobSkillItem[];
             applicantCount: number;
             saved?: boolean;
-        }
+        },
     ): StudentJobCard {
         return {
             jobId: domain.jobId,
@@ -43,33 +75,8 @@ export class JobPostingMapper {
             postedAt: toRelativeTime(domain.createdAt),
             applicantCount: extra.applicantCount,
             skills: extra.skills,
-            saved: extra.saved || false,
-            // Computed từ domain — mapper chỉ gọi, không tự tính
-            //isExpired:           domain.isExpired(),
-            //canApply:            domain.canAcceptApplications(),
-            //salaryDisplay:       domain.getSalaryDisplay(),
+            saved: extra.saved ?? false,
         };
-    }
-
-    private static resolveTag(domain: JobPostingDomain): CompanyJobCard['tag'] {
-        const now = new Date();
-
-        if (domain.status !== 'approved') {
-            return 'Pending';
-        }
-
-        if (!domain.isActive) {
-            return 'Hidden';
-        }
-
-        if (domain.applicationDeadline) {
-            const deadline = new Date(domain.applicationDeadline);
-            if (deadline < now) {
-                return 'Closed';
-            }
-        }
-
-        return 'Active';
     }
 
     static toCompanyCard(
@@ -123,7 +130,6 @@ export class JobPostingMapper {
         };
     }
 
-
     static toResponse(
         domain: JobPostingDomain,
         extra: {
@@ -133,21 +139,6 @@ export class JobPostingMapper {
             logoUrl: string | null;
         },
     ): JobPostingResponse {
-
-        const now = new Date();
-
-        let tag: JobTag;
-
-        if (domain.status !== 'approved') {
-            tag = JobTag.PENDING;
-        } else if (!domain.isActive) {
-            tag = JobTag.HIDDEN;
-        } else if (domain.applicationDeadline && new Date(domain.applicationDeadline) < now) {
-            tag = JobTag.CLOSED;
-        } else {
-            tag = JobTag.ACTIVE;
-        }
-
         return {
             jobId: domain.jobId,
             companyId: domain.companyId,
@@ -173,8 +164,52 @@ export class JobPostingMapper {
             updatedAt: domain.updatedAt,
             requiredSkills: extra.requiredSkills,
             adminNote: domain.adminNote,
-            tag,
+            tag: this.resolveJobTag(domain),
             saved: false,
+        };
+    }
+
+    // ── Convenience: map từ RawJobWithMeta ───────────────────────────────────
+
+    static rawToProfileJobCard(raw: RawJobWithMeta): ProfileJobCard {
+        return this.toProfileJobCard(raw.domain);
+    }
+
+    static rawToStudentCard(raw: RawJobWithMeta, saved: boolean): StudentJobCard {
+        return this.toStudentCard(raw.domain, {
+            companyName: raw.companyName,
+            logoUrl: raw.logoUrl,
+            skills: raw.skills,
+            applicantCount: raw.applicantCount,
+            saved,
+        });
+    }
+
+    static rawToCompanyCard(raw: RawJobWithMeta): CompanyJobCard {
+        return this.toCompanyCard(raw.domain, {
+            companyName: raw.companyName,
+            logoUrl: raw.logoUrl,
+            skills: raw.skills,
+            applicantCount: raw.applicantCount,
+        });
+    }
+
+    static rawToAdminCard(raw: RawJobWithMeta): AdminJobCard {
+        return this.toAdminCard(raw.domain, {
+            companyName: raw.companyName,
+            logoUrl: raw.logoUrl,
+        });
+    }
+
+    static rawToResponse(raw: RawJobWithMeta, saved: boolean): JobPostingResponse {
+        return {
+            ...this.toResponse(raw.domain, {
+                applicantCount: raw.applicantCount,
+                requiredSkills: raw.skills,
+                companyName: raw.companyName,
+                logoUrl: raw.logoUrl,
+            }),
+            saved,
         };
     }
 }

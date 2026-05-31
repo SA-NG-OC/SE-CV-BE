@@ -1,5 +1,5 @@
 import { JobPostingDomain } from "../domain/job-posting.domain";
-import { JobSkillItem } from "../interfaces";
+import { JobSkillItem } from ".";
 
 
 export interface RawJobWithMeta {

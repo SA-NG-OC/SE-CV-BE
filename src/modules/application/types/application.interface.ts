@@ -1,4 +1,4 @@
-import { JobSkillItem } from "src/modules/job-posting/interfaces";
+import { JobSkillItem } from "src/modules/job-posting/types";
 import { ApplicationStatus } from "../domain/application/application.props";
 
 export interface ApplicationCardView {

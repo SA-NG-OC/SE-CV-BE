@@ -1,4 +1,4 @@
-import { JobSkillItem } from 'src/modules/job-posting/interfaces';
+import { JobSkillItem } from 'src/modules/job-posting/types';
 import { ApplicationStatus } from './application.props';
 import { ApplicantCardRaw, ApplicationCardRaw, ApplicationStatsRaw } from '../../types/application.raw';
 import { ApplicantCardView, ApplicationCardView, ApplicationStats } from '../../types/application.interface';
