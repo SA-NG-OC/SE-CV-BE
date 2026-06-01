@@ -10,10 +10,13 @@ import { FollowedCompanyModule } from '../follow/follow.module';
 @Module({
   imports: [AuthModule, CloudinaryModule, FollowedCompanyModule],
   controllers: [CompanyController],
-  providers: [CompanyService, {
-    provide: I_COMPANY_REPOSITORY,
-    useClass: CompanyRepository,
-  }],
+  providers: [
+    CompanyService,
+    {
+      provide: I_COMPANY_REPOSITORY,
+      useClass: CompanyRepository,
+    },
+  ],
   exports: [I_COMPANY_REPOSITORY],
 })
-export class CompanyModule { }
+export class CompanyModule {}

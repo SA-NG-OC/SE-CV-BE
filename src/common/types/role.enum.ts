@@ -1,11 +1,11 @@
 export enum Role {
-    ADMIN = 1,
-    COMPANY = 2,
-    STUDENT = 3
+  ADMIN = 1,
+  COMPANY = 2,
+  STUDENT = 3,
 }
 
 export enum RoleName {
-    ADMIN = 'admin',
-    COMPANY = 'company',
-    STUDENT = 'student'
+  ADMIN = 'admin',
+  COMPANY = 'company',
+  STUDENT = 'student',
 }

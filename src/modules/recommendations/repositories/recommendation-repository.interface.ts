@@ -1,11 +1,11 @@
-export const RECOMMENDATION_REPOSITORY = "RECOMMENDATION_REPOSITORY";
+export const RECOMMENDATION_REPOSITORY = 'RECOMMENDATION_REPOSITORY';
 
 export interface IRecommendationRepository {
-    getStudentProfile(studentId: number);
+  getStudentProfile(studentId: number);
 
-    getJobProfile(jobId: number);
+  getJobProfile(jobId: number);
 
-    getActiveJobsWithSkillsByIds(jobIds: number[]);
+  getActiveJobsWithSkillsByIds(jobIds: number[]);
 
-    getOpenStudentsWithSkillsByIds(studentIds: number[]);
+  getOpenStudentsWithSkillsByIds(studentIds: number[]);
 }

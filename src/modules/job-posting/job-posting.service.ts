@@ -9,7 +9,18 @@ import {
 import { I_JOB_POSTING_REPOSITORY } from './job-posting.tokens';
 import type { IJobPostingRepository } from './repositories/job-posting-repository.interface';
 import { CreateJobPostingDto } from './dto/create-job-posting.dto';
-import { AdminJobCard, AdminJobStats, CategoryItem, CompanyJobCard, JobPostingResponse, JobPostingStats, JobSkillItem, ProfileJobCard, StudentJobCard, UpdateJobResponse } from './types';
+import {
+  AdminJobCard,
+  AdminJobStats,
+  CategoryItem,
+  CompanyJobCard,
+  JobPostingResponse,
+  JobPostingStats,
+  JobSkillItem,
+  ProfileJobCard,
+  StudentJobCard,
+  UpdateJobResponse,
+} from './types';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { UpdateJobPostingDto } from './dto/update-job-posting.dto';
 import { RoleName } from 'src/common/types/role.enum';
@@ -21,7 +32,10 @@ import { JobPostingFilterDto } from './dto/filter-job-card.dto';
 import { EmbeddingQueueService } from '../recommendations/embedding/embedding-queue.service';
 import { I_COMPANY_REPOSITORY } from '../company/company.tokens';
 import { type ICompanyRepository } from '../company/repositories/company-repository.interface';
-import { I_SAVED_JOB_REPOSITORY, type ISavedJobRepository } from '../saved-jobs/repositories/saved-jobs-repository.interface';
+import {
+  I_SAVED_JOB_REPOSITORY,
+  type ISavedJobRepository,
+} from '../saved-jobs/repositories/saved-jobs-repository.interface';
 import { JobPostingMapper } from './domain/job-posting.mapper';
 
 @Injectable()
@@ -35,9 +49,12 @@ export class JobPostingService {
     private readonly savedJobsRepository: ISavedJobRepository,
     private readonly eventEmitter: EventEmitter2,
     private readonly embeddingQueue: EmbeddingQueueService,
-  ) { }
+  ) {}
 
-  async createJobPosting(companyId: number, dto: CreateJobPostingDto): Promise<number> {
+  async createJobPosting(
+    companyId: number,
+    dto: CreateJobPostingDto,
+  ): Promise<number> {
     const isActive = await this.jobPostingRepository.isCompanyActive(companyId);
     if (!isActive) {
       throw new ForbiddenException(
@@ -45,7 +62,10 @@ export class JobPostingService {
       );
     }
 
-    const data = await this.jobPostingRepository.createJobPosting(companyId, dto);
+    const data = await this.jobPostingRepository.createJobPosting(
+      companyId,
+      dto,
+    );
     if (!data) throw new InternalServerErrorException('Thao tác thất bại');
 
     await this.embeddingQueue.addJobEmbeddingTask(data);
@@ -59,7 +79,11 @@ export class JobPostingService {
     companyId: number,
     dto: UpdateJobPostingDto,
   ): Promise<UpdateJobResponse> {
-    const updated = await this.jobPostingRepository.updateJobPosting(jobId, companyId, dto);
+    const updated = await this.jobPostingRepository.updateJobPosting(
+      jobId,
+      companyId,
+      dto,
+    );
     if (!updated) {
       throw new NotFoundException(
         'Không tìm thấy tin tuyển dụng, hoặc bạn không có quyền chỉnh sửa tin này.',
@@ -86,7 +110,11 @@ export class JobPostingService {
     companyId?: number,
     studentId?: number,
   ): Promise<JobPostingResponse> {
-    const raw = await this.jobPostingRepository.findJobDetailById(jobId, viewer, companyId);
+    const raw = await this.jobPostingRepository.findJobDetailById(
+      jobId,
+      viewer,
+      companyId,
+    );
     if (!raw) throw new NotFoundException('Không tìm thấy tin tuyển dụng.');
 
     const saved = studentId
@@ -104,7 +132,12 @@ export class JobPostingService {
   ): Promise<PaginationResponse<ProfileJobCard>> {
     await this.jobPostingRepository.checkCompany(companyId);
 
-    const raw = await this.jobPostingRepository.findByCompanyId(companyId, page, limit, roleName);
+    const raw = await this.jobPostingRepository.findByCompanyId(
+      companyId,
+      page,
+      limit,
+      roleName,
+    );
     const items = raw.items.map((r) => JobPostingMapper.rawToProfileJobCard(r));
 
     return new PaginationResponse(items, raw.page, raw.limit, raw.total);
@@ -119,7 +152,9 @@ export class JobPostingService {
     dto: ListJobPostingDto,
     companyId?: number,
     studentId?: number,
-  ): Promise<PaginationResponse<AdminJobCard | CompanyJobCard | StudentJobCard>> {
+  ): Promise<
+    PaginationResponse<AdminJobCard | CompanyJobCard | StudentJobCard>
+  > {
     if (role === RoleName.ADMIN) {
       const raw = await this.jobPostingRepository.findRawForAdmin(dto);
       const items = raw.items.map((r) => JobPostingMapper.rawToAdminCard(r));
@@ -143,8 +178,13 @@ export class JobPostingService {
     studentId: number,
     dto: ListJobPostingDto,
   ): Promise<PaginationResponse<StudentJobCard>> {
-    const raw = await this.jobPostingRepository.findRawSavedJobs(studentId, dto);
-    const items = raw.items.map((r) => JobPostingMapper.rawToStudentCard(r, true));
+    const raw = await this.jobPostingRepository.findRawSavedJobs(
+      studentId,
+      dto,
+    );
+    const items = raw.items.map((r) =>
+      JobPostingMapper.rawToStudentCard(r, true),
+    );
     return new PaginationResponse(items, raw.page, raw.limit, raw.total);
   }
 
@@ -152,9 +192,13 @@ export class JobPostingService {
     dto: JobPostingFilterDto,
     companyId?: number,
   ): Promise<PaginationResponse<CompanyJobCard>> {
-    if (!companyId) throw new ForbiddenException('Không xác định được công ty.');
+    if (!companyId)
+      throw new ForbiddenException('Không xác định được công ty.');
 
-    const raw = await this.jobPostingRepository.findRawForCompany(companyId, dto);
+    const raw = await this.jobPostingRepository.findRawForCompany(
+      companyId,
+      dto,
+    );
     const items = raw.items.map((r) => JobPostingMapper.rawToCompanyCard(r));
     return new PaginationResponse(items, raw.page, raw.limit, raw.total);
   }
@@ -165,10 +209,17 @@ export class JobPostingService {
     adminId: number,
   ) {
     try {
-      const result = await this.jobPostingRepository.changeJobStatus(jobId, dto, adminId);
-      if (!result?.company_id) throw new NotFoundException(`Không tìm thấy job với ID ${jobId}`);
+      const result = await this.jobPostingRepository.changeJobStatus(
+        jobId,
+        dto,
+        adminId,
+      );
+      if (!result?.company_id)
+        throw new NotFoundException(`Không tìm thấy job với ID ${jobId}`);
 
-      const company = await this.companyRepository.getCompanyName(result.company_id);
+      const company = await this.companyRepository.getCompanyName(
+        result.company_id,
+      );
       this.eventEmitter.emit('job.statusChanged', {
         companyId: result.company_id,
         companyName: company.company_name,
@@ -189,11 +240,16 @@ export class JobPostingService {
 
   async getJobStatsByCompanyId(companyId: number): Promise<JobPostingStats> {
     try {
-      const stats = await this.jobPostingRepository.getJobStatsByCompanyId(companyId);
-      if (!stats) throw new NotFoundException(`Không tìm thấy dữ liệu cho công ty ID ${companyId}`);
+      const stats =
+        await this.jobPostingRepository.getJobStatsByCompanyId(companyId);
+      if (!stats)
+        throw new NotFoundException(
+          `Không tìm thấy dữ liệu cho công ty ID ${companyId}`,
+        );
       return stats;
     } catch (error) {
-      if (error instanceof JobPostingDomainError) throw new BadRequestException(error.message);
+      if (error instanceof JobPostingDomainError)
+        throw new BadRequestException(error.message);
       throw error;
     }
   }

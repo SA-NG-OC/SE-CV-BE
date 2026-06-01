@@ -9,30 +9,33 @@ import {
   Post,
   Query,
   UseGuards,
-} from "@nestjs/common";
-import { JobCategoryService } from "./category.service";
-import ResponseSuccess from "src/common/types/response-success";
-import { CreateJobCategoryDto } from "./dto/create-category.dto";
-import { UpdateJobCategoryDto } from "./dto/update-category.dto";
-import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
-import { RolesGuard } from "../auth/guards/roles.guard";
-import { Roles } from "../auth/decorators/roles.decorator";
-import { Role } from "src/common/types/role.enum";
-import { CreateJobCategoryDocs, DeleteJobCategoryDocs, GetJobCategoriesDocs, GetJobCategoryStatsDocs, ToggleJobCategoryDocs, UpdateJobCategoryDocs } from "./decorator";
-
+} from '@nestjs/common';
+import { JobCategoryService } from './category.service';
+import ResponseSuccess from 'src/common/types/response-success';
+import { CreateJobCategoryDto } from './dto/create-category.dto';
+import { UpdateJobCategoryDto } from './dto/update-category.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from 'src/common/types/role.enum';
+import {
+  CreateJobCategoryDocs,
+  DeleteJobCategoryDocs,
+  GetJobCategoriesDocs,
+  GetJobCategoryStatsDocs,
+  ToggleJobCategoryDocs,
+  UpdateJobCategoryDocs,
+} from './decorator';
 
 @Controller('job-categories')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class JobCategoryController {
-  constructor(private readonly service: JobCategoryService) { }
+  constructor(private readonly service: JobCategoryService) {}
 
   @Get()
   @GetJobCategoriesDocs()
   @Roles(Role.ADMIN)
-  async findAll(
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-  ) {
+  async findAll(@Query('page') page?: string, @Query('limit') limit?: string) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
 
@@ -55,7 +58,7 @@ export class JobCategoryController {
   @Roles(Role.ADMIN)
   async update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateJobCategoryDto
+    @Body() dto: UpdateJobCategoryDto,
   ) {
     if (dto.categoryName !== undefined) {
       await this.service.updateName(id, dto.categoryName);

@@ -1,4 +1,1 @@
-export type StudentStatus =
-    | "STUDYING"
-    | "GRADUATED"
-    | "DROPPED_OUT";
+export type StudentStatus = 'STUDYING' | 'GRADUATED' | 'DROPPED_OUT';

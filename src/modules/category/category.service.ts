@@ -1,17 +1,19 @@
-import { Inject, Injectable, NotFoundException } from "@nestjs/common";
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 
-import { PaginationResponse } from "src/common/types/pagination-response";
-import { I_JOB_CATEGORY_REPOSITORY, type IJobCategoryRepository } from "./repositories/job-category-repository.interface";
-import { JobCategoryResponse, JobCategoryStats } from "./types";
-import { JobCategoryMapper } from "./mapper/job-category.mapper";
-
+import { PaginationResponse } from 'src/common/types/pagination-response';
+import {
+  I_JOB_CATEGORY_REPOSITORY,
+  type IJobCategoryRepository,
+} from './repositories/job-category-repository.interface';
+import { JobCategoryResponse, JobCategoryStats } from './types';
+import { JobCategoryMapper } from './mapper/job-category.mapper';
 
 @Injectable()
 export class JobCategoryService {
   constructor(
     @Inject(I_JOB_CATEGORY_REPOSITORY)
     private readonly repo: IJobCategoryRepository,
-  ) { }
+  ) {}
 
   async findAll(
     page: number,
@@ -29,7 +31,7 @@ export class JobCategoryService {
     const raw = await this.repo.findById(id);
 
     if (!raw) {
-      throw new NotFoundException("Không tìm thấy danh mục");
+      throw new NotFoundException('Không tìm thấy danh mục');
     }
 
     return JobCategoryMapper.toResponse({ ...raw, job_count: 0 });

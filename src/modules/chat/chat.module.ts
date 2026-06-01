@@ -21,7 +21,7 @@ import { CloudinaryModule } from 'src/shared/cloudinary/cloudinary.module';
     }),
     CompanyModule,
     StudentModule,
-    CloudinaryModule
+    CloudinaryModule,
   ],
   controllers: [ChatController],
   providers: [
@@ -34,4 +34,4 @@ import { CloudinaryModule } from 'src/shared/cloudinary/cloudinary.module';
   ],
   exports: [ChatService, ChatGateway],
 })
-export class ChatModule { }
+export class ChatModule {}

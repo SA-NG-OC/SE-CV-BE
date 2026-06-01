@@ -1,5 +1,5 @@
-import { ScoreResult } from "./recommendation.types";
+import { ScoreResult } from './recommendation.types';
 
 export interface IScorer<TContext> {
-    score(context: TContext): Promise<ScoreResult[]>;
+  score(context: TContext): Promise<ScoreResult[]>;
 }

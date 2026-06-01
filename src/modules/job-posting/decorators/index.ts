@@ -6,8 +6,8 @@ export { GetJobSkillsDocs } from './get-job-skills.docs';
 export { ListJobPostingsDocs } from './list-job-postings.docs';
 export { GetJobByIdDocs } from './get-job-by-id.docs';
 export { ChangeJobStatusDocs } from './change-job-status.docs';
-export { GetJobListDocs } from './get-job-list.docs'
+export { GetJobListDocs } from './get-job-list.docs';
 export { GetJobStatsDocs, GetAdminJobStatsDocs } from './job-posting.decorator';
-export { GetJobCardCompanyDocs } from './get-job-company-card.docs'
-export { ToggleJobActiveDocs } from './toggle-job.docs'
+export { GetJobCardCompanyDocs } from './get-job-company-card.docs';
+export { ToggleJobActiveDocs } from './toggle-job.docs';
 export { GetJobSaveDocs } from './get-job-saved.docs';

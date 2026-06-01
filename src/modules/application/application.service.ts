@@ -6,14 +6,20 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { I_APPLICATION_REPOSITORY, I_JOB_INVITATION } from './application.token';
+import {
+  I_APPLICATION_REPOSITORY,
+  I_JOB_INVITATION,
+} from './application.token';
 import { I_JOB_POSTING_REPOSITORY } from '../job-posting/job-posting.tokens';
 
 import type { IApplicationRepository } from './repositories/application-repository.interface';
 import type { IJobPostingRepository } from '../job-posting/repositories/job-posting-repository.interface';
 import type { IJobInvitationRepository } from './repositories/job-invitation-repository.interface';
 
-import { ApplicationDomain, ApplicationDomainError } from './domain/application/application.domain';
+import {
+  ApplicationDomain,
+  ApplicationDomainError,
+} from './domain/application/application.domain';
 import { JobInvitationDomain } from './domain/job-invitation/job-invitation.domain';
 import { ApplicationMapper } from './domain/application/application.mapper';
 
@@ -31,7 +37,10 @@ import {
 } from './types/application.interface';
 import { ApplicationStatus } from './domain/application/application.props';
 import { PaginationResponse } from 'src/common/types/pagination-response';
-import { EmployerInvitationCardView, InvitationCardView } from './domain/job-invitation/job-invitation.mapper';
+import {
+  EmployerInvitationCardView,
+  InvitationCardView,
+} from './domain/job-invitation/job-invitation.mapper';
 
 @Injectable()
 export class ApplicationService {
@@ -42,7 +51,7 @@ export class ApplicationService {
     private readonly jobPostingRepo: IJobPostingRepository,
     @Inject(I_JOB_INVITATION)
     private readonly jobInvitationRepo: IJobInvitationRepository,
-  ) { }
+  ) {}
 
   // =========================================================================
   // PRIVATE HELPERS
@@ -55,10 +64,15 @@ export class ApplicationService {
     throw error;
   }
 
-  private async assertJobBelongsToCompany(companyId: number, jobId: number): Promise<void> {
+  private async assertJobBelongsToCompany(
+    companyId: number,
+    jobId: number,
+  ): Promise<void> {
     const job = await this.jobPostingRepo.findById(jobId);
     if (!job || job.companyId !== companyId) {
-      throw new ForbiddenException('Bạn không có quyền thao tác với tin tuyển dụng này');
+      throw new ForbiddenException(
+        'Bạn không có quyền thao tác với tin tuyển dụng này',
+      );
     }
   }
 
@@ -69,7 +83,9 @@ export class ApplicationService {
     deadlineDate.setHours(23, 59, 59, 999);
 
     if (new Date() > deadlineDate) {
-      throw new BadRequestException('Hết hạn ứng tuyển! Bạn không thể nộp hồ sơ cho tin này nữa.');
+      throw new BadRequestException(
+        'Hết hạn ứng tuyển! Bạn không thể nộp hồ sơ cho tin này nữa.',
+      );
     }
   }
 
@@ -77,8 +93,14 @@ export class ApplicationService {
   // STUDENT — ứng tuyển
   // =========================================================================
 
-  async applyJob(dto: CreateApplicationDto, studentId: number): Promise<ApplicationDomain> {
-    const existing = await this.applicationRepo.findByJobAndStudent(dto.jobId, studentId);
+  async applyJob(
+    dto: CreateApplicationDto,
+    studentId: number,
+  ): Promise<ApplicationDomain> {
+    const existing = await this.applicationRepo.findByJobAndStudent(
+      dto.jobId,
+      studentId,
+    );
     if (existing) {
       throw new ConflictException('Bạn đã nộp đơn cho công việc này rồi');
     }
@@ -122,7 +144,10 @@ export class ApplicationService {
       await this.assertJobBelongsToCompany(companyId, filter.jobId);
     }
 
-    const raw = await this.applicationRepo.findApplicantCardsByJob(filter, companyId);
+    const raw = await this.applicationRepo.findApplicantCardsByJob(
+      filter,
+      companyId,
+    );
 
     return {
       ...raw,
@@ -130,7 +155,10 @@ export class ApplicationService {
     };
   }
 
-  async getJobStats(companyId: number, jobId?: number): Promise<ApplicationStats> {
+  async getJobStats(
+    companyId: number,
+    jobId?: number,
+  ): Promise<ApplicationStats> {
     if (jobId) {
       await this.assertJobBelongsToCompany(companyId, jobId);
     }
@@ -166,7 +194,10 @@ export class ApplicationService {
   ): Promise<JobInvitationDomain> {
     await this.assertJobBelongsToCompany(companyId, dto.jobId);
 
-    const existingApp = await this.applicationRepo.findByJobAndStudent(dto.jobId, dto.studentId);
+    const existingApp = await this.applicationRepo.findByJobAndStudent(
+      dto.jobId,
+      dto.studentId,
+    );
     const job = await this.jobPostingRepo.findById(dto.jobId);
 
     if (job?.applicationDeadline) {
@@ -182,11 +213,10 @@ export class ApplicationService {
       throw new ConflictException('Ứng viên này đã nộp đơn vào công việc này');
     }
 
-    const existingInvitation =
-      await this.jobInvitationRepo.findByJobId(
-        dto.jobId,
-        dto.studentId
-      );
+    const existingInvitation = await this.jobInvitationRepo.findByJobId(
+      dto.jobId,
+      dto.studentId,
+    );
 
     if (existingInvitation) {
       existingInvitation.updateMessage(dto.message);
@@ -250,11 +280,14 @@ export class ApplicationService {
       if (action === 'accept') {
         invitation.accept();
 
-        const application = ApplicationDomain.create({
-          jobId: invitation.jobId,
-          cvUrl: cvUrl || 'URL_CV_MAC_DINH_CUA_SINH_VIEN',
-          coverLetter: `Chấp nhận lời mời ứng tuyển: ${invitation.message || ''}`,
-        }, studentId);
+        const application = ApplicationDomain.create(
+          {
+            jobId: invitation.jobId,
+            cvUrl: cvUrl || 'URL_CV_MAC_DINH_CUA_SINH_VIEN',
+            coverLetter: `Chấp nhận lời mời ứng tuyển: ${invitation.message || ''}`,
+          },
+          studentId,
+        );
 
         application.scheduleInterview();
 

@@ -1,6 +1,9 @@
 import { PaginationResponse } from 'src/common/types/pagination-response';
 import { CreateResumeDto } from '../dto/update-student.dto';
-import { GetStudentsQuery, StudentGeneralInfo } from '../types/student.interface';
+import {
+  GetStudentsQuery,
+  StudentGeneralInfo,
+} from '../types/student.interface';
 import {
   MajorRaw,
   StudentAdminListRaw,
@@ -15,10 +18,10 @@ import {
 } from '../types/student.raw';
 
 export interface IStudentRepository {
-  findRawById(actorId: number): Promise<number | null>
+  findRawById(actorId: number): Promise<number | null>;
   getMajors();
   // Read
-  getGeneralInformation(): Promise<StudentGeneralInfoRaw>
+  getGeneralInformation(): Promise<StudentGeneralInfoRaw>;
   getStudentListAdmin(
     page: number,
     limit: number,
@@ -30,11 +33,18 @@ export interface IStudentRepository {
 
   findSkillsByStudent(studentId: number): Promise<StudentSkillsRaw>;
 
-  findResumesByStudent(studentId: number, isDefault?: boolean): Promise<StudentResumeRaw[]>;
+  findResumesByStudent(
+    studentId: number,
+    isDefault?: boolean,
+  ): Promise<StudentResumeRaw[]>;
 
-  countApplicationsByStudent(studentId: number): Promise<StudentApplicationCountRaw>;
+  countApplicationsByStudent(
+    studentId: number,
+  ): Promise<StudentApplicationCountRaw>;
 
-  findStudentCards(query: GetStudentsQuery): Promise<PaginationResponse<StudentCardRaw>>;
+  findStudentCards(
+    query: GetStudentsQuery,
+  ): Promise<PaginationResponse<StudentCardRaw>>;
 
   findStudentProfileByUserId(userId: number): Promise<StudentProfileRaw | null>;
 
@@ -42,9 +52,15 @@ export interface IStudentRepository {
 
   getJobPreference(userId: number);
 
-  updateFields(userId: number, fields: Partial<Record<string, unknown>>): Promise<void>;
+  updateFields(
+    userId: number,
+    fields: Partial<Record<string, unknown>>,
+  ): Promise<void>;
 
-  updateByStudentId(studentId: number, fields: Partial<Record<string, unknown>>): Promise<void>;
+  updateByStudentId(
+    studentId: number,
+    fields: Partial<Record<string, unknown>>,
+  ): Promise<void>;
 
   replaceSkills(studentId: number, skillIds: number[]): Promise<void>;
 
@@ -56,8 +72,14 @@ export interface IStudentRepository {
 
   deleteResume(resumeId: number): Promise<void>;
 
-  setDefaultResume(studentId: number, resumeId: number): Promise<StudentResumeRaw | null>;
+  setDefaultResume(
+    studentId: number,
+    resumeId: number,
+  ): Promise<StudentResumeRaw | null>;
 
-  findResumeById(resumeId: number, studentId: number): Promise<StudentResumeRaw | null>;
+  findResumeById(
+    resumeId: number,
+    studentId: number,
+  ): Promise<StudentResumeRaw | null>;
   isActive(studentId: number, isActive: boolean): Promise<void>;
 }

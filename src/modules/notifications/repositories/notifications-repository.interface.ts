@@ -1,21 +1,25 @@
-import { PaginationResponse } from "src/common/types/pagination-response";
+import { PaginationResponse } from 'src/common/types/pagination-response';
 
 export interface INotificationsRepository {
-    create(data: any): Promise<any>;
+  create(data: any): Promise<any>;
 
-    getAdminId(): Promise<number[]>;
+  getAdminId(): Promise<number[]>;
 
-    getCompanyUserId(companyId: number): Promise<number>
+  getCompanyUserId(companyId: number): Promise<number>;
 
-    createMany(data: any[]): Promise<any[]>;
+  createMany(data: any[]): Promise<any[]>;
 
-    findByUserId(userId: number, page: number, limit: number): Promise<PaginationResponse<any>>;
+  findByUserId(
+    userId: number,
+    page: number,
+    limit: number,
+  ): Promise<PaginationResponse<any>>;
 
-    getUnreadCount(userId: number): Promise<{ unread_count: number }[]>;
+  getUnreadCount(userId: number): Promise<{ unread_count: number }[]>;
 
-    markAsRead(userId: number, notificationIds?: number[]): Promise<any[]>;
+  markAsRead(userId: number, notificationIds?: number[]): Promise<any[]>;
 
-    delete(userId: number, notificationId: number): Promise<any>;
+  delete(userId: number, notificationId: number): Promise<any>;
 
-    deleteAll(userId: number): Promise<any>;
+  deleteAll(userId: number): Promise<any>;
 }

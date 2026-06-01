@@ -17,15 +17,20 @@ import { MailQueueService } from 'src/shared/mail/mail-queue.service';
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET')!,
         signOptions: {
-          expiresIn: configService.get<string>('JWT_EXPIRES_IN', '1d') as any
+          expiresIn: configService.get<string>('JWT_EXPIRES_IN', '1d') as any,
         },
       }),
     }),
     MailModule,
   ],
-  providers: [AuthService, JwtStrategy, GoogleStrategy, GoogleOAuthGuard, MailQueueService],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    GoogleStrategy,
+    GoogleOAuthGuard,
+    MailQueueService,
+  ],
   controllers: [AuthController],
   exports: [JwtModule],
 })
-export class AuthModule { }
-
+export class AuthModule {}

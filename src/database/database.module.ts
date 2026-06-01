@@ -9,20 +9,20 @@ export const DATABASE_CONNECTION = 'DATABASE_CONNECTION';
 
 @Global()
 @Module({
-    providers: [
-        {
-            provide: DATABASE_CONNECTION,
-            inject: [ConfigService],
-            useFactory: async (configService: ConfigService) => {
-                const connectionString = configService.get<string>('DATABASE_URL');
-                const pool = new Pool({
-                    connectionString,
-                });
+  providers: [
+    {
+      provide: DATABASE_CONNECTION,
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => {
+        const connectionString = configService.get<string>('DATABASE_URL');
+        const pool = new Pool({
+          connectionString,
+        });
 
-                return drizzle(pool, { schema });
-            },
-        },
-    ],
-    exports: [DATABASE_CONNECTION],
+        return drizzle(pool, { schema });
+      },
+    },
+  ],
+  exports: [DATABASE_CONNECTION],
 })
-export class DatabaseModule { }
+export class DatabaseModule {}

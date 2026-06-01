@@ -1,33 +1,39 @@
 import { applyDecorators } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiOkResponse, ApiBody } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiOkResponse,
+  ApiBody,
+} from '@nestjs/swagger';
 
-export const CreateJobCategoryDocs = () => applyDecorators(
+export const CreateJobCategoryDocs = () =>
+  applyDecorators(
     ApiBearerAuth(),
     ApiOperation({
-        summary: 'Tạo danh mục (Admin)',
+      summary: 'Tạo danh mục (Admin)',
     }),
     ApiBody({
-        schema: {
-            type: 'object',
-            required: ['categoryName'],
-            properties: {
-                categoryName: {
-                    type: 'string',
-                    example: 'IT',
-                    minLength: 2,
-                    maxLength: 100,
-                },
-            },
+      schema: {
+        type: 'object',
+        required: ['categoryName'],
+        properties: {
+          categoryName: {
+            type: 'string',
+            example: 'IT',
+            minLength: 2,
+            maxLength: 100,
+          },
         },
+      },
     }),
     ApiOkResponse({
-        description: 'Tạo thành công',
-        example: {
-            success: true,
-            message: 'Tạo danh mục thành công',
-            data: {
-                id: 1
-            }
-        }
+      description: 'Tạo thành công',
+      example: {
+        success: true,
+        message: 'Tạo danh mục thành công',
+        data: {
+          id: 1,
+        },
+      },
     }),
-);
+  );

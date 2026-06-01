@@ -1,25 +1,26 @@
 import z from 'zod';
 import { createZodDto } from 'nestjs-zod';
-import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi'
+import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
 extendZodWithOpenApi(z);
 
-export const registerScheme = z.object({
+export const registerScheme = z
+  .object({
     email: z
-        .email({ message: 'Email không đúng định dạng' })
-        .min(1, { message: 'Email là bắt buộc' })
-        .openapi({ example: 'newuser@example.com' }),
+      .email({ message: 'Email không đúng định dạng' })
+      .min(1, { message: 'Email là bắt buộc' })
+      .openapi({ example: 'newuser@example.com' }),
     password: z
-        .string({ message: 'Dữ liệu ko đúng định dạng' })
-        .min(6, { message: 'Mật khẩu phải có ít nhất 6 kí tự' })
-        .openapi({ example: 'securePassword123' }),
+      .string({ message: 'Dữ liệu ko đúng định dạng' })
+      .min(6, { message: 'Mật khẩu phải có ít nhất 6 kí tự' })
+      .openapi({ example: 'securePassword123' }),
     confirmPassword: z
-        .string({ message: 'Dữ liệu ko đúng định dạng' })
-        .min(6, { message: 'Mật khẩu phải có ít nhất 6 kí tự' })
-        .openapi({ example: 'securePassword123' }),
-})
-    .refine((data) => data.password === data.confirmPassword, {
-        message: "Mật khẩu xác nhận không khớp",
-        path: ["confirmPassword"],
-    });
+      .string({ message: 'Dữ liệu ko đúng định dạng' })
+      .min(6, { message: 'Mật khẩu phải có ít nhất 6 kí tự' })
+      .openapi({ example: 'securePassword123' }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Mật khẩu xác nhận không khớp',
+    path: ['confirmPassword'],
+  });
 
-export class RegisterDto extends createZodDto(registerScheme) { }
+export class RegisterDto extends createZodDto(registerScheme) {}

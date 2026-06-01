@@ -32,7 +32,7 @@ import { SavedJobsModule } from './modules/saved-jobs/saved-jobs.module';
     MailModule,
     EventEmitterModule.forRoot({
       wildcard: true,
-      maxListeners: 11
+      maxListeners: 11,
     }),
     BullModule.forRootAsync({
       imports: [ConfigModule],
@@ -54,8 +54,7 @@ import { SavedJobsModule } from './modules/saved-jobs/saved-jobs.module';
           ttl: 60000,
           limit: 10,
         },
-      ]
-
+      ],
     }),
     StudentModule,
     NotificationsModule,
@@ -67,9 +66,9 @@ import { SavedJobsModule } from './modules/saved-jobs/saved-jobs.module';
     ChatModule,
     StatisticsModule,
     FollowedCompanyModule,
-    SavedJobsModule
+    SavedJobsModule,
   ],
   controllers: [AppController],
   providers: [AppService, EventsGateway, NotificationsGateway],
 })
-export class AppModule { }
+export class AppModule {}

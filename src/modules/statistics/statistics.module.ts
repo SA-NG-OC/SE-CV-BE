@@ -6,11 +6,12 @@ import { StatisticsRepository } from './repositories/statistics.repository';
 
 @Module({
   controllers: [StatisticsController],
-  providers: [StatisticsService,
+  providers: [
+    StatisticsService,
     {
       provide: I_STATISTICS_REPOSITORY,
       useClass: StatisticsRepository,
-    }
+    },
   ],
 })
-export class StatisticsModule { }
+export class StatisticsModule {}

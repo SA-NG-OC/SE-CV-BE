@@ -3,19 +3,25 @@ import { createZodDto } from 'nestjs-zod';
 
 const StatusEnum = z.enum(['submitted', 'interviewing', 'passed', 'rejected']);
 export const GetCompanyApplicationsSchema = z.object({
-    jobId: z.coerce.number().int().positive('Job ID phải là số nguyên dương').optional(),
+  jobId: z.coerce
+    .number()
+    .int()
+    .positive('Job ID phải là số nguyên dương')
+    .optional(),
 
-    status: z.union([StatusEnum, z.array(StatusEnum)]).optional(),
+  status: z.union([StatusEnum, z.array(StatusEnum)]).optional(),
 
-    dateRange: z.enum(['7days', '30days']).optional(),
+  dateRange: z.enum(['7days', '30days']).optional(),
 
-    categoryId: z.coerce.number().int().positive().optional(),
+  categoryId: z.coerce.number().int().positive().optional(),
 
-    search: z.string().trim().min(1).max(255).optional(),
+  search: z.string().trim().min(1).max(255).optional(),
 
-    page: z.coerce.number().int().min(1).default(1),
+  page: z.coerce.number().int().min(1).default(1),
 
-    limit: z.coerce.number().int().min(1).max(50).default(10),
+  limit: z.coerce.number().int().min(1).max(50).default(10),
 });
 
-export class GetCompanyApplicationsQuery extends createZodDto(GetCompanyApplicationsSchema) { }
+export class GetCompanyApplicationsQuery extends createZodDto(
+  GetCompanyApplicationsSchema,
+) {}

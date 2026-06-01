@@ -1,18 +1,37 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
-import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
-import { RolesGuard } from "../auth/guards/roles.guard";
-import { CommentsService } from "./comment.service";
-import { Roles } from "../auth/decorators/roles.decorator";
-import { CreateCommentDto } from "./dto/create-comment.dto";
-import ResponseSuccess from "src/common/types/response-success";
-import { Role, RoleName } from "src/common/types/role.enum";
-import { UpdateCommentDto } from "./dto/update-comment.dto";
-import { CreateCommentDocs, DeleteCommentDocs, GetAdminCompanyCommentsDocs, GetCompanyCommentStatDocs, GetMyCompanyCommentsDocs, UpdateCommentDocs } from "./decorators";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { CommentsService } from './comment.service';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { CreateCommentDto } from './dto/create-comment.dto';
+import ResponseSuccess from 'src/common/types/response-success';
+import { Role, RoleName } from 'src/common/types/role.enum';
+import { UpdateCommentDto } from './dto/update-comment.dto';
+import {
+  CreateCommentDocs,
+  DeleteCommentDocs,
+  GetAdminCompanyCommentsDocs,
+  GetCompanyCommentStatDocs,
+  GetMyCompanyCommentsDocs,
+  UpdateCommentDocs,
+} from './decorators';
 
 @Controller('comments')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class CommentsController {
-  constructor(private readonly commentsService: CommentsService) { }
+  constructor(private readonly commentsService: CommentsService) {}
 
   @Get('company')
   @Roles(Role.COMPANY)
@@ -26,7 +45,11 @@ export class CommentsController {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
 
-    const data = await this.commentsService.getCommentOfMyCompany(companyId, pageNum, limitNum);
+    const data = await this.commentsService.getCommentOfMyCompany(
+      companyId,
+      pageNum,
+      limitNum,
+    );
     return new ResponseSuccess('Đánh giá được tải thành công', data);
   }
 
@@ -65,7 +88,11 @@ export class CommentsController {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
 
-    const data = await this.commentsService.getCommentByCompany(companyId, pageNum, limitNum);
+    const data = await this.commentsService.getCommentByCompany(
+      companyId,
+      pageNum,
+      limitNum,
+    );
     return new ResponseSuccess('Đánh giá được tải thành công', data);
   }
 
@@ -75,7 +102,7 @@ export class CommentsController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Req() req,
-    @Body() dto: UpdateCommentDto
+    @Body() dto: UpdateCommentDto,
   ) {
     const studentId = req.user.studentId;
     const result = await this.commentsService.updateComment(id, studentId, dto);
@@ -90,6 +117,4 @@ export class CommentsController {
     await this.commentsService.deleteComment(id, studentId);
     return new ResponseSuccess('Xóa đánh giá thành công', {});
   }
-
-
 }

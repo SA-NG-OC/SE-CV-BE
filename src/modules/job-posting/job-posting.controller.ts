@@ -12,7 +12,7 @@ import {
   ParseIntPipe,
   Query,
   Patch,
-  DefaultValuePipe
+  DefaultValuePipe,
 } from '@nestjs/common';
 import { JobPostingService } from './job-posting.service';
 import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
@@ -20,32 +20,54 @@ import { RolesGuard } from 'src/modules/auth/guards/roles.guard';
 import { Roles } from 'src/modules/auth/decorators/roles.decorator';
 import { Role, RoleName } from 'src/common/types/role.enum';
 import { CreateJobPostingDto } from './dto/create-job-posting.dto';
-import { JobSkillItem, CategoryItem, UpdateJobResponse, JobPostingResponse } from './types';
+import {
+  JobSkillItem,
+  CategoryItem,
+  UpdateJobResponse,
+  JobPostingResponse,
+} from './types';
 import ResponseSuccess from 'src/common/types/response-success';
 import { UpdateJobPostingDto } from './dto/update-job-posting.dto';
 import { ListJobPostingDto } from './dto/list-job-posting.dto';
 import { ChangeJobPostingStatusDto } from './dto/change-job-posting-status.dto';
-import { ChangeJobStatusDocs, CreateJobPostingDocs, GetAdminJobStatsDocs, GetJobByIdDocs, GetJobCardCompanyDocs, GetJobCategoriesDocs, GetJobListDocs, GetJobSaveDocs, GetJobSkillsDocs, GetJobStatsDocs, GetProfileJobDocs, ListJobPostingsDocs, ToggleJobActiveDocs, UpdateJobPostingDocs } from './decorators';
+import {
+  ChangeJobStatusDocs,
+  CreateJobPostingDocs,
+  GetAdminJobStatsDocs,
+  GetJobByIdDocs,
+  GetJobCardCompanyDocs,
+  GetJobCategoriesDocs,
+  GetJobListDocs,
+  GetJobSaveDocs,
+  GetJobSkillsDocs,
+  GetJobStatsDocs,
+  GetProfileJobDocs,
+  ListJobPostingsDocs,
+  ToggleJobActiveDocs,
+  UpdateJobPostingDocs,
+} from './decorators';
 import { JobPostingFilterDto } from './dto/filter-job-card.dto';
 
 @Controller('job-postings')
 export class JobPostingController {
-  constructor(private readonly jobPostingService: JobPostingService) { }
+  constructor(private readonly jobPostingService: JobPostingService) {}
 
   @Post()
   @CreateJobPostingDocs()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.COMPANY)
   @HttpCode(HttpStatus.CREATED)
-  async createJobPosting(
-    @Req() req,
-    @Body() dto: CreateJobPostingDto,
-  ) {
+  async createJobPosting(@Req() req, @Body() dto: CreateJobPostingDto) {
     const companyId = req.user.companyId;
 
-    const newJobId = await this.jobPostingService.createJobPosting(companyId, dto);
+    const newJobId = await this.jobPostingService.createJobPosting(
+      companyId,
+      dto,
+    );
 
-    return new ResponseSuccess('Đăng tin tuyển dụng thành công', { jobId: newJobId });
+    return new ResponseSuccess('Đăng tin tuyển dụng thành công', {
+      jobId: newJobId,
+    });
   }
 
   @Get('categories')
@@ -73,7 +95,11 @@ export class JobPostingController {
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
   ) {
     const companyId = req.user.companyId;
-    const data = await this.jobPostingService.listJob(companyId, page = 1, limit = 10);
+    const data = await this.jobPostingService.listJob(
+      companyId,
+      (page = 1),
+      (limit = 10),
+    );
     return new ResponseSuccess('Lấy thông tin thành công', data);
   }
 
@@ -81,10 +107,7 @@ export class JobPostingController {
   @GetJobSaveDocs()
   @Roles(Role.STUDENT)
   @UseGuards(JwtAuthGuard, RolesGuard)
-  async getSavedJobs(
-    @Req() req: any,
-    @Query() dto: ListJobPostingDto,
-  ) {
+  async getSavedJobs(@Req() req: any, @Query() dto: ListJobPostingDto) {
     const studentId = req.user.studentId;
 
     const data = await this.jobPostingService.getSavedJobsForStudent(
@@ -100,14 +123,17 @@ export class JobPostingController {
   @Roles(Role.ADMIN, Role.COMPANY, Role.STUDENT)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @HttpCode(HttpStatus.OK)
-  async listJobPostings(
-    @Req() req,
-    @Query() dto: ListJobPostingDto,
-  ) {
+  async listJobPostings(@Req() req, @Query() dto: ListJobPostingDto) {
     const role: RoleName = req.user.roleName;
     const studentId = req.user.studentId;
-    const companyId = role === RoleName.COMPANY ? req.user.companyId : undefined;
-    const result = await this.jobPostingService.listJobPostings(role, dto, companyId, studentId);
+    const companyId =
+      role === RoleName.COMPANY ? req.user.companyId : undefined;
+    const result = await this.jobPostingService.listJobPostings(
+      role,
+      dto,
+      companyId,
+      studentId,
+    );
     return new ResponseSuccess('Lấy thông tin thành công', result);
   }
 
@@ -116,13 +142,13 @@ export class JobPostingController {
   @Roles(Role.COMPANY)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @HttpCode(HttpStatus.OK)
-  async getJobCardCompany(
-    @Req() req,
-    @Query() dto: JobPostingFilterDto,
-  ) {
+  async getJobCardCompany(@Req() req, @Query() dto: JobPostingFilterDto) {
     const companyId = req.user.companyId;
 
-    const result = await this.jobPostingService.getJobCardCompany(dto, companyId);
+    const result = await this.jobPostingService.getJobCardCompany(
+      dto,
+      companyId,
+    );
     return new ResponseSuccess('Lấy thông tin thành công', result);
   }
 
@@ -164,7 +190,7 @@ export class JobPostingController {
       jobId,
       role,
       companyId,
-      studentId
+      studentId,
     );
 
     return new ResponseSuccess('Lấy thông tin thành công', job);
@@ -199,7 +225,10 @@ export class JobPostingController {
       dto,
     );
 
-    return new ResponseSuccess('Cập nhật thông tin tuyển dụng thành công', updatedId);
+    return new ResponseSuccess(
+      'Cập nhật thông tin tuyển dụng thành công',
+      updatedId,
+    );
   }
 
   @Get('company/:companyId')
@@ -212,7 +241,12 @@ export class JobPostingController {
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
   ) {
     const roleName: RoleName = req.user.roleName;
-    const data = await this.jobPostingService.listProfileJobCard(companyId, page, limit, roleName);
+    const data = await this.jobPostingService.listProfileJobCard(
+      companyId,
+      page,
+      limit,
+      roleName,
+    );
     return new ResponseSuccess('Lấy dữ liệu thành công', data);
   }
 
@@ -222,7 +256,7 @@ export class JobPostingController {
   @Roles(Role.COMPANY)
   async toggleActive(
     @Param('id', ParseIntPipe) jobId: number,
-    @Req() req: any
+    @Req() req: any,
   ) {
     const companyId = req.user.companyId;
 

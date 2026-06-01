@@ -1,13 +1,25 @@
-import { Inject, Injectable, NotFoundException } from "@nestjs/common";
-import { RuleBasedScorer } from "./scorers/rule-based.scorer";
-import { EmbeddingScorer } from "./scorers/embedding.scorer";
-import { HybridMerger } from "./merger/hybrid-merger";
-import { GetJobRecommendationsDto, GetStudentRecommendationsDto } from "./dto/get-recommendations.dto";
-import { JobRecommendationResponse, StudentRecommendationResponse } from "./types/recommendation.types";
-import { JobRecommendationMapper } from "./mapper/job-recommendation.mapper";
-import { StudentRecommendationMapper } from "./mapper/student-recommendation.mapper";
-import { type IRecommendationRepository, RECOMMENDATION_REPOSITORY } from "./repositories/recommendation-repository.interface";
-import { I_SAVED_JOB_REPOSITORY, type ISavedJobRepository } from "../saved-jobs/repositories/saved-jobs-repository.interface";
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { RuleBasedScorer } from './scorers/rule-based.scorer';
+import { EmbeddingScorer } from './scorers/embedding.scorer';
+import { HybridMerger } from './merger/hybrid-merger';
+import {
+  GetJobRecommendationsDto,
+  GetStudentRecommendationsDto,
+} from './dto/get-recommendations.dto';
+import {
+  JobRecommendationResponse,
+  StudentRecommendationResponse,
+} from './types/recommendation.types';
+import { JobRecommendationMapper } from './mapper/job-recommendation.mapper';
+import { StudentRecommendationMapper } from './mapper/student-recommendation.mapper';
+import {
+  type IRecommendationRepository,
+  RECOMMENDATION_REPOSITORY,
+} from './repositories/recommendation-repository.interface';
+import {
+  I_SAVED_JOB_REPOSITORY,
+  type ISavedJobRepository,
+} from '../saved-jobs/repositories/saved-jobs-repository.interface';
 
 @Injectable()
 export class RecommendationsService {
@@ -19,11 +31,11 @@ export class RecommendationsService {
     private readonly merger: HybridMerger,
     @Inject(I_SAVED_JOB_REPOSITORY)
     private readonly savedJobsRepository: ISavedJobRepository,
-  ) { }
+  ) {}
 
   async getJobRecommendationsForStudent(
     dto: GetJobRecommendationsDto,
-    studentId: number
+    studentId: number,
   ): Promise<JobRecommendationResponse[]> {
     const { limit = 10, alpha = 0.6 } = dto;
 
@@ -34,7 +46,7 @@ export class RecommendationsService {
     ]);
 
     if (!student) {
-      throw new NotFoundException("Không tìm thấy thông tin sinh viên");
+      throw new NotFoundException('Không tìm thấy thông tin sinh viên');
     }
 
     if (vectorResults.length === 0) {
@@ -45,7 +57,8 @@ export class RecommendationsService {
 
     const candidateJobIds = vectorResults.map((v) => v.id);
 
-    const jobs = await this.recRepo.getActiveJobsWithSkillsByIds(candidateJobIds);
+    const jobs =
+      await this.recRepo.getActiveJobsWithSkillsByIds(candidateJobIds);
 
     if (jobs.length === 0) {
       return [];
@@ -95,11 +108,12 @@ export class RecommendationsService {
       this.embeddingScorer.scoreStudentsForJob(jobId, limit * 3),
     ]);
 
-    if (!job) throw new NotFoundException("Không tìm thấy thông tin công việc");
+    if (!job) throw new NotFoundException('Không tìm thấy thông tin công việc');
     if (vectorResults.length === 0) return [];
 
     const candidateStudentIds = vectorResults.map((v) => v.id);
-    const students = await this.recRepo.getOpenStudentsWithSkillsByIds(candidateStudentIds);
+    const students =
+      await this.recRepo.getOpenStudentsWithSkillsByIds(candidateStudentIds);
 
     if (students.length === 0) return [];
 

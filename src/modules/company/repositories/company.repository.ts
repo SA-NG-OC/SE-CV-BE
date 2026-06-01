@@ -13,527 +13,544 @@ import { UpdateCompanyDescriptionDto } from '../dto/update-company-description.d
 import { UpdateCompanyContactDto } from '../dto/update-company-contact.dto';
 import { UpdateCompanyDetailDto } from '../dto/update-company-detail.dto';
 import {
-    CompanyResponse,
-    CompanyImageItem,
-    CompanyAdminListResult,
-    CompanyUserListResult,
-    CompanyStatusUpdateResult,
+  CompanyResponse,
+  CompanyImageItem,
+  CompanyAdminListResult,
+  CompanyUserListResult,
+  CompanyStatusUpdateResult,
 } from '../interfaces/company.interface';
 import { CompanyStatus } from '../domain/company.props';
 
 @Injectable()
 export class CompanyRepository implements ICompanyRepository {
-    constructor(
-        @Inject(DATABASE_CONNECTION)
-        private readonly db: NodePgDatabase<typeof schema>,
-    ) { }
+  constructor(
+    @Inject(DATABASE_CONNECTION)
+    private readonly db: NodePgDatabase<typeof schema>,
+  ) {}
 
-    // =========================================================================
-    // PRIVATE HELPERS
-    // =========================================================================
-    private async loadByUserId(userId: number) {
-        const [row] = await this.db
-            .select()
-            .from(schema.companies)
-            .where(eq(schema.companies.user_id, userId))
-            .limit(1);
-        return row ?? null;
+  // =========================================================================
+  // PRIVATE HELPERS
+  // =========================================================================
+  private async loadByUserId(userId: number) {
+    const [row] = await this.db
+      .select()
+      .from(schema.companies)
+      .where(eq(schema.companies.user_id, userId))
+      .limit(1);
+    return row ?? null;
+  }
+
+  private async loadByCompanyId(companyId: number) {
+    const [row] = await this.db
+      .select()
+      .from(schema.companies)
+      .where(eq(schema.companies.company_id, companyId))
+      .limit(1);
+    return row ?? null;
+  }
+
+  private async saveAndReturn(
+    domain: CompanyDomain,
+    whereField: 'user_id' | 'company_id',
+  ): Promise<CompanyResponse> {
+    const condition =
+      whereField === 'user_id'
+        ? eq(schema.companies.user_id, domain.userId)
+        : eq(schema.companies.company_id, domain.companyId);
+
+    const [updated] = await this.db
+      .update(schema.companies)
+      .set(domain.toUpdatePersistence())
+      .where(condition)
+      .returning();
+
+    const updatedDomain = CompanyDomain.fromPersistence(updated);
+    const images = await this.getOfficeImages(updatedDomain.companyId);
+    return CompanyMapper.toResponse(updatedDomain, images);
+  }
+
+  private async getEmailByUserId(userId: number): Promise<string | undefined> {
+    const rows = await this.db
+      .select({ email: schema.users.email })
+      .from(schema.users)
+      .where(eq(schema.users.user_id, userId))
+      .limit(1);
+    return rows[0]?.email;
+  }
+
+  async findRawById(actorId: number): Promise<number | null> {
+    const [data] = await this.db
+      .select({ userId: schema.companies.user_id })
+      .from(schema.companies)
+      .where(eq(schema.companies.company_id, actorId));
+    return data.userId;
+  }
+
+  async createCompanyWithImages(
+    userId: number,
+    dto: CreateCompanyDto,
+    logoUrl?: string,
+    coverUrl?: string,
+    officeImageUrls?: string[],
+  ): Promise<CompanyResponse> {
+    const domain = CompanyDomain.create(userId, dto, logoUrl, coverUrl);
+
+    return this.db.transaction(async (tx) => {
+      const [newCompany] = await tx
+        .insert(schema.companies)
+        .values(domain.toPersistence())
+        .returning();
+
+      let officeImages: CompanyImageItem[] = [];
+
+      if (officeImageUrls?.length) {
+        const inserted = await tx
+          .insert(schema.company_images)
+          .values(
+            officeImageUrls.map((url) => ({
+              company_id: newCompany.company_id,
+              image_url: url,
+            })),
+          )
+          .returning();
+
+        officeImages = inserted.map(CompanyMapper.toImageItem);
+      }
+
+      const newDomain = CompanyDomain.fromPersistence(newCompany);
+      return CompanyMapper.toResponse(newDomain, officeImages);
+    });
+  }
+
+  async findById(
+    companyId: number,
+    includeAllStatus,
+  ): Promise<CompanyResponse | null> {
+    console.log(`includeAllStatus: ${includeAllStatus}`);
+    const condition = includeAllStatus
+      ? eq(schema.companies.company_id, companyId)
+      : and(
+          eq(schema.companies.company_id, companyId),
+          eq(schema.companies.status, 'APPROVED'),
+        );
+
+    const [row] = await this.db
+      .select()
+      .from(schema.companies)
+      .where(condition)
+      .limit(1);
+
+    if (!row) return null;
+
+    const domain = CompanyDomain.fromPersistence(row);
+    const images = await this.getOfficeImages(companyId);
+    return CompanyMapper.toResponse(domain, images);
+  }
+
+  async findByUserId(userId: number): Promise<CompanyResponse | null> {
+    const row = await this.loadByUserId(userId);
+    if (!row) return null;
+
+    const domain = CompanyDomain.fromPersistence(row);
+    const images = await this.getOfficeImages(domain.companyId);
+    return CompanyMapper.toResponse(domain, images);
+  }
+
+  async updateBasic(
+    userId: number,
+    dto: UpdateCompanyBasicDto,
+  ): Promise<CompanyResponse> {
+    const row = await this.loadByUserId(userId);
+    if (!row) return null!;
+
+    const domain = CompanyDomain.fromPersistence(row);
+    domain.updateBasic(dto);
+    return this.saveAndReturn(domain, 'user_id');
+  }
+
+  async updateDescription(
+    userId: number,
+    dto: UpdateCompanyDescriptionDto,
+  ): Promise<CompanyResponse> {
+    const row = await this.loadByUserId(userId);
+    if (!row) return null!;
+
+    const domain = CompanyDomain.fromPersistence(row);
+    domain.updateDescription(dto);
+    return this.saveAndReturn(domain, 'user_id');
+  }
+
+  async updateContact(
+    userId: number,
+    dto: UpdateCompanyContactDto,
+  ): Promise<CompanyResponse> {
+    const row = await this.loadByUserId(userId);
+    if (!row) return null!;
+
+    const domain = CompanyDomain.fromPersistence(row);
+    domain.updateContact(dto);
+    return this.saveAndReturn(domain, 'user_id');
+  }
+
+  async updateDetail(
+    userId: number,
+    dto: UpdateCompanyDetailDto,
+  ): Promise<CompanyResponse> {
+    const row = await this.loadByUserId(userId);
+    if (!row) return null!;
+
+    const domain = CompanyDomain.fromPersistence(row);
+    domain.updateDetail(dto);
+    return this.saveAndReturn(domain, 'user_id');
+  }
+
+  async updateLogo(userId: number, logoUrl: string): Promise<CompanyResponse> {
+    const row = await this.loadByUserId(userId);
+    if (!row) return null!;
+
+    const domain = CompanyDomain.fromPersistence(row);
+    domain.updateLogo(logoUrl);
+    return this.saveAndReturn(domain, 'user_id');
+  }
+
+  async updateCover(
+    userId: number,
+    coverUrl: string,
+  ): Promise<CompanyResponse> {
+    const row = await this.loadByUserId(userId);
+    if (!row) return null!;
+
+    const domain = CompanyDomain.fromPersistence(row);
+    domain.updateCover(coverUrl);
+    return this.saveAndReturn(domain, 'user_id');
+  }
+
+  async approveCompany(companyId: number): Promise<CompanyStatusUpdateResult> {
+    const row = await this.loadByCompanyId(companyId);
+    if (!row) return null!;
+
+    const domain = CompanyDomain.fromPersistence(row);
+    domain.approve();
+
+    await this.db
+      .update(schema.companies)
+      .set(domain.toUpdatePersistence())
+      .where(eq(schema.companies.company_id, companyId));
+
+    const email = await this.getEmailByUserId(domain.userId);
+    return CompanyMapper.toStatusUpdateResult(domain, email);
+  }
+
+  async rejectCompany(
+    companyId: number,
+    reason: string,
+  ): Promise<CompanyStatusUpdateResult> {
+    const row = await this.loadByCompanyId(companyId);
+    if (!row) return null!;
+
+    const domain = CompanyDomain.fromPersistence(row);
+    domain.reject(reason);
+
+    await this.db
+      .update(schema.companies)
+      .set(domain.toUpdatePersistence())
+      .where(eq(schema.companies.company_id, companyId));
+
+    const email = await this.getEmailByUserId(domain.userId);
+    return CompanyMapper.toStatusUpdateResult(domain, email);
+  }
+
+  async restrictCompany(
+    companyId: number,
+    reason: string,
+  ): Promise<CompanyStatusUpdateResult> {
+    const row = await this.loadByCompanyId(companyId);
+    if (!row) return null!;
+
+    const domain = CompanyDomain.fromPersistence(row);
+    domain.restrict(reason);
+
+    await this.db
+      .update(schema.companies)
+      .set(domain.toUpdatePersistence())
+      .where(eq(schema.companies.company_id, companyId));
+
+    const email = await this.getEmailByUserId(domain.userId);
+    return CompanyMapper.toStatusUpdateResult(domain, email);
+  }
+
+  // =========================================================================
+  // OFFICE IMAGES
+  // =========================================================================
+
+  async getOfficeImages(companyId: number): Promise<CompanyImageItem[]> {
+    const rows = await this.db
+      .select()
+      .from(schema.company_images)
+      .where(eq(schema.company_images.company_id, companyId));
+
+    return rows.map(CompanyMapper.toImageItem);
+  }
+
+  async insertOfficeImages(
+    companyId: number,
+    imageUrls: string[],
+  ): Promise<CompanyImageItem[]> {
+    const inserted = await this.db
+      .insert(schema.company_images)
+      .values(
+        imageUrls.map((url) => ({ company_id: companyId, image_url: url })),
+      )
+      .returning();
+
+    return inserted.map(CompanyMapper.toImageItem);
+  }
+
+  async findImageByIdAndCompany(
+    imageId: number,
+    companyId: number,
+  ): Promise<CompanyImageItem | null> {
+    const [row] = await this.db
+      .select()
+      .from(schema.company_images)
+      .where(
+        and(
+          eq(schema.company_images.image_id, imageId),
+          eq(schema.company_images.company_id, companyId),
+        ),
+      )
+      .limit(1);
+
+    return row ? CompanyMapper.toImageItem(row) : null;
+  }
+
+  async deleteImage(imageId: number): Promise<void> {
+    await this.db
+      .delete(schema.company_images)
+      .where(eq(schema.company_images.image_id, imageId));
+  }
+
+  async getCompanyListForAdmin(
+    page: number,
+    limit: number,
+    status?: CompanyStatus,
+    search?: string,
+  ): Promise<CompanyAdminListResult> {
+    const offset = (page - 1) * limit;
+
+    const conditions: SQL[] = [];
+
+    // filter status
+    if (status) {
+      conditions.push(eq(schema.companies.status, status));
     }
 
-    private async loadByCompanyId(companyId: number) {
-        const [row] = await this.db
-            .select()
-            .from(schema.companies)
-            .where(eq(schema.companies.company_id, companyId))
-            .limit(1);
-        return row ?? null;
+    // filter search
+    if (search) {
+      conditions.push(ilike(schema.companies.company_name, `%${search}%`));
     }
 
-    private async saveAndReturn(
-        domain: CompanyDomain,
-        whereField: 'user_id' | 'company_id',
-    ): Promise<CompanyResponse> {
-        const condition = whereField === 'user_id'
-            ? eq(schema.companies.user_id, domain.userId)
-            : eq(schema.companies.company_id, domain.companyId);
+    const whereClause = conditions.length ? and(...conditions) : undefined;
 
-        const [updated] = await this.db
-            .update(schema.companies)
-            .set(domain.toUpdatePersistence())
-            .where(condition)
-            .returning();
+    const [companies, [{ totalItems }], statusCount] = await Promise.all([
+      this.db
+        .select({
+          companyId: schema.companies.company_id,
+          companyName: schema.companies.company_name,
+          logoUrl: schema.companies.logo_url,
+          industry: schema.companies.industry,
+          status: schema.companies.status,
+          rating: schema.companies.rating,
+          followers: schema.companies.total_followers,
+          totalJobs: schema.companies.total_jobs_posted,
+          companySize: schema.companies.company_size,
+          createdAt: schema.companies.created_at,
+        })
+        .from(schema.companies)
+        .where(whereClause)
+        .limit(limit)
+        .offset(offset),
 
-        const updatedDomain = CompanyDomain.fromPersistence(updated);
-        const images = await this.getOfficeImages(updatedDomain.companyId);
-        return CompanyMapper.toResponse(updatedDomain, images);
+      this.db
+        .select({ totalItems: sql<number>`count(*)`.mapWith(Number) })
+        .from(schema.companies)
+        .where(whereClause),
+
+      this.db
+        .select({
+          status: schema.companies.status,
+          count: sql<number>`count(*)`.mapWith(Number),
+        })
+        .from(schema.companies)
+        .groupBy(schema.companies.status),
+    ]);
+
+    return {
+      companies: companies.map(CompanyMapper.toAdminCard),
+      totalItems,
+      statusCount: CompanyMapper.toStatusCount(statusCount),
+    };
+  }
+
+  async getCompanyListForUser(
+    page: number,
+    limit: number,
+    filters?: {
+      search?: string;
+      location?: string;
+      scale?: string;
+    },
+  ): Promise<CompanyUserListResult> {
+    const offset = (page - 1) * limit;
+
+    const conditions: SQL[] = [];
+
+    conditions.push(eq(schema.companies.status, 'APPROVED'));
+
+    // ================= SEARCH =================
+    if (filters?.search) {
+      conditions.push(
+        ilike(schema.companies.company_name, `%${filters.search}%`),
+      );
     }
 
-    private async getEmailByUserId(userId: number): Promise<string | undefined> {
-        const rows = await this.db
-            .select({ email: schema.users.email })
-            .from(schema.users)
-            .where(eq(schema.users.user_id, userId))
-            .limit(1);
-        return rows[0]?.email;
+    // ================= LOCATION =================
+    if (filters?.location) {
+      conditions.push(ilike(schema.companies.address, `%${filters.location}%`));
     }
 
-    async findRawById(actorId: number): Promise<number | null> {
-        const [data] = await this.db
-            .select({ userId: schema.companies.user_id })
-            .from(schema.companies)
-            .where(eq(schema.companies.company_id, actorId))
-        return data.userId
+    // ================= SCALE =================
+    if (filters?.scale) {
+      conditions.push(eq(schema.companies.company_size, filters.scale));
     }
 
-    async createCompanyWithImages(
-        userId: number,
-        dto: CreateCompanyDto,
-        logoUrl?: string,
-        coverUrl?: string,
-        officeImageUrls?: string[],
-    ): Promise<CompanyResponse> {
-        const domain = CompanyDomain.create(userId, dto, logoUrl, coverUrl);
+    const whereClause = conditions.length ? and(...conditions) : undefined;
 
-        return this.db.transaction(async (tx) => {
-            const [newCompany] = await tx
-                .insert(schema.companies)
-                .values(domain.toPersistence())
-                .returning();
-
-            let officeImages: CompanyImageItem[] = [];
-
-            if (officeImageUrls?.length) {
-                const inserted = await tx
-                    .insert(schema.company_images)
-                    .values(
-                        officeImageUrls.map((url) => ({
-                            company_id: newCompany.company_id,
-                            image_url: url,
-                        })),
-                    )
-                    .returning();
-
-                officeImages = inserted.map(CompanyMapper.toImageItem);
-            }
-
-            const newDomain = CompanyDomain.fromPersistence(newCompany);
-            return CompanyMapper.toResponse(newDomain, officeImages);
-        });
-    }
-
-    async findById(
-        companyId: number,
-        includeAllStatus,
-    ): Promise<CompanyResponse | null> {
-        console.log(`includeAllStatus: ${includeAllStatus}`)
-        const condition = includeAllStatus
-            ? eq(schema.companies.company_id, companyId)
-            : and(
-                eq(schema.companies.company_id, companyId),
-                eq(schema.companies.status, 'APPROVED'),
-            );
-
-        const [row] = await this.db
-            .select()
-            .from(schema.companies)
-            .where(condition)
-            .limit(1);
-
-        if (!row) return null;
-
-        const domain = CompanyDomain.fromPersistence(row);
-        const images = await this.getOfficeImages(companyId);
-        return CompanyMapper.toResponse(domain, images);
-    }
-
-    async findByUserId(userId: number): Promise<CompanyResponse | null> {
-        const row = await this.loadByUserId(userId);
-        if (!row) return null;
-
-        const domain = CompanyDomain.fromPersistence(row);
-        const images = await this.getOfficeImages(domain.companyId);
-        return CompanyMapper.toResponse(domain, images);
-    }
-
-    async updateBasic(userId: number, dto: UpdateCompanyBasicDto): Promise<CompanyResponse> {
-        const row = await this.loadByUserId(userId);
-        if (!row) return null!;
-
-        const domain = CompanyDomain.fromPersistence(row);
-        domain.updateBasic(dto);
-        return this.saveAndReturn(domain, 'user_id');
-    }
-
-    async updateDescription(userId: number, dto: UpdateCompanyDescriptionDto): Promise<CompanyResponse> {
-        const row = await this.loadByUserId(userId);
-        if (!row) return null!;
-
-        const domain = CompanyDomain.fromPersistence(row);
-        domain.updateDescription(dto);
-        return this.saveAndReturn(domain, 'user_id');
-    }
-
-    async updateContact(userId: number, dto: UpdateCompanyContactDto): Promise<CompanyResponse> {
-        const row = await this.loadByUserId(userId);
-        if (!row) return null!;
-
-        const domain = CompanyDomain.fromPersistence(row);
-        domain.updateContact(dto);
-        return this.saveAndReturn(domain, 'user_id');
-    }
-
-    async updateDetail(userId: number, dto: UpdateCompanyDetailDto): Promise<CompanyResponse> {
-        const row = await this.loadByUserId(userId);
-        if (!row) return null!;
-
-        const domain = CompanyDomain.fromPersistence(row);
-        domain.updateDetail(dto);
-        return this.saveAndReturn(domain, 'user_id');
-    }
-
-    async updateLogo(userId: number, logoUrl: string): Promise<CompanyResponse> {
-        const row = await this.loadByUserId(userId);
-        if (!row) return null!;
-
-        const domain = CompanyDomain.fromPersistence(row);
-        domain.updateLogo(logoUrl);
-        return this.saveAndReturn(domain, 'user_id');
-    }
-
-    async updateCover(userId: number, coverUrl: string): Promise<CompanyResponse> {
-        const row = await this.loadByUserId(userId);
-        if (!row) return null!;
-
-        const domain = CompanyDomain.fromPersistence(row);
-        domain.updateCover(coverUrl);
-        return this.saveAndReturn(domain, 'user_id');
-    }
-
-    async approveCompany(companyId: number): Promise<CompanyStatusUpdateResult> {
-        const row = await this.loadByCompanyId(companyId);
-        if (!row) return null!;
-
-        const domain = CompanyDomain.fromPersistence(row);
-        domain.approve();
-
-        await this.db
-            .update(schema.companies)
-            .set(domain.toUpdatePersistence())
-            .where(eq(schema.companies.company_id, companyId));
-
-        const email = await this.getEmailByUserId(domain.userId);
-        return CompanyMapper.toStatusUpdateResult(domain, email);
-    }
-
-    async rejectCompany(companyId: number, reason: string): Promise<CompanyStatusUpdateResult> {
-        const row = await this.loadByCompanyId(companyId);
-        if (!row) return null!;
-
-        const domain = CompanyDomain.fromPersistence(row);
-        domain.reject(reason);
-
-        await this.db
-            .update(schema.companies)
-            .set(domain.toUpdatePersistence())
-            .where(eq(schema.companies.company_id, companyId));
-
-        const email = await this.getEmailByUserId(domain.userId);
-        return CompanyMapper.toStatusUpdateResult(domain, email);
-    }
-
-    async restrictCompany(companyId: number, reason: string): Promise<CompanyStatusUpdateResult> {
-        const row = await this.loadByCompanyId(companyId);
-        if (!row) return null!;
-
-        const domain = CompanyDomain.fromPersistence(row);
-        domain.restrict(reason);
-
-        await this.db
-            .update(schema.companies)
-            .set(domain.toUpdatePersistence())
-            .where(eq(schema.companies.company_id, companyId));
-
-        const email = await this.getEmailByUserId(domain.userId);
-        return CompanyMapper.toStatusUpdateResult(domain, email);
-    }
-
-    // =========================================================================
-    // OFFICE IMAGES
-    // =========================================================================
-
-    async getOfficeImages(companyId: number): Promise<CompanyImageItem[]> {
-        const rows = await this.db
-            .select()
-            .from(schema.company_images)
-            .where(eq(schema.company_images.company_id, companyId));
-
-        return rows.map(CompanyMapper.toImageItem);
-    }
-
-    async insertOfficeImages(companyId: number, imageUrls: string[]): Promise<CompanyImageItem[]> {
-        const inserted = await this.db
-            .insert(schema.company_images)
-            .values(imageUrls.map((url) => ({ company_id: companyId, image_url: url })))
-            .returning();
-
-        return inserted.map(CompanyMapper.toImageItem);
-    }
-
-    async findImageByIdAndCompany(
-        imageId: number,
-        companyId: number,
-    ): Promise<CompanyImageItem | null> {
-        const [row] = await this.db
-            .select()
-            .from(schema.company_images)
-            .where(
-                and(
-                    eq(schema.company_images.image_id, imageId),
-                    eq(schema.company_images.company_id, companyId),
-                ),
-            )
-            .limit(1);
-
-        return row ? CompanyMapper.toImageItem(row) : null;
-    }
-
-    async deleteImage(imageId: number): Promise<void> {
-        await this.db
-            .delete(schema.company_images)
-            .where(eq(schema.company_images.image_id, imageId));
-    }
-
-    async getCompanyListForAdmin(
-        page: number,
-        limit: number,
-        status?: CompanyStatus,
-        search?: string,
-    ): Promise<CompanyAdminListResult> {
-        const offset = (page - 1) * limit;
-
-        const conditions: SQL[] = [];
-
-        // filter status
-        if (status) {
-            conditions.push(eq(schema.companies.status, status));
-        }
-
-        // filter search
-        if (search) {
-            conditions.push(
-                ilike(schema.companies.company_name, `%${search}%`)
-            );
-        }
-
-        const whereClause = conditions.length ? and(...conditions) : undefined;
-
-        const [companies, [{ totalItems }], statusCount] = await Promise.all([
-            this.db
-                .select({
-                    companyId: schema.companies.company_id,
-                    companyName: schema.companies.company_name,
-                    logoUrl: schema.companies.logo_url,
-                    industry: schema.companies.industry,
-                    status: schema.companies.status,
-                    rating: schema.companies.rating,
-                    followers: schema.companies.total_followers,
-                    totalJobs: schema.companies.total_jobs_posted,
-                    companySize: schema.companies.company_size,
-                    createdAt: schema.companies.created_at,
-                })
-                .from(schema.companies)
-                .where(whereClause)
-                .limit(limit)
-                .offset(offset),
-
-            this.db
-                .select({ totalItems: sql<number>`count(*)`.mapWith(Number) })
-                .from(schema.companies)
-                .where(whereClause),
-
-            this.db
-                .select({
-                    status: schema.companies.status,
-                    count: sql<number>`count(*)`.mapWith(Number),
-                })
-                .from(schema.companies)
-                .groupBy(schema.companies.status),
-        ]);
-
-        return {
-            companies: companies.map(CompanyMapper.toAdminCard),
-            totalItems,
-            statusCount: CompanyMapper.toStatusCount(statusCount),
-        };
-    }
-
-    async getCompanyListForUser(
-        page: number,
-        limit: number,
-        filters?: {
-            search?: string;
-            location?: string;
-            scale?: string;
-        }
-    ): Promise<CompanyUserListResult> {
-        const offset = (page - 1) * limit;
-
-        const conditions: SQL[] = [];
-
-        conditions.push(eq(schema.companies.status, 'APPROVED'));
-
-        // ================= SEARCH =================
-        if (filters?.search) {
-            conditions.push(
-                ilike(schema.companies.company_name, `%${filters.search}%`)
-            );
-        }
-
-        // ================= LOCATION =================
-        if (filters?.location) {
-            conditions.push(
-                ilike(schema.companies.address, `%${filters.location}%`)
-            );
-        }
-
-        // ================= SCALE =================
-        if (filters?.scale) {
-            conditions.push(
-                eq(schema.companies.company_size, filters.scale)
-            );
-        }
-
-        const whereClause = conditions.length ? and(...conditions) : undefined;
-
-        const [companies, [{ totalItems }]] = await Promise.all([
-            this.db
-                .select({
-                    company_id: schema.companies.company_id,
-                    company_name: schema.companies.company_name,
-                    logo_url: schema.companies.logo_url,
-                    industry: schema.companies.industry,
-                    active_jobs: sql<number>`(
+    const [companies, [{ totalItems }]] = await Promise.all([
+      this.db
+        .select({
+          company_id: schema.companies.company_id,
+          company_name: schema.companies.company_name,
+          logo_url: schema.companies.logo_url,
+          industry: schema.companies.industry,
+          active_jobs: sql<number>`(
           SELECT COUNT(job_id)
           FROM ${schema.job_postings}
           WHERE company_id = ${schema.companies.company_id}
           AND status = 'approved'
         )`.mapWith(Number),
-                })
-                .from(schema.companies)
-                .where(whereClause)
-                .orderBy(desc(schema.companies.created_at))
-                .limit(limit)
-                .offset(offset),
+        })
+        .from(schema.companies)
+        .where(whereClause)
+        .orderBy(desc(schema.companies.created_at))
+        .limit(limit)
+        .offset(offset),
 
-            this.db
-                .select({ totalItems: count() })
-                .from(schema.companies)
-                .where(whereClause),
-        ]);
+      this.db
+        .select({ totalItems: count() })
+        .from(schema.companies)
+        .where(whereClause),
+    ]);
 
-        return {
-            companies: companies.map((item) => CompanyMapper.toUserCard(item, false)),
-            totalItems: Number(totalItems),
-        };
+    return {
+      companies: companies.map((item) => CompanyMapper.toUserCard(item, false)),
+      totalItems: Number(totalItems),
+    };
+  }
+
+  async getFollowedCompaniesForUser(
+    studentId: number,
+    page: number,
+    limit: number,
+    filters?: {
+      search?: string;
+      location?: string;
+      scale?: string;
+    },
+  ): Promise<CompanyUserListResult> {
+    const offset = (page - 1) * limit;
+
+    const conditions: SQL[] = [];
+
+    // chỉ lấy company approved
+    conditions.push(eq(schema.companies.status, 'APPROVED'));
+
+    // filter follow theo student
+    conditions.push(eq(schema.followed_companies.student_id, studentId));
+
+    // ===== SEARCH =====
+    if (filters?.search) {
+      conditions.push(
+        ilike(schema.companies.company_name, `%${filters.search}%`),
+      );
     }
 
-    async getFollowedCompaniesForUser(
-        studentId: number,
-        page: number,
-        limit: number,
-        filters?: {
-            search?: string;
-            location?: string;
-            scale?: string;
-        }
-    ): Promise<CompanyUserListResult> {
-        const offset = (page - 1) * limit;
+    // ===== LOCATION =====
+    if (filters?.location) {
+      conditions.push(ilike(schema.companies.address, `%${filters.location}%`));
+    }
 
-        const conditions: SQL[] = [];
+    // ===== SCALE =====
+    if (filters?.scale) {
+      conditions.push(eq(schema.companies.company_size, filters.scale));
+    }
 
-        // chỉ lấy company approved
-        conditions.push(eq(schema.companies.status, 'APPROVED'));
+    const whereClause = and(...conditions);
 
-        // filter follow theo student
-        conditions.push(eq(schema.followed_companies.student_id, studentId));
-
-        // ===== SEARCH =====
-        if (filters?.search) {
-            conditions.push(
-                ilike(schema.companies.company_name, `%${filters.search}%`)
-            );
-        }
-
-        // ===== LOCATION =====
-        if (filters?.location) {
-            conditions.push(
-                ilike(schema.companies.address, `%${filters.location}%`)
-            );
-        }
-
-        // ===== SCALE =====
-        if (filters?.scale) {
-            conditions.push(
-                eq(schema.companies.company_size, filters.scale)
-            );
-        }
-
-        const whereClause = and(...conditions);
-
-        const [companies, [{ totalItems }]] = await Promise.all([
-            this.db
-                .select({
-                    company_id: schema.companies.company_id,
-                    company_name: schema.companies.company_name,
-                    logo_url: schema.companies.logo_url,
-                    industry: schema.companies.industry,
-                    active_jobs: sql<number>`(
+    const [companies, [{ totalItems }]] = await Promise.all([
+      this.db
+        .select({
+          company_id: schema.companies.company_id,
+          company_name: schema.companies.company_name,
+          logo_url: schema.companies.logo_url,
+          industry: schema.companies.industry,
+          active_jobs: sql<number>`(
           SELECT COUNT(job_id)
           FROM ${schema.job_postings}
           WHERE company_id = ${schema.companies.company_id}
           AND status = 'approved'
         )`.mapWith(Number),
-                })
-                .from(schema.followed_companies)
-                .innerJoin(
-                    schema.companies,
-                    eq(schema.followed_companies.company_id, schema.companies.company_id)
-                )
-                .where(whereClause)
-                .orderBy(desc(schema.companies.created_at))
-                .limit(limit)
-                .offset(offset),
+        })
+        .from(schema.followed_companies)
+        .innerJoin(
+          schema.companies,
+          eq(schema.followed_companies.company_id, schema.companies.company_id),
+        )
+        .where(whereClause)
+        .orderBy(desc(schema.companies.created_at))
+        .limit(limit)
+        .offset(offset),
 
-            this.db
-                .select({ totalItems: count() })
-                .from(schema.followed_companies)
-                .innerJoin(
-                    schema.companies,
-                    eq(schema.followed_companies.company_id, schema.companies.company_id)
-                )
-                .where(whereClause),
-        ]);
+      this.db
+        .select({ totalItems: count() })
+        .from(schema.followed_companies)
+        .innerJoin(
+          schema.companies,
+          eq(schema.followed_companies.company_id, schema.companies.company_id),
+        )
+        .where(whereClause),
+    ]);
 
-        return {
-            companies: companies.map(item => CompanyMapper.toUserCard(item, true)),
-            totalItems: Number(totalItems),
-        };
-    }
+    return {
+      companies: companies.map((item) => CompanyMapper.toUserCard(item, true)),
+      totalItems: Number(totalItems),
+    };
+  }
 
-    async getCompanyName(companyId: number): Promise<{
-        company_name: string | null,
-        user_id: number | null
-    }> {
-        const [data] = await this.db
-            .select({
-                company_name: schema.companies.company_name,
-                user_id: schema.companies.user_id
-            })
-            .from(schema.companies)
-            .where(eq(schema.companies.company_id, companyId));
-        return {
-            company_name: data.company_name,
-            user_id: data.user_id,
-        }
-    }
+  async getCompanyName(companyId: number): Promise<{
+    company_name: string | null;
+    user_id: number | null;
+  }> {
+    const [data] = await this.db
+      .select({
+        company_name: schema.companies.company_name,
+        user_id: schema.companies.user_id,
+      })
+      .from(schema.companies)
+      .where(eq(schema.companies.company_id, companyId));
+    return {
+      company_name: data.company_name,
+      user_id: data.user_id,
+    };
+  }
 }

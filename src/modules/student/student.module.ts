@@ -9,10 +9,14 @@ import { CloudinaryService } from 'src/shared/cloudinary/cloudinary.service';
 @Module({
   imports: [CloudinaryModule],
   controllers: [StudentController],
-  providers: [CloudinaryService, StudentService, {
-    provide: I_STUDENT_REPOSITORY,
-    useClass: StudentRepository
-  }],
+  providers: [
+    CloudinaryService,
+    StudentService,
+    {
+      provide: I_STUDENT_REPOSITORY,
+      useClass: StudentRepository,
+    },
+  ],
   exports: [I_STUDENT_REPOSITORY],
 })
-export class StudentModule { }
+export class StudentModule {}

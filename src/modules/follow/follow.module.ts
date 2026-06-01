@@ -15,4 +15,4 @@ import { FollowedCompanyService } from './follow.service';
   ],
   exports: [I_FOLLOWED_COMPANY_REPOSITORY],
 })
-export class FollowedCompanyModule { }
+export class FollowedCompanyModule {}

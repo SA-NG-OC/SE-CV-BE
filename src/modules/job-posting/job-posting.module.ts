@@ -10,7 +10,13 @@ import { CompanyModule } from '../company/company.module';
 import { SavedJobsModule } from '../saved-jobs/saved-jobs.module';
 
 @Module({
-  imports: [AuthModule, CommonModule, RecommendationsModule, CompanyModule, SavedJobsModule],
+  imports: [
+    AuthModule,
+    CommonModule,
+    RecommendationsModule,
+    CompanyModule,
+    SavedJobsModule,
+  ],
   controllers: [JobPostingController],
   providers: [
     JobPostingService,
@@ -21,4 +27,4 @@ import { SavedJobsModule } from '../saved-jobs/saved-jobs.module';
   ],
   exports: [I_JOB_POSTING_REPOSITORY],
 })
-export class JobPostingModule { }
+export class JobPostingModule {}

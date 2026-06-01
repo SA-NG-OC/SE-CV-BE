@@ -7,164 +7,190 @@ import { ICommentsRepository } from './comment-repository.interface';
 import { UpdateCommentDto } from '../dto/update-comment.dto';
 import { CreateCommentDto } from '../dto/create-comment.dto';
 import { CommentMapper } from '../mapper/comment.mapper';
-import { CommentOfMyCompany, CommentResponse, CommentResponseDetail, CompanyCommentStatistics, RatingDistribution } from '../interface';
+import {
+  CommentOfMyCompany,
+  CommentResponse,
+  CommentResponseDetail,
+  CompanyCommentStatistics,
+  RatingDistribution,
+} from '../interface';
 import { Role, RoleName } from 'src/common/types/role.enum';
 import { PaginationResponse } from 'src/common/types/pagination-response';
 
 @Injectable()
 export class CommentsRepository implements ICommentsRepository {
-    constructor(
-        @Inject(DATABASE_CONNECTION)
-        private readonly db: NodePgDatabase<typeof schema>,
-    ) { }
+  constructor(
+    @Inject(DATABASE_CONNECTION)
+    private readonly db: NodePgDatabase<typeof schema>,
+  ) {}
 
-    async create(data: CreateCommentDto, studentId: number): Promise<CommentResponse> {
+  async create(
+    data: CreateCommentDto,
+    studentId: number,
+  ): Promise<CommentResponse> {
+    const [comment] = await this.db
+      .insert(schema.comments)
+      .values({
+        student_id: studentId,
+        rating: data.ratting,
+        content: data.content,
+        company_id: data.companyId,
+      })
+      .returning();
 
-        const [comment] = await this.db
-            .insert(schema.comments)
-            .values({
-                student_id: studentId,
-                rating: data.ratting,
-                content: data.content,
-                company_id: data.companyId,
-            })
-            .returning();
+    return CommentMapper.toResponse(comment);
+  }
 
-        return CommentMapper.toResponse(comment);
-    }
+  async update(
+    id: number,
+    studentId: number,
+    data: UpdateCommentDto,
+  ): Promise<CommentResponse | null> {
+    const [updated] = await this.db
+      .update(schema.comments)
+      .set(data)
+      .where(
+        and(
+          eq(schema.comments.id, id),
+          eq(schema.comments.student_id, studentId),
+        ),
+      )
+      .returning();
+    return CommentMapper.toResponse(updated);
+  }
 
-    async update(id: number, studentId: number, data: UpdateCommentDto): Promise<CommentResponse | null> {
-        const [updated] = await this.db
-            .update(schema.comments)
-            .set(data)
-            .where(and(
-                eq(schema.comments.id, id),
-                eq(schema.comments.student_id, studentId)
-            ))
-            .returning();
-        return CommentMapper.toResponse(updated);
-    }
+  async delete(id: number, studentId: number): Promise<boolean> {
+    const result = await this.db
+      .delete(schema.comments)
+      .where(
+        and(
+          eq(schema.comments.id, id),
+          eq(schema.comments.student_id, studentId),
+        ),
+      )
+      .returning({ id: schema.comments.id });
 
-    async delete(id: number, studentId: number): Promise<boolean> {
-        const result = await this.db
-            .delete(schema.comments)
-            .where(and(
-                eq(schema.comments.id, id),
-                eq(schema.comments.student_id, studentId)
-            ))
-            .returning({ id: schema.comments.id });
+    return result.length > 0;
+  }
 
-        return result.length > 0;
-    }
+  async getCompanyComment(
+    companyId: number,
+    page: number,
+    limit: number,
+  ): Promise<PaginationResponse<CommentResponseDetail>> {
+    const offset = (page - 1) * limit;
+    const totalQuery = this.db
+      .select({ total: count() })
+      .from(schema.comments)
+      .where(eq(schema.comments.company_id, companyId));
 
-    async getCompanyComment(
-        companyId: number,
-        page: number,
-        limit: number
-    ): Promise<PaginationResponse<CommentResponseDetail>> {
-        const offset = (page - 1) * limit;
-        const totalQuery = this.db
-            .select({ total: count() })
-            .from(schema.comments)
-            .where(eq(schema.comments.company_id, companyId));
+    const dataQuery = this.db
+      .select({
+        id: schema.comments.id,
+        student_id: schema.comments.student_id,
+        student_name: schema.students.full_name,
+        student_avatar: schema.students.avatar_url,
+        company_id: schema.comments.company_id,
+        rating: schema.comments.rating,
+        content: schema.comments.content,
+        created_at: schema.comments.created_at,
+      })
+      .from(schema.comments)
+      .innerJoin(
+        schema.students,
+        eq(schema.comments.student_id, schema.students.student_id),
+      )
+      .where(eq(schema.comments.company_id, companyId))
+      .orderBy(desc(schema.comments.created_at))
+      .limit(limit)
+      .offset(offset);
 
-        const dataQuery = this.db
-            .select({
-                id: schema.comments.id,
-                student_id: schema.comments.student_id,
-                student_name: schema.students.full_name,
-                student_avatar: schema.students.avatar_url,
-                company_id: schema.comments.company_id,
-                rating: schema.comments.rating,
-                content: schema.comments.content,
-                created_at: schema.comments.created_at,
-            })
-            .from(schema.comments)
-            .innerJoin(schema.students, eq(schema.comments.student_id, schema.students.student_id))
-            .where(eq(schema.comments.company_id, companyId))
-            .orderBy(desc(schema.comments.created_at))
-            .limit(limit)
-            .offset(offset);
+    const [[{ total }], rows] = await Promise.all([totalQuery, dataQuery]);
 
-        const [[{ total }], rows] = await Promise.all([totalQuery, dataQuery]);
+    const mappedData = CommentMapper.toResponseDetailArray(rows);
 
-        const mappedData = CommentMapper.toResponseDetailArray(rows);
+    return new PaginationResponse(mappedData, page, limit, Number(total));
+  }
 
-        return new PaginationResponse(mappedData, page, limit, Number(total));
-    }
+  async getCommentOfMyCompany(
+    companyId: number,
+    page: number,
+    limit: number,
+  ): Promise<PaginationResponse<CommentOfMyCompany>> {
+    const offset = (page - 1) * limit;
 
-    async getCommentOfMyCompany(
-        companyId: number,
-        page: number,
-        limit: number
-    ): Promise<PaginationResponse<CommentOfMyCompany>> {
-        const offset = (page - 1) * limit;
+    const totalQuery = this.db
+      .select({ total: count() })
+      .from(schema.comments)
+      .where(eq(schema.comments.company_id, companyId));
 
-        const totalQuery = this.db
-            .select({ total: count() })
-            .from(schema.comments)
-            .where(eq(schema.comments.company_id, companyId));
+    const dataQuery = this.db
+      .select({
+        id: schema.comments.id,
+        company_id: schema.comments.company_id,
+        rating: schema.comments.rating,
+        content: schema.comments.content,
+        created_at: schema.comments.created_at,
+      })
+      .from(schema.comments)
+      .where(eq(schema.comments.company_id, companyId))
+      .orderBy(desc(schema.comments.created_at))
+      .limit(limit)
+      .offset(offset);
 
-        const dataQuery = this.db
-            .select({
-                id: schema.comments.id,
-                company_id: schema.comments.company_id,
-                rating: schema.comments.rating,
-                content: schema.comments.content,
-                created_at: schema.comments.created_at,
-            })
-            .from(schema.comments)
-            .where(eq(schema.comments.company_id, companyId))
-            .orderBy(desc(schema.comments.created_at))
-            .limit(limit)
-            .offset(offset);
+    const [[{ total }], rows] = await Promise.all([totalQuery, dataQuery]);
 
-        const [[{ total }], rows] = await Promise.all([totalQuery, dataQuery]);
+    const mappedData = CommentMapper.toCommentAnonymousArray(rows);
 
-        const mappedData = CommentMapper.toCommentAnonymousArray(rows);
+    return new PaginationResponse(mappedData, page, limit, Number(total));
+  }
 
-        return new PaginationResponse(mappedData, page, limit, Number(total));
-    }
+  async getCompanyCommentStats(
+    companyId: number,
+  ): Promise<CompanyCommentStatistics> {
+    // 1. Lấy số lượng comment theo từng mức rating (1-5 sao)
+    const statsRaw = await this.db
+      .select({
+        rating: schema.comments.rating,
+        count: count(),
+      })
+      .from(schema.comments)
+      .where(eq(schema.comments.company_id, companyId))
+      .groupBy(schema.comments.rating);
 
-    async getCompanyCommentStats(companyId: number): Promise<CompanyCommentStatistics> {
-        // 1. Lấy số lượng comment theo từng mức rating (1-5 sao)
-        const statsRaw = await this.db
-            .select({
-                rating: schema.comments.rating,
-                count: count(),
-            })
-            .from(schema.comments)
-            .where(eq(schema.comments.company_id, companyId))
-            .groupBy(schema.comments.rating);
+    // 2. Tính tổng số lượng comment
+    const totalComments = statsRaw.reduce(
+      (acc, curr) => acc + Number(curr.count),
+      0,
+    );
 
-        // 2. Tính tổng số lượng comment
-        const totalComments = statsRaw.reduce((acc, curr) => acc + Number(curr.count), 0);
+    // 3. Tính trung bình đánh giá
+    const sumRatings = statsRaw.reduce(
+      (acc, curr) => acc + curr.rating * Number(curr.count),
+      0,
+    );
+    const averageRating =
+      totalComments > 0 ? Number((sumRatings / totalComments).toFixed(1)) : 0;
 
-        // 3. Tính trung bình đánh giá
-        const sumRatings = statsRaw.reduce((acc, curr) => acc + (curr.rating * Number(curr.count)), 0);
-        const averageRating = totalComments > 0
-            ? Number((sumRatings / totalComments).toFixed(1))
-            : 0;
+    // 4. Phân loại và tính phần trăm cho từng mức sao
+    const distribution: RatingDistribution[] = [1, 2, 3, 4, 5].map((star) => {
+      const found = statsRaw.find((s) => s.rating === star);
+      const countValue = found ? Number(found.count) : 0;
 
-        // 4. Phân loại và tính phần trăm cho từng mức sao 
-        const distribution: RatingDistribution[] = [1, 2, 3, 4, 5].map((star) => {
-            const found = statsRaw.find((s) => s.rating === star);
-            const countValue = found ? Number(found.count) : 0;
+      return {
+        rating: star,
+        count: countValue,
+        percentage:
+          totalComments > 0
+            ? Number((countValue / totalComments).toFixed(2))
+            : 0,
+      };
+    });
 
-            return {
-                rating: star,
-                count: countValue,
-                percentage: totalComments > 0
-                    ? Number((countValue / totalComments).toFixed(2))
-                    : 0,
-            };
-        });
-
-        return {
-            totalComments,
-            averageRating,
-            distribution,
-        };
-    }
-
+    return {
+      totalComments,
+      averageRating,
+      distribution,
+    };
+  }
 }

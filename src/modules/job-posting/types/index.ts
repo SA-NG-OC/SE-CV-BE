@@ -1,104 +1,103 @@
 export interface JobRequiredSkill {
-    jobSkillId: number;
-    jobId: number;
-    skillId: number;
-    createdAt: Date;
+  jobSkillId: number;
+  jobId: number;
+  skillId: number;
+  createdAt: Date;
 }
 
 export interface UpdateJobResponse {
-    jobId: number,
-    jobTitle: string | undefined,
+  jobId: number;
+  jobTitle: string | undefined;
 }
 
 export interface JobList {
-    jobId: number,
-    jobTitle: string | undefined,
+  jobId: number;
+  jobTitle: string | undefined;
 }
 
 export interface ProfileJobCard {
-    jobId: number,
-    jobTitle: string | undefined,
-    city: string | null,
-    categoryId: number | null,
-    status: 'pending' | 'approved' | 'rejected' | 'restricted',
-    salaryMin: number | null,
-    salaryMax: number | null,
-    salaryType: string | null,
-    isSalaryNegotiable: boolean,
-    applicationDeadline: string | null
+  jobId: number;
+  jobTitle: string | undefined;
+  city: string | null;
+  categoryId: number | null;
+  status: 'pending' | 'approved' | 'rejected' | 'restricted';
+  salaryMin: number | null;
+  salaryMax: number | null;
+  salaryType: string | null;
+  isSalaryNegotiable: boolean;
+  applicationDeadline: string | null;
 }
 
 // Item trả về cho FE (đã join thêm skillName)
 export interface JobSkillItem {
-    skillId: number | null;
-    skillName: string;
+  skillId: number | null;
+  skillName: string;
 }
 
 export enum JobTag {
-    PENDING = 'Pending',
-    HIDDEN = 'Hidden',
-    CLOSED = 'Closed',
-    ACTIVE = 'Active',
+  PENDING = 'Pending',
+  HIDDEN = 'Hidden',
+  CLOSED = 'Closed',
+  ACTIVE = 'Active',
 }
 
 // Response chính của job posting
 export interface JobPostingResponse {
-    jobId: number;
-    companyId: number;
-    categoryId: number | null;
-    logoUrl: string | null;
-    jobTitle: string;
-    jobDescription: string;
-    requirements: string;
-    benefits: string | null;
-    experienceLevel: string | null;
-    positionLevel: string | null;
+  jobId: number;
+  companyId: number;
+  categoryId: number | null;
+  logoUrl: string | null;
+  jobTitle: string;
+  jobDescription: string;
+  requirements: string;
+  benefits: string | null;
+  experienceLevel: string | null;
+  positionLevel: string | null;
 
-    numberOfPositions: number;
+  numberOfPositions: number;
 
-    salaryMin: number | null;
-    salaryMax: number | null;
-    salaryType: 'FIXED' | 'RANGE' | 'NEGOTIABLE' | null;
-    isSalaryNegotiable: boolean;
+  salaryMin: number | null;
+  salaryMax: number | null;
+  salaryType: 'FIXED' | 'RANGE' | 'NEGOTIABLE' | null;
+  isSalaryNegotiable: boolean;
 
-    city: string | null;
-    applicationDeadline: string | null;
-    isActive: boolean;
-    status: string;
-    applicantCount: number;
-    createdAt: Date;
-    updatedAt: Date;
-    adminNote: string | null;
-    requiredSkills: JobSkillItem[];
-    tag: JobTag;
-    saved: boolean;
+  city: string | null;
+  applicationDeadline: string | null;
+  isActive: boolean;
+  status: string;
+  applicantCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+  adminNote: string | null;
+  requiredSkills: JobSkillItem[];
+  tag: JobTag;
+  saved: boolean;
 }
 
 // Category
 export interface CategoryItem {
-    categoryId: number;
-    categoryName: string;
+  categoryId: number;
+  categoryName: string;
 }
 
 export interface AdminJobCard {
-    jobId: number;
-    companyId: number;
-    companyName: string;
-    logoUrl: string | null;
+  jobId: number;
+  companyId: number;
+  companyName: string;
+  logoUrl: string | null;
 
-    jobTitle: string;
-    city: string | null;
+  jobTitle: string;
+  city: string | null;
 
-    salaryMin: number | null;
-    salaryMax: number | null;
-    salaryType: 'FIXED' | 'RANGE' | 'NEGOTIABLE' | null;
-    isSalaryNegotiable: boolean;
+  salaryMin: number | null;
+  salaryMax: number | null;
+  salaryType: 'FIXED' | 'RANGE' | 'NEGOTIABLE' | null;
+  isSalaryNegotiable: boolean;
 
-    applicationDeadline: string | null;
+  applicationDeadline: string | null;
 
-    status: 'pending' | 'approved' | 'rejected' | 'restricted';
+  status: 'pending' | 'approved' | 'rejected' | 'restricted';
 }
-
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Card dùng cho STUDENT
@@ -106,27 +105,26 @@ export interface AdminJobCard {
 // KHÔNG có status (student chỉ thấy approved)
 // ─────────────────────────────────────────────────────────────────────────────
 export interface StudentJobCard {
-    jobId: number;
-    companyId: number;
-    companyName: string;
-    logoUrl: string | null;
+  jobId: number;
+  companyId: number;
+  companyName: string;
+  logoUrl: string | null;
 
-    jobTitle: string;
-    city: string | null;
+  jobTitle: string;
+  city: string | null;
 
-    salaryMin: number | null;
-    salaryMax: number | null;
-    salaryType: 'FIXED' | 'RANGE' | 'NEGOTIABLE' | null;
-    isSalaryNegotiable: boolean;
+  salaryMin: number | null;
+  salaryMax: number | null;
+  salaryType: 'FIXED' | 'RANGE' | 'NEGOTIABLE' | null;
+  isSalaryNegotiable: boolean;
 
-    // "5 ngày trước", "1 tuần trước"...
-    postedAt: string;
+  // "5 ngày trước", "1 tuần trước"...
+  postedAt: string;
 
-    applicantCount: number;
+  applicantCount: number;
 
-    skills: JobSkillItem[];
-    saved: boolean;
-
+  skills: JobSkillItem[];
+  saved: boolean;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -134,40 +132,40 @@ export interface StudentJobCard {
 // Giống student nhưng có thêm status (tin của chính mình)
 // ─────────────────────────────────────────────────────────────────────────────
 export interface CompanyJobCard {
-    jobId: number;
+  jobId: number;
 
-    jobTitle: string;
-    city: string | null;
-    companyName: string;
-    logoUrl: string | null;
+  jobTitle: string;
+  city: string | null;
+  companyName: string;
+  logoUrl: string | null;
 
-    salaryMin: number | null;
-    salaryMax: number | null;
-    salaryType: 'FIXED' | 'RANGE' | 'NEGOTIABLE' | null;
-    isSalaryNegotiable: boolean;
+  salaryMin: number | null;
+  salaryMax: number | null;
+  salaryType: 'FIXED' | 'RANGE' | 'NEGOTIABLE' | null;
+  isSalaryNegotiable: boolean;
 
-    applicationDeadline: string | null;
+  applicationDeadline: string | null;
 
-    // Company thấy status tin của mình
-    status: 'pending' | 'approved' | 'rejected' | 'restricted';
+  // Company thấy status tin của mình
+  status: 'pending' | 'approved' | 'rejected' | 'restricted';
 
-    applicantCount: number;
-    tag: 'Active' | 'Closed' | 'Hidden' | 'Pending' | 'Unknown';
-    skills: JobSkillItem[];
+  applicantCount: number;
+  tag: 'Active' | 'Closed' | 'Hidden' | 'Pending' | 'Unknown';
+  skills: JobSkillItem[];
 
-    createdAt: Date;
+  createdAt: Date;
 }
 
 export interface JobPostingStats {
-    total: number;       // Tổng tin
-    active: number;      // Đang hoạt động (Status = approved AND chưa hết hạn)
-    hidden: number;  // Tạm ẩn (Status = restricted)
-    closed: number;      // Đã đóng (Status = approved AND đã hết hạn)
+  total: number; // Tổng tin
+  active: number; // Đang hoạt động (Status = approved AND chưa hết hạn)
+  hidden: number; // Tạm ẩn (Status = restricted)
+  closed: number; // Đã đóng (Status = approved AND đã hết hạn)
 }
 
 export interface AdminJobStats {
-    pending: number;       // Chờ duyệt (status = pending)
-    approvedToday: number; // Đã duyệt hôm nay (status = approved AND approved_at trong ngày hôm nay)
-    rejected: number;      // Đã từ chối (status = rejected)
-    total: number;         // Tổng tin đăng
+  pending: number; // Chờ duyệt (status = pending)
+  approvedToday: number; // Đã duyệt hôm nay (status = approved AND approved_at trong ngày hôm nay)
+  rejected: number; // Đã từ chối (status = rejected)
+  total: number; // Tổng tin đăng
 }

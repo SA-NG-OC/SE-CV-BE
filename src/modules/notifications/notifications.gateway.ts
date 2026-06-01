@@ -1,5 +1,13 @@
-import { ConnectedSocket, MessageBody, OnGatewayConnection, OnGatewayDisconnect, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io'
+import {
+  ConnectedSocket,
+  MessageBody,
+  OnGatewayConnection,
+  OnGatewayDisconnect,
+  SubscribeMessage,
+  WebSocketGateway,
+  WebSocketServer,
+} from '@nestjs/websockets';
+import { Server, Socket } from 'socket.io';
 import { Injectable, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 
@@ -15,13 +23,14 @@ interface JwtPayload {
     origin: '*',
   },
 })
-export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisconnect {
-
+export class NotificationsGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server!: Server;
 
   private readonly logger = new Logger(NotificationsGateway.name);
-  constructor(private readonly jwtService: JwtService) { }
+  constructor(private readonly jwtService: JwtService) {}
 
   private extractToken(client: Socket): string | null {
     const authHeader = client.handshake.auth?.token;
@@ -51,8 +60,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
       this.logger.log(
         `User ${userId} connected | Socket: ${client.id} | Room: ${room}`,
       );
-    }
-    catch (err: any) {
+    } catch (err: any) {
       this.logger.warn(
         `Socket connection rejected: ${client.id} | Reason: ${err.message}`,
       );
@@ -81,7 +89,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     @MessageBody() payload: { content: string },
     @ConnectedSocket() client: Socket,
   ) {
-    console.log(`Message received from ${client.id}`, payload)
+    console.log(`Message received from ${client.id}`, payload);
     this.server.emit('receive_message', {
       senderId: client.id,
       content: payload.content,

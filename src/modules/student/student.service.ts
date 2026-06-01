@@ -11,7 +11,13 @@ import { StudentDomain, StudentDomainError } from './domain/student.domain';
 import { StudentMapper } from './domain/student.mapper';
 import { CloudinaryService } from 'src/shared/cloudinary/cloudinary.service';
 
-import { CreateResumeDto, UpdateGeneralInfoDto, UpdateJobPreferenceDto, UpdateJobStatusDto, UpdateSkillsDto } from './dto/update-student.dto';
+import {
+  CreateResumeDto,
+  UpdateGeneralInfoDto,
+  UpdateJobPreferenceDto,
+  UpdateJobStatusDto,
+  UpdateSkillsDto,
+} from './dto/update-student.dto';
 import { GetStudentsQueryDto } from './dto/get-students-query.dto';
 import { GeneralInformationDto } from './dto/general-information.dto';
 
@@ -32,14 +38,15 @@ export class StudentService {
     @Inject(I_STUDENT_REPOSITORY)
     private readonly repo: IStudentRepository,
     private readonly cloudinaryService: CloudinaryService,
-  ) { }
+  ) {}
 
   // =========================================================================
   // PRIVATE HELPERS
   // =========================================================================
 
   private rethrow(error: unknown): never {
-    if (error instanceof StudentDomainError) throw new BadRequestException(error.message);
+    if (error instanceof StudentDomainError)
+      throw new BadRequestException(error.message);
     throw error;
   }
 
@@ -85,9 +92,15 @@ export class StudentService {
     }
   }
 
-  async getStudentDetail(studentId: number, role: string): Promise<Omit<StudentResponse, 'totalApplications'> | StudentResponse> {
+  async getStudentDetail(
+    studentId: number,
+    role: string,
+  ): Promise<Omit<StudentResponse, 'totalApplications'> | StudentResponse> {
     const raw = await this.repo.findStudentWithMajor(studentId);
-    if (!raw) throw new NotFoundException(`Không tìm thấy sinh viên với ID ${studentId}`);
+    if (!raw)
+      throw new NotFoundException(
+        `Không tìm thấy sinh viên với ID ${studentId}`,
+      );
 
     const [skills, resumes, totalApplications] = await Promise.all([
       this.repo.findSkillsByStudent(studentId),
@@ -112,7 +125,9 @@ export class StudentService {
     return response;
   }
 
-  async getStudentCards(query: GetStudentsQueryDto): Promise<PaginationResponse<StudentCard>> {
+  async getStudentCards(
+    query: GetStudentsQueryDto,
+  ): Promise<PaginationResponse<StudentCard>> {
     const raw = await this.repo.findStudentCards(query);
 
     return {
@@ -148,7 +163,10 @@ export class StudentService {
 
   async updateJobStatus(studentId: number, dto: UpdateJobStatusDto) {
     const raw = await this.repo.findRawById2(studentId);
-    if (!raw) throw new NotFoundException(`Không tìm thấy sinh viên với ID ${studentId}`);
+    if (!raw)
+      throw new NotFoundException(
+        `Không tìm thấy sinh viên với ID ${studentId}`,
+      );
 
     const domain = StudentDomain.fromPersistence(raw);
     domain.setOpenToWork(dto.isOpenToWork);
@@ -161,7 +179,10 @@ export class StudentService {
   async updateSkills(studentId: number, dto: UpdateSkillsDto) {
     try {
       const raw = await this.repo.findRawById2(studentId);
-      if (!raw) throw new NotFoundException(`Không tìm thấy sinh viên với ID ${studentId}`);
+      if (!raw)
+        throw new NotFoundException(
+          `Không tìm thấy sinh viên với ID ${studentId}`,
+        );
 
       const domain = StudentDomain.fromPersistence(raw);
       domain.validateSkillIds(dto.skillIds);
@@ -175,7 +196,10 @@ export class StudentService {
   }
 
   async uploadResume(studentId: number, dto: CreateResumeDto) {
-    const existingResumes = await this.repo.findResumesByStudent(studentId, true);
+    const existingResumes = await this.repo.findResumesByStudent(
+      studentId,
+      true,
+    );
     const isDefault = existingResumes.length === 0;
 
     const raw = await this.repo.insertResume(studentId, dto, isDefault);
@@ -189,13 +213,20 @@ export class StudentService {
   async deleteResume(studentId: number, resumeId: number): Promise<void> {
     const resume = await this.repo.findResumeById(resumeId, studentId);
     if (!resume) throw new NotFoundException('CV không tồn tại');
-    if (resume.is_default) throw new BadRequestException('Không thể xóa CV mặc định');
+    if (resume.is_default)
+      throw new BadRequestException('Không thể xóa CV mặc định');
     await this.repo.deleteResume(resumeId);
   }
 
-  async setDefaultResume(studentId: number, resumeId: number): Promise<{ message: string; data: StudentResumeItem }> {
+  async setDefaultResume(
+    studentId: number,
+    resumeId: number,
+  ): Promise<{ message: string; data: StudentResumeItem }> {
     const raw = await this.repo.setDefaultResume(studentId, resumeId);
-    if (!raw) throw new NotFoundException('Không tìm thấy CV này hoặc CV không thuộc về bạn');
+    if (!raw)
+      throw new NotFoundException(
+        'Không tìm thấy CV này hoặc CV không thuộc về bạn',
+      );
 
     return {
       message: 'Đã cập nhật CV mặc định',
@@ -228,7 +259,9 @@ export class StudentService {
       dto.desiredSalaryMax !== undefined &&
       dto.desiredSalaryMin > dto.desiredSalaryMax
     ) {
-      throw new BadRequestException('Mức lương tối thiểu không được lớn hơn tối đa');
+      throw new BadRequestException(
+        'Mức lương tối thiểu không được lớn hơn tối đa',
+      );
     }
 
     await this.repo.updateFields(userId, {

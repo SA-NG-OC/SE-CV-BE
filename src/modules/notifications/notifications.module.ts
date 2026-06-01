@@ -9,14 +9,17 @@ import { I_NOTIFICATIONS_REPOSITORY } from './notification.token';
 import { FollowedCompanyModule } from '../follow/follow.module';
 
 @Module({
-    imports: [AuthModule, FollowedCompanyModule],
-    providers: [NotificationsGateway, NotificationsService, NotificationsListener, {
-        provide: I_NOTIFICATIONS_REPOSITORY,
-        useClass: NotificationsRepository,
-    }],
-    controllers: [NotificationsController],
-    exports: [NotificationsGateway, NotificationsService],
+  imports: [AuthModule, FollowedCompanyModule],
+  providers: [
+    NotificationsGateway,
+    NotificationsService,
+    NotificationsListener,
+    {
+      provide: I_NOTIFICATIONS_REPOSITORY,
+      useClass: NotificationsRepository,
+    },
+  ],
+  controllers: [NotificationsController],
+  exports: [NotificationsGateway, NotificationsService],
 })
-export class NotificationsModule {
-
-}
+export class NotificationsModule {}

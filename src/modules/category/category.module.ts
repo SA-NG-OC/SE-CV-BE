@@ -14,4 +14,4 @@ import { I_JOB_CATEGORY_REPOSITORY } from './repositories/job-category-repositor
     },
   ],
 })
-export class CategoryModule { }
+export class CategoryModule {}

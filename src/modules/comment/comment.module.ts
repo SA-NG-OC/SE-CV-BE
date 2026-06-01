@@ -8,12 +8,13 @@ import { ApplicationModule } from '../application/application.module';
 @Module({
   imports: [ApplicationModule],
   controllers: [CommentsController],
-  providers: [CommentsService,
+  providers: [
+    CommentsService,
     {
       provide: I_COMMENTS_REPOSITORY,
-      useClass: CommentsRepository
+      useClass: CommentsRepository,
     },
   ],
   exports: [I_COMMENTS_REPOSITORY],
 })
-export class CommentModule { }
+export class CommentModule {}

@@ -9,112 +9,113 @@ import { INotificationsRepository } from './notifications-repository.interface';
 import { PaginationResponse } from 'src/common/types/pagination-response';
 @Injectable()
 export class NotificationsRepository implements INotificationsRepository {
-    constructor(
-        @Inject(DATABASE_CONNECTION)
-        private readonly db: NodePgDatabase<typeof schema>,
-    ) { }
+  constructor(
+    @Inject(DATABASE_CONNECTION)
+    private readonly db: NodePgDatabase<typeof schema>,
+  ) {}
 
-    async create(data: any) {
-        const [notification] = await this.db
-            .insert(schema.notifications)
-            .values(data)
-            .returning();
-        return notification;
-    }
+  async create(data: any) {
+    const [notification] = await this.db
+      .insert(schema.notifications)
+      .values(data)
+      .returning();
+    return notification;
+  }
 
-    async getAdminId(): Promise<number[]> {
-        const admin = await this.db
-            .select({ admin_id: schema.users.user_id })
-            .from(schema.users)
-            .where(eq(schema.users.role_id, Role.ADMIN));
-        const adminId: number[] = admin.map((admin) => admin.admin_id);
-        return adminId;
-    }
+  async getAdminId(): Promise<number[]> {
+    const admin = await this.db
+      .select({ admin_id: schema.users.user_id })
+      .from(schema.users)
+      .where(eq(schema.users.role_id, Role.ADMIN));
+    const adminId: number[] = admin.map((admin) => admin.admin_id);
+    return adminId;
+  }
 
-    async getCompanyUserId(companyId: number): Promise<number> {
-        const [company] = await this.db.select({ id: schema.companies.user_id })
-            .from(schema.companies)
-            .where(eq(schema.companies.company_id, companyId));
-        return company.id;
-    }
+  async getCompanyUserId(companyId: number): Promise<number> {
+    const [company] = await this.db
+      .select({ id: schema.companies.user_id })
+      .from(schema.companies)
+      .where(eq(schema.companies.company_id, companyId));
+    return company.id;
+  }
 
-    // notifications.repository.ts
-    async createMany(data: any[]) {
-        return await this.db.insert(schema.notifications).values(data).returning();
-    }
+  // notifications.repository.ts
+  async createMany(data: any[]) {
+    return await this.db.insert(schema.notifications).values(data).returning();
+  }
 
-    async findByUserId(userId: number, page: number = 1, limit: number = 10) {
-        // Tính toán vị trí bắt đầu lấy dữ liệu
-        const offset = (page - 1) * limit;
+  async findByUserId(userId: number, page: number = 1, limit: number = 10) {
+    // Tính toán vị trí bắt đầu lấy dữ liệu
+    const offset = (page - 1) * limit;
 
-        // 1. Truy vấn lấy dữ liệu có giới hạn (limit/offset)
-        const dataPromise = this.db.query.notifications.findMany({
-            where: eq(schema.notifications.user_id, userId),
-            orderBy: [desc(schema.notifications.created_at)],
-            limit: limit,
-            offset: offset,
-        });
+    // 1. Truy vấn lấy dữ liệu có giới hạn (limit/offset)
+    const dataPromise = this.db.query.notifications.findMany({
+      where: eq(schema.notifications.user_id, userId),
+      orderBy: [desc(schema.notifications.created_at)],
+      limit: limit,
+      offset: offset,
+    });
 
-        // 2. Truy vấn đếm tổng số thông báo của user đó để tính tổng trang
-        const countPromise = this.db
-            .select({ value: count() })
-            .from(schema.notifications)
-            .where(eq(schema.notifications.user_id, userId));
+    // 2. Truy vấn đếm tổng số thông báo của user đó để tính tổng trang
+    const countPromise = this.db
+      .select({ value: count() })
+      .from(schema.notifications)
+      .where(eq(schema.notifications.user_id, userId));
 
-        // Chạy song song cả 2 query để tối ưu hiệu năng
-        const [data, [totalCountRes]] = await Promise.all([
-            dataPromise,
-            countPromise
-        ]);
+    // Chạy song song cả 2 query để tối ưu hiệu năng
+    const [data, [totalCountRes]] = await Promise.all([
+      dataPromise,
+      countPromise,
+    ]);
 
-        const totalItems = Number(totalCountRes?.value ?? 0);
+    const totalItems = Number(totalCountRes?.value ?? 0);
 
-        // Trả về instance của PaginationResponse
-        return new PaginationResponse(data, page, limit, totalItems);
-    }
+    // Trả về instance của PaginationResponse
+    return new PaginationResponse(data, page, limit, totalItems);
+  }
 
-    async getUnreadCount(userId: number) {
-        const result = await this.db
-            .select({ unread_count: count() })
-            .from(schema.notifications)
-            .where(
-                and(
-                    eq(schema.notifications.user_id, userId),
-                    eq(schema.notifications.is_read, false),
-                ),
-            );
-        return result;
-    }
+  async getUnreadCount(userId: number) {
+    const result = await this.db
+      .select({ unread_count: count() })
+      .from(schema.notifications)
+      .where(
+        and(
+          eq(schema.notifications.user_id, userId),
+          eq(schema.notifications.is_read, false),
+        ),
+      );
+    return result;
+  }
 
-    async markAsRead(userId: number, notificationIds?: number[]) {
-        const condition = notificationIds
-            ? and(
-                eq(schema.notifications.user_id, userId),
-                inArray(schema.notifications.notification_id, notificationIds),
-            )
-            : eq(schema.notifications.user_id, userId);
+  async markAsRead(userId: number, notificationIds?: number[]) {
+    const condition = notificationIds
+      ? and(
+          eq(schema.notifications.user_id, userId),
+          inArray(schema.notifications.notification_id, notificationIds),
+        )
+      : eq(schema.notifications.user_id, userId);
 
-        return await this.db
-            .update(schema.notifications)
-            .set({ is_read: true })
-            .where(condition)
-            .returning();
-    }
+    return await this.db
+      .update(schema.notifications)
+      .set({ is_read: true })
+      .where(condition)
+      .returning();
+  }
 
-    async delete(userId: number, notificationId: number) {
-        return await this.db
-            .delete(schema.notifications)
-            .where(
-                and(
-                    eq(schema.notifications.user_id, userId),
-                    eq(schema.notifications.notification_id, notificationId),
-                ),
-            );
-    }
+  async delete(userId: number, notificationId: number) {
+    return await this.db
+      .delete(schema.notifications)
+      .where(
+        and(
+          eq(schema.notifications.user_id, userId),
+          eq(schema.notifications.notification_id, notificationId),
+        ),
+      );
+  }
 
-    async deleteAll(userId: number) {
-        return await this.db
-            .delete(schema.notifications)
-            .where(eq(schema.notifications.user_id, userId));
-    }
+  async deleteAll(userId: number) {
+    return await this.db
+      .delete(schema.notifications)
+      .where(eq(schema.notifications.user_id, userId));
+  }
 }
