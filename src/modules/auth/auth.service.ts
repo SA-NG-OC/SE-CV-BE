@@ -6,7 +6,6 @@ import {
   ConflictException,
   BadRequestException,
   InternalServerErrorException,
-  ForbiddenException,
 } from '@nestjs/common';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../../database/schema';
@@ -42,7 +41,7 @@ export class AuthService {
     @Inject(DATABASE_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
     @Inject('REDIS_CLIENT') private readonly redisClient: Redis,
-  ) { }
+  ) {}
 
   async hashPassword(password: string): Promise<string> {
     const saltRounds = 10;
@@ -436,7 +435,6 @@ export class AuthService {
 
   //Oauth2
   async findOrCreateOAuthUser(googleUser: GoogleUserDto) {
-    // 1. Tìm user theo oauth provider
     let [user] = await this.db
       .select()
       .from(schema.users)
@@ -446,21 +444,12 @@ export class AuthService {
           eq(schema.users.oauth_provider_id, googleUser.oauth_provider_id),
         ),
       );
-
     if (!user) {
-      // 2. Tìm theo email
-      let [existingUser] = await this.db
+      [user] = await this.db
         .select()
         .from(schema.users)
         .where(eq(schema.users.email, googleUser.email));
-
-      if (existingUser) {
-        if (existingUser.role_id !== Role.COMPANY) {
-          throw new ForbiddenException(
-            'This email is already registered with another account type',
-          );
-        }
-        // 3a. Update user cũ
+      if (user) {
         await this.db
           .update(schema.users)
           .set({
@@ -469,12 +458,9 @@ export class AuthService {
             is_verified: true,
             last_login: new Date(),
           })
-          .where(eq(schema.users.user_id, existingUser.user_id));
-
-        user = existingUser;
+          .where(eq(schema.users.user_id, user.user_id));
       } else {
-        // 3b. Tạo user mới
-        const [newUser] = await this.db
+        [user] = await this.db
           .insert(schema.users)
           .values({
             email: googleUser.email,
@@ -487,48 +473,16 @@ export class AuthService {
             last_login: new Date(),
           })
           .returning();
-
-        user = newUser;
       }
     }
 
-    // 4. Query đầy đủ thông tin profile (lấy company_id, student_id)
-    const [fullUser] = await this.db
-      .select({
-        user_id: schema.users.user_id,
-        email: schema.users.email,
-        role_id: schema.users.role_id,
-        role_name: schema.roles.role_name,
-        student_id: schema.students.student_id,
-        company_id: schema.companies.company_id,
-      })
-      .from(schema.users)
-      .leftJoin(schema.roles, eq(schema.users.role_id, schema.roles.role_id))
-      .leftJoin(
-        schema.students,
-        eq(schema.students.user_id, schema.users.user_id),
-      )
-      .leftJoin(
-        schema.companies,
-        eq(schema.companies.user_id, schema.users.user_id),
-      )
-      .where(eq(schema.users.user_id, user.user_id))
-      .limit(1);
-
-    // 5. Generate tokens với đầy đủ studentId, companyId
-    const { accessToken, refreshToken } = await this.generateTokens(
-      fullUser,
-      fullUser.student_id,
-      fullUser.company_id,
-    );
-
+    const { accessToken, refreshToken } = await this.generateTokens(user);
     await this.redisClient.set(
       `refresh_token:${user.user_id}`,
       refreshToken,
       'EX',
       7 * 24 * 60 * 60,
     );
-
     return {
       email: user.email,
       access_token: accessToken,
@@ -594,8 +548,6 @@ export class AuthService {
       email,
       password_hash: hashedPassword,
       role_id: adminRole.role_id,
-      is_active: true,
-      is_verified: true,
       created_at: new Date(),
     });
 

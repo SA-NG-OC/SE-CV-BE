@@ -25,7 +25,6 @@
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^8.4.3",
-    "@casl/ability": "^7.0.0",
     "@google/generative-ai": "^0.24.1",
     "@nestjs-modules/mailer": "^2.0.2",
     "@nestjs/bullmq": "^11.0.4",

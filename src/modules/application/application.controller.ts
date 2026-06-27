@@ -12,7 +12,7 @@ import {
 import { ApplicationService } from './application.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { ApplicationDomain } from './domain/application/application.domain';
-import { type ApplicationStatus } from './domain/application/application.props';
+import { ApplicationStatus } from './domain/application/application.props';
 import { PaginationResponse } from 'src/common/types/pagination-response';
 import {
   ApplicantCardView,
@@ -45,7 +45,7 @@ import {
 
 @Controller('application')
 export class ApplicationController {
-  constructor(private readonly applicationService: ApplicationService) { }
+  constructor(private readonly applicationService: ApplicationService) {}
 
   @Post()
   @ApplyJobDocs()
